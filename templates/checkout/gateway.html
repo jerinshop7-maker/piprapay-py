@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}{{ gateway.display }} — Checkout{% endblock %}
+{% block content %}
+<h1>{{ gateway.display }}</h1>
+<p>Pay <strong>{{ transaction.local_net_amount }} {{ transaction.local_currency }}</strong></p>
+{% if instructions %}<ol>{% for s in instructions %}<li>{{ s.text }}</li>{% endfor %}</ol>{% endif %}
+{% if gateway_html %}{{ gateway_html|safe }}{% endif %}
+<form method="post">{% csrf_token %}
+<input type="hidden" name="gateway_id" value="{{ gateway.gateway_id }}">
+<input name="sender" placeholder="Sender number" required>
+<input name="trx_id" placeholder="Transaction ID" required>
+<button type="submit">Verify payment</button></form>
+{% endblock %}

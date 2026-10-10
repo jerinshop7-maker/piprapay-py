@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Brands</h1><ul>{% for b in page %}<li><a href="/admin/brands/{{ b.brand_id }}/">{{ b.identify_name }}</a></li>{% endfor %}</ul>{% endblock %}

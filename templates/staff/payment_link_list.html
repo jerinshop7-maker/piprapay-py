@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Payment links</h1><ul>{% for l in page %}<li><a href="/admin/payment-link/{{ l.ref }}/">{{ l.ref }}</a> {{ l.status }}</li>{% endfor %}</ul>{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}Payment {{ transaction.status }}{% endblock %}
+{% block content %}
+<h1>Payment {{ transaction.status }}</h1>
+<p>Order {{ transaction.pp_id }} · {{ transaction.total }} {{ transaction.currency }}</p>
+<p>Gateway: {{ transaction.gateway }} · Txn: {{ transaction.transaction_id }}</p>
+<p><a href="/payment/{{ transaction.pp_id }}/receipt/">Download receipt</a></p>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block title %}Receipt {{ transaction.pp_id }}{% endblock %}
+{% block content %}
+<h1>Receipt {{ transaction.pp_id }}</h1>
+<p>{{ transaction.full_name }} · {{ transaction.total }} {{ transaction.currency }}</p>
+<p>Status: {{ transaction.status }} · Date: {{ transaction.date }}</p>
+{% endblock %}

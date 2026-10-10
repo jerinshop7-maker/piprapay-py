@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}Invoice {{ invoice.ref }}{% endblock %}
+{% block content %}
+<h1>Invoice {{ invoice.ref }} ({{ invoice.status }})</h1>
+<p>Bill to: {{ customer.name }} · {{ customer.email }}</p>
+<table><tr><th>Description</th><th>Qty</th><th>Amount</th></tr>
+{% for it in items %}<tr><td>{{ it.description }}</td><td>{{ it.quantity }}</td><td>{{ it.amount }}</td></tr>{% endfor %}</table>
+<p>Subtotal: {{ subtotal }} · Shipping: {{ invoice.shipping }} · Total: {{ total }} {{ invoice.currency }}</p>
+{% endblock %}

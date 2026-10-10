@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Payment link{% endblock %}
+{% block content %}
+<h1>Payment link {{ link.ref }}</h1>
+<p>Amount: {{ link.amount }} {{ link.currency }}</p>
+<form method="post">{% csrf_token %}
+<input name="full_name" placeholder="Full name" required>
+<input name="email_address" placeholder="Email" required>
+<input name="mobile_number" placeholder="Mobile" required>
+<button type="submit">Pay now</button></form>
+{% endblock %}

@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Currencies</h1><ul>{% for c in currencies %}<li>{{ c.brand_id }} {{ c.code }} {{ c.rate }}</li>{% endfor %}</ul>{% endblock %}

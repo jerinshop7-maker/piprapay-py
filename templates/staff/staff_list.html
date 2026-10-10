@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Staff</h1><ul>{% for s in page %}<li><a href="/admin/staff/{{ s.a_id }}/">{{ s.username }}</a> {{ s.role }}</li>{% endfor %}</ul>{% endblock %}

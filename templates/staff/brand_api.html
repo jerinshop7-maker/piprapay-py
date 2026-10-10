@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>API keys</h1><ul>{% for k in keys %}<li>{{ k.name }} {{ k.status }}</li>{% endfor %}</ul>{% endblock %}

@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Gateway</h1><form method="post" enctype="multipart/form-data">{% csrf_token %}<input name="display" value="{{ gw.display|default:"" }}"><button>Save</button></form>{% endblock %}

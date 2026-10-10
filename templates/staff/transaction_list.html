@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Transactions</h1><form method="get"><input name="q" value="{{ q }}"><button>Search</button></form><ul>{% for t in page %}<li><a href="/admin/transaction/{{ t.id }}/">{{ t.ref }}</a> {{ t.status }} {{ t.amount }}</li>{% endfor %}</ul>{% endblock %}

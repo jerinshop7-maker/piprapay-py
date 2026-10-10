@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}Checkout {{ transaction.pp_id }}{% endblock %}
+{% block content %}
+<h1>Checkout — {{ transaction.amount }} {{ transaction.currency }}</h1>
+<p>Order {{ transaction.pp_id }} · {{ transaction.full_name }}</p>
+<h2>Select payment method</h2>
+<ul>{% for g in gateways %}
+<li><a href="?gateway={{ g.slug }}">{{ g.display|default:g.name }} ({{ g.currency }})</a></li>
+{% empty %}<li>No gateways available.</li>{% endfor %}</ul>
+{% endblock %}

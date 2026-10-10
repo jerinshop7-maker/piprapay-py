@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Staff</h1><form method="post">{% csrf_token %}<input name="full_name" value="{{ member.full_name|default:"" }}"><button>Save</button></form>{% endblock %}

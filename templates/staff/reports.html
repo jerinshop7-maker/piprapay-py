@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Reports</h1><ul>{% for r in by_status %}<li>{{ r.status }}: {{ r.n }}</li>{% endfor %}</ul>{% endblock %}

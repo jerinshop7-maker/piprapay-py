@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>Gateways</h1><ul>{% for g in page %}<li><a href="/admin/gateways/{{ g.gateway_id }}/">{{ g.display }}</a> {{ g.slug }} {{ g.status }}</li>{% endfor %}</ul>{% endblock %}

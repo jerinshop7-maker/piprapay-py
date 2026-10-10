@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<h1>SMS data</h1><ul>{% for s in page %}<li>{{ s.sender_key }} {{ s.trx_id }} {{ s.amount }} {{ s.status }}</li>{% endfor %}</ul>{% endblock %}

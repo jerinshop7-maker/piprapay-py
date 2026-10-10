@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}2FA — PipraPay{% endblock %}
+{% block content %}<h1>Two-factor authentication</h1>
+<form method="post">{% csrf_token %}
+<input name="code" placeholder="6-digit code" required>
+<button type="submit">Verify</button></form>{% endblock %}
