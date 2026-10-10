@@ -69,6 +69,14 @@ def money_div(a, b, scale: int = SCALE) -> str:
     return format(_q(Decimal(money_sanitize(a)) / divisor, scale), "f")
 
 
+def num_eq(a, b) -> bool:
+    """PHP `==` numeric juggling for amount strings ("100.50000000" == "100.50")."""
+    try:
+        return Decimal(money_sanitize(a)) == Decimal(money_sanitize(b))
+    except InvalidOperation:
+        return False
+
+
 def money_round(amount, decimals: int = 2) -> str:
     """bc-truncation: bcmul(x,10^(d+1),0) -> bcdiv(/10,0) -> bcdiv(/10^d,d)."""
     sanitized = money_sanitize(amount)

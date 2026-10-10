@@ -194,8 +194,9 @@ class OxapayGateway:
         d = r.get("data", {}) if isinstance(r.get("data"), dict) else {}
         order = str(d.get("order_id", ""))
         ref = order.split("-BP-")[1] if "-BP-" in order else ""
+        # PHP `==` juggling: numeric comparison, not string equality.
         if (d.get("status") == "paid"
-                and str(d.get("amount", "")) == str(data.get("transaction", {}).get("local_net_amount", ""))
+                and M.num_eq(d.get("amount", ""), data.get("transaction", {}).get("local_net_amount", ""))
                 and ref == data.get("transaction", {}).get("ref")):
             return {"verified": True, "trx_id": track_id,
                     "source_info": [{"label": "Track ID", "value": track_id}]}
@@ -1051,9 +1052,8 @@ class ShurjopayGateway:
             cust_order = str(row.get("customer_order_id", ""))
             ref = cust_order.split("-BP-")[1] if "-BP-" in cust_order else ""
             if ref:
-                checkout_url = data.get("callback_url", "") or "/"
                 return {"verified": True, "trx_id": str(row.get("bank_trx_id", "")), "pp_ref": ref,
-                        "redirect": checkout_url,
+                        "redirect": "checkout",
                         "source_info": [{"label": "PG ID", "value": str(row.get("id", ""))},
                                         {"label": "Order ID", "value": order_id},
                                         {"label": "Method", "value": str(row.get("method", ""))}]}

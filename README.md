@@ -137,7 +137,7 @@ staff/         admin panel views/urls/auth + system_ops.py (update/import/addons
 cron_app/      tasks.py, views.py, run_cron command
 themes/        twenty_six.py + lang_data.json (69 keys)
 templates/     base, core/, checkout/, staff/
-tests/         test_parity.py (46 tests)
+tests/         test_parity.py + test_parity2.py (55 tests)
 tools/         extract_gateway_lang.py (regenerates lang_data.json from PHP)
 AGENTS.md      agent operating manual
 ```

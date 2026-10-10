@@ -84,19 +84,23 @@ def ipn_entry(request, gateway_id: str):
     result = plugin.ipn(data) or {}
     if result.get("json") is not None:
         return JsonResponse(result["json"])
-    if result.get("redirect"):
-        from django.shortcuts import redirect
-        return redirect(result["redirect"])
     if result.get("verified"):
         from core.models import Transaction
         pp_ref = result.get("pp_ref") or (data["query"].get("pp_id") or data["post"].get("pp_id") or "")
         txn = Transaction.objects.filter(ref=pp_ref).first() if pp_ref else None
+        ok = False
         if txn:
             data["transaction"] = {"ref": txn.ref}
             ok = set_transaction_status(pp_ref, "completed", gateway_id,
                                         result.get("trx_id", ""), result.get("source_info", []))
-            return JsonResponse({"status": "ok" if ok else "not-matched"})
-        return JsonResponse({"status": "ignored"})
+        if result.get("redirect"):
+            from django.shortcuts import redirect
+            target = result["redirect"]
+            if target == "checkout" and pp_ref:
+                # ShurjoPay-style: complete, then back to checkout (PHP redirect).
+                return redirect(f"/payment/{pp_ref}/")
+            return redirect(target)
+        return JsonResponse({"status": "ok" if ok else "not-matched"})
     code = result.get("http_code", 200)
     if code != 200:
         return JsonResponse({"status": "ignored"}, status=code)

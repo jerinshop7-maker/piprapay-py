@@ -48,8 +48,10 @@ def dashboard(request):
     last30 = now - timedelta(days=30)
     completed = txns.filter(status="completed", created_date__gte=last30)
     volume = completed.aggregate(s=Sum("amount"))["s"] or 0
+    # PHP Total Payments card excludes `initiated`.
+    visible = txns.exclude(status="initiated")
     ctx = {
-        "total_transactions": txns.count(),
+        "total_transactions": visible.count(),
         "completed": txns.filter(status="completed").count(),
         "pending": txns.filter(status="pending").count(),
         "volume_30d": M.money_round(str(volume)),
@@ -804,12 +806,14 @@ def device_connect_info(request):
         return JsonResponse({"status": "false", "title": "Access denied",
                              "message": "You need permission to perform this action. Please contact the admin."})
     otp = M.generate_item_id()
-    row = Device.objects.filter(status="processing", d_id=request.pp_admin.a_id).first()
+    # device.d_id = the pp_admin browser cookie (mirrors $pp_admin = getCookie('pp_admin')).
+    d_id = request.session.get("pp_cookie", "") or ""
+    row = Device.objects.filter(status="processing", d_id=d_id).first()
     if row:
         row.otp = otp
         row.save(update_fields=["otp", "updated_date"])
     else:
-        Device.objects.create(d_id=request.pp_admin.a_id, device_id=M.generate_item_id(), otp=otp)
+        Device.objects.create(d_id=d_id, device_id=M.generate_item_id(), otp=otp)
     return JsonResponse({"status": "true", "otp": otp})
 
 
@@ -1372,7 +1376,20 @@ def staff_permissions(request, a_id: str):
         messages.success(request, "Permissions updated.")
         return redirect(f"/admin/staff/{a_id}/brands/")
     return render(request, "staff/staff_permissions.html",
-                  {"member": member, "schema": schema, "current": current, "row": row})
+                  {"member": member, "schema": schema, "current": current, "row": row,
+                   "granted": _granted_keys(current)})
+
+
+def _granted_keys(current: dict) -> set:
+    granted = set()
+    for module, actions in (current.get("resources") or {}).items():
+        for action, on in (actions or {}).items():
+            if on:
+                granted.add(f"res_{module}_{action}")
+    for page, on in (current.get("pages") or {}).items():
+        if on:
+            granted.add(f"page_{page}")
+    return granted
 
 
 @login_required
@@ -1450,7 +1467,7 @@ def activities(request):
     if date_until:
         logs = logs.filter(created_date__lte=f"{date_until} 23:59:59")
     hooks_list = WebhookLog.objects.all().order_by("-id")[:50]
-    current_cookie = request.session.session_key or ""
+    current_cookie = request.session.get("pp_cookie", "") or ""
     return render(request, "staff/activities.html",
                   {"page": _paginate(request, logs), "webhooks": hooks_list,
                    "status": status, "q": q, "date_from": date_from, "date_until": date_until,
@@ -1464,7 +1481,7 @@ def my_account(request):
         if "logout_others" in request.POST:
             # my-account-account-browser-sessions: keep only this session.
             BrowserLog.objects.filter(a_id=admin.a_id).exclude(
-                cookie=(request.session.session_key or "")[:40]).delete()
+                cookie=(request.session.get("pp_cookie", "") or "")[:40]).delete()
             messages.success(request, "Other browser sessions logged out.")
             return redirect("/admin/my-account/")
         username = request.POST.get("username", admin.username)
@@ -1506,7 +1523,7 @@ def my_account(request):
     qr_url = otpauth_url(admin.twofa_secret, admin.email or admin.username) if show_secret else ""
     return render(request, "staff/my_account.html",
                   {"admin": admin, "qr_url": qr_url, "show_secret": show_secret,
-                   "sessions": sessions, "current_cookie": (request.session.session_key or "")[:40]})
+                   "sessions": sessions, "current_cookie": (request.session.get("pp_cookie", "") or "")[:40]})
 
 
 @login_required

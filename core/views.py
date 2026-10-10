@@ -19,14 +19,18 @@ from core.totp import generate_secret, verify_totp
 
 
 def _remember_admin(request, admin: Admin):
+    # Mirror PHP: bin2hex(random_bytes(16)) cookie stored server-side in
+    # browser_log AND client-side; companion pairing keys off this cookie.
+    import secrets as _secrets
     request.session["pp_admin_id"] = admin.a_id
     request.session["pp_admin_role"] = admin.role
+    cookie = _secrets.token_hex(16)
+    request.session["pp_cookie"] = cookie
     perms = Permission.objects.filter(a_id=admin.a_id, status="active").order_by("id")
     first = perms.first()
     if first:
         request.session["pp_brand_id"] = first.brand_id
     info = get_user_device_info(request)
-    cookie = request.session.session_key or ""
     BrowserLog.objects.create(a_id=admin.a_id, cookie=cookie[:40], browser=info["browser"][:10],
                               device=info["device"][:10], ip=(info["ip_address"] or "")[:15])
 

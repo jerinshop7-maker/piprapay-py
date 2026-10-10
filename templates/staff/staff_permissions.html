@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block content %}<h1>Permissions: {{ member.username }} ({{ row.brand_id }})</h1>
 <form method="post">{% csrf_token %}<input type="hidden" name="permission_id" value="{{ row.id }}">
 <select name="status"><option {% if row.status == "active" %}selected{% endif %}>active</option><option {% if row.status == "suspend" %}selected{% endif %}>suspend</option></select>
-<h3>Resources</h3>{% for module,actions in schema.resources.items %}<h4>{{ module }}</h4>{% for a,v in actions.items %}<label><input type="checkbox" name="res_{{ module }}_{{ a }}" {% if current.resources|default:"" %}{% endif %}> {{ a }}</label>{% endfor %}{% endfor %}
-<h3>Pages</h3>{% for p,v in schema.pages.items %}<label><input type="checkbox" name="page_{{ p }}"> {{ p }}</label>{% endfor %}<br>
+<h3>Resources</h3>{% for module,actions in schema.resources.items %}<h4>{{ module }}</h4>{% for a,v in actions.items %}{% with k="res_"|add:module|add:"_"|add:a %}<label><input type="checkbox" name="{{ k }}"{% if k in granted %} checked{% endif %}> {{ a }}</label>{% endwith %}{% endfor %}{% endfor %}
+<h3>Pages</h3>{% for p,v in schema.pages.items %}{% with k="page_"|add:p %}<label><input type="checkbox" name="{{ k }}"{% if k in granted %} checked{% endif %}> {{ p }}</label>{% endwith %}{% endfor %}<br>
 <button>Save</button></form>{% endblock %}

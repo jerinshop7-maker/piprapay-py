@@ -235,6 +235,12 @@ def checkout_payment(request, pp_id: str):
                 if result.get("canceled"):
                     set_transaction_status(pp_id, "canceled")
                     return redirect(f"/payment/{pp_id}/")
+                if result.get("pending"):
+                    return render(request, "checkout/gateway.html",
+                                  {"transaction": txn_ctx, "brand": _brand_info(brand), "gateway": gateway_ctx,
+                                   "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
+                                   "language": language,
+                                   "gateway_html": "<center>Payment is pending confirmation on the network.</center>"})
                 return render(request, "checkout/gateway.html",
                               {"transaction": txn_ctx, "brand": _brand_info(brand), "gateway": gateway_ctx,
                                "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,

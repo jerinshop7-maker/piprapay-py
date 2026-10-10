@@ -12,6 +12,7 @@ urlpatterns = [
     path("refund-payment", views.refund_payment),
     # Android companion-device API (action-companion).
     path("companion/<str:action>/", companion.companion, name="api-companion"),
+    path("", views.unknown_api, name="api-root"),
     # Unknown api_type/checkout_type -> JSON INVALID_JSON_PAYLOAD (not HTML 404).
     re_path(r"^(?P<path>.*)/$", views.unknown_api, name="api-unknown"),
     re_path(r"^(?P<path>.+)$", views.unknown_api),

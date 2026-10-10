@@ -145,7 +145,8 @@ def _sms_transmit_bulk(request):
                 bsimslot = "Sim1" if str(simslot) == "1" else "Sim2"
                 expected = M.money_add(str(rule.current_balance), amount)
                 status, reason = "approved", "--"
-                if expected != M.money_sanitize(balance):
+                # PHP `==` is numeric juggling, NOT string equality.
+                if not M.num_eq(expected, M.money_sanitize(balance)):
                     reasons = [f"SMS balance and expected balance do not match. Recorded SMS balance: "
                                f"{M.money_round(balance)}; Expected balance: {M.money_round(expected)}"]
                     status = "awaiting-review"
@@ -165,7 +166,7 @@ def _sms_transmit_bulk(request):
                     number=number, amount=M.money_sanitize(amount), currency=currency, trx_id=trx_id,
                     balance=M.money_sanitize(balance), type=sms_type, status=status,
                     message=message, reason=reason)
-                if status == "awaiting-review" and expected != M.money_sanitize(balance):
+                if status == "awaiting-review" and not M.num_eq(expected, M.money_sanitize(balance)):
                     reconcile_by_longest_chain(device_id, sender_key, sms_type)
             else:
                 SmsData.objects.create(
