@@ -178,12 +178,27 @@ def _refund_transaction(txn: Transaction) -> None:
 
 
 def _send_transaction_ipn(txn: Transaction) -> int:
-    """Mirror transaction-ipn: full payload via sendIPN, skipped when webhook is '--'."""
+    """Mirror transaction-ipn: its own payload shape (gateway `name`, rounded
+    total, no local_currency) via single sendIPN; skipped when webhook is '--'.
+
+    Deviation: customer names come from customer_info (PHP reads nonexistent
+    top-level txn keys, so it always sends 'N/A')."""
     if not txn.webhook_url or txn.webhook_url == "--":
         return 0
     from core.transactions import transaction_payload
-    return send_ipn_multi([{"id": txn.id, "url": txn.webhook_url,
-                            "payload": transaction_payload(txn)}]).get(txn.id, 0)
+    from core.webhooks import send_ipn
+    base = transaction_payload(txn, name_field="name")
+    payload = {k: base[k] for k in ("pp_id", "full_name", "email_address", "mobile_number",
+                                    "gateway", "amount", "fee", "discount_amount",
+                                    "local_net_amount", "currency", "metadata", "sender",
+                                    "transaction_id", "status", "date")}
+    payload["total"] = M.money_round(base["total"])
+    try:
+        import requests
+        r = requests.post(txn.webhook_url, json=payload, timeout=15)
+        return r.status_code
+    except Exception:
+        return send_ipn(txn.webhook_url, payload)
 
 
 @login_required
@@ -632,15 +647,21 @@ def gateway_edit(request, gateway_id: str = ""):
             name = field["name"]
             if field.get("type") == "image" and request.FILES.get(name):
                 from core.storage import upload_image
-                up = upload_image(request.FILES[name], 2 * 1024 * 1024)
+                up = upload_image(request.FILES[name], 5 * 1024 * 1024)
                 if up.get("status"):
                     value = f"/media/storage/{up['file']}"
                 else:
                     continue
             elif name in request.POST:
-                value = request.POST.get(name, "")
+                if field.get("multiple"):
+                    # Multi-select arrays are JSON-encoded (PHP parity).
+                    value = json.dumps(request.POST.getlist(name), ensure_ascii=False)
+                else:
+                    value = request.POST.get(name, "")
             else:
                 continue
+            # Empty option values are stored as '--' (PHP parity).
+            value = value if value != "" else "--"
             GatewayParameter.objects.update_or_create(gateway_id=gid, option_name=name,
                                                       defaults={"value": value, "brand_id": gw.brand_id})
         messages.success(request, "Gateway saved.")
@@ -696,26 +717,65 @@ def sms_data(request):
                 return render(request, "staff/denied.html", status=403)
             row = SmsData.objects.filter(id=request.POST["edit_id"]).first()
             if row:
+                # PHP quirk (sms-data-edit): the (sender_key, trx_id) lookup must HIT
+                # or the save is rejected as "Duplicate Transaction" — even on miss.
+                new_sender_key = request.POST.get("sender_key", row.sender_key)
+                new_status = request.POST.get("status", row.status)
+                new_device = request.POST.get("device_id", "") or "--"
+                new_currency = request.POST.get("currency", row.currency)
                 if row.entry_type == "automatic":
                     # Frozen entry_type: re-parse the (possibly corrected) message.
                     message = request.POST.get("message", row.message or "")
-                    result = mfs_message_verified(row.sender_key, message)
+                    result = mfs_message_verified(new_sender_key, message)
                     if result is False:
                         messages.error(request, "Invalid or unknown MFS message.")
                         return redirect("/admin/sms-data/")
-                    row.type = result.get("type", "") or row.type
-                    row.amount = M.money_sanitize(result.get("amount", "0") or "0")
-                    row.balance = M.money_sanitize(result.get("balance", "0") or "0")
-                    row.number = result.get("sender", "") or row.number
-                    row.trx_id = result.get("trxid", "") or row.trx_id
+                    new_type = result.get("type", "") or ""
+                    new_amount = result.get("amount", "") or ""
+                    new_number = result.get("sender", "") or ""
+                    new_trx = result.get("trxid", "") or ""
+                    new_balance = result.get("balance", "") or ""
+                    if not new_type or not new_amount or not new_number or not new_trx:
+                        messages.error(request, "Invalid or unknown MFS message.")
+                        return redirect("/admin/sms-data/")
+                    if not SmsData.objects.filter(sender_key=new_sender_key,
+                                                  trx_id=new_trx).exists():
+                        messages.error(request,
+                                       "The provided Transaction ID already exists in our system.")
+                        return redirect("/admin/sms-data/")
+                    row.device_id = new_device
+                    row.sender_key = new_sender_key
+                    row.number = new_number
+                    row.amount = M.money_sanitize(new_amount)
+                    row.currency = new_currency
+                    row.trx_id = new_trx
+                    row.balance = M.money_sanitize(new_balance)
+                    row.type = new_type
                     row.message = message
+                    row.status = new_status
                 else:
-                    row.type = request.POST.get("type", row.type)
-                    row.amount = M.money_sanitize(request.POST.get("amount", row.amount))
-                    row.number = request.POST.get("number", row.number)
-                    row.trx_id = request.POST.get("trx_id", row.trx_id)
+                    new_type = request.POST.get("type", row.type)
+                    new_amount = request.POST.get("amount", "")
+                    new_number = request.POST.get("number", "")
+                    new_trx = request.POST.get("trx_id", "")
+                    if not new_type or not new_amount or not new_number or not new_trx:
+                        messages.error(request, "Please fill in all required fields before proceeding.")
+                        return redirect("/admin/sms-data/")
+                    if not SmsData.objects.filter(sender_key=new_sender_key,
+                                                  trx_id=new_trx).exists():
+                        messages.error(request,
+                                       "The provided Transaction ID already exists in our system.")
+                        return redirect("/admin/sms-data/")
+                    row.device_id = new_device
+                    row.sender_key = new_sender_key
+                    row.number = new_number
+                    row.amount = M.money_sanitize(new_amount)
+                    row.currency = new_currency
+                    row.trx_id = new_trx
+                    row.balance = "0"
+                    row.type = new_type
                     row.message = request.POST.get("message", row.message or "")
-                row.status = request.POST.get("status", row.status)
+                    row.status = new_status
                 row.save()
             return redirect("/admin/sms-data/")
         if not has_permission(request.pp_permissions, "sms_data", "create", request.pp_admin.role):
@@ -1486,17 +1546,26 @@ def my_account(request):
             return redirect("/admin/my-account/")
         username = request.POST.get("username", admin.username)
         email = request.POST.get("email", admin.email)
+        full_name = request.POST.get("full_name", admin.full_name)
+        if not full_name or not username or not email:
+            messages.error(request, "Please fill in all required fields before proceeding.")
+            return redirect("/admin/my-account/")
+        if "@" not in email:
+            messages.error(request, "Please enter a valid email address.")
+            return redirect("/admin/my-account/")
         if Admin.objects.filter(username=username).exclude(a_id=admin.a_id).exists():
-            messages.error(request, "Username already exists.")
+            messages.error(request, "Username already exits.")
             return redirect("/admin/my-account/")
         if Admin.objects.filter(email=email).exclude(a_id=admin.a_id).exists():
-            messages.error(request, "Email already exists.")
+            messages.error(request, "Email Address already exits.")
             return redirect("/admin/my-account/")
-        admin.full_name = request.POST.get("full_name", admin.full_name)
+        admin.full_name = full_name
         admin.username = username
         admin.email = email
         if request.POST.get("password"):
+            # PHP also rotates temp_password on password change.
             admin.password = make_password(request.POST["password"])
+            admin.temp_password = make_password(M.generate_strong_password())
         # 2FA enable requires verifying a TOTP code (like PHP's QR + code step).
         if request.POST.get("twofa") == "enable" and admin.twofa_status != "enable":
             code = request.POST.get("twofa_code", "")

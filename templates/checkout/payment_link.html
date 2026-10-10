@@ -16,12 +16,13 @@
 <label>{{ f.label }}{% if f.required == "true" %} *{% endif %}</label>
 {% if f.type == "textarea" %}<textarea name="{{ f.name }}"></textarea>
 {% elif f.type == "select" %}<select name="{{ f.name }}">{% for o in f.options %}<option>{{ o }}</option>{% endfor %}</select>
-{% elif f.type == "checkbox" %}{% for o in f.options %}<label><input type="checkbox" name="{{ f.name }}" value="{{ o }}"> {{ o }}</label>{% endfor %}
+{% elif f.type == "checkbox" %}{% for o in f.options %}<label><input type="checkbox" name="{{ f.name }}[]" value="{{ o }}"> {{ o }}</label>{% endfor %}
 {% elif f.type == "radio" %}{% for o in f.options %}<label><input type="radio" name="{{ f.name }}" value="{{ o }}"> {{ o }}</label>{% endfor %}
-{% elif f.type == "file" %}<input type="file" name="{{ f.name }}">
+{% elif f.type == "file" %}<input type="file" name="{{ f.name }}"{% if f.accept %} accept="{{ f.accept }}"{% endif %}>
 {% else %}<input type="text" name="{{ f.name }}">
 {% endif %}<br>
 {% endfor %}
+<p>{{ lang.amount|default:"Amount" }}: {{ link.currency }} <input value="{{ link.total }}" readonly></p>
 <button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
 <script>
 document.getElementById('pl-form').addEventListener('submit', async (e) => {

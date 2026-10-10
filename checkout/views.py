@@ -160,15 +160,21 @@ def _transaction_info(txn: Transaction, brand: Brand, gateway_display: str = "")
 
 
 def _resolve_steps(plugin, language: str, instructions: list) -> list:
-    """Resolve instruction lang keys (buildLangArray equivalent)."""
+    """Resolve instruction lang keys (buildLangArray) + var substitution with
+    <span class="dynamic-value"> wrappers (pp_gateway_render rendering)."""
     lang_map = {}
     if plugin:
         for k, v in plugin.lang_text().items():
             lang_map[k] = v.get(language, v.get("en", k))
     steps = []
-    for s in instructions:
+    for i, s in enumerate(instructions, start=1):
+        text = lang_map.get(str(s.get("text", "")), str(s.get("text", "")))
+        for k, v in (s.get("vars") or {}).items():
+            text = text.replace(k, f'<span class="dynamic-value">{v}</span>')
         step = dict(s)
-        step["text"] = lang_map.get(str(s.get("text", "")), str(s.get("text", "")))
+        step["label"] = text
+        step["text"] = text
+        step["row"] = i
         steps.append(step)
     return steps
 
@@ -209,12 +215,25 @@ def checkout_payment(request, pp_id: str):
                        local_net_amount=M.money_round(totals["converted"]),
                        local_currency=totals["currency"])
         gtype = plugin.info().get("gateway_type") if plugin else None
+        if plugin is None and gw.tab == "bank":
+            # Bank fallback (pp_gateway_render): manual/slip + bank_step_* lang.
+            gtype = "manual"
         plugin_lang = {}
         if plugin:
             for k, v in plugin.lang_text().items():
                 plugin_lang[k] = v.get(language, v.get("en", ""))
-        instructions = plugin.instructions({"options": options, "transaction": txn_ctx}) if plugin else []
-        steps = _resolve_steps(plugin, language, instructions)
+        from gateways.render_lang import framework_built, resolve_bank_steps
+        fw = framework_built(language)
+        plugin_lang.update({k: v for k, v in fw.items() if k not in plugin_lang})
+        if plugin is None and gw.tab == "bank":
+            from gateways.render_lang import BANK_LANG_TEXT
+            for k, v in BANK_LANG_TEXT.items():
+                plugin_lang[k] = v.get(language, v.get("en", k))
+            instructions = resolve_bank_steps(options, txn_ctx, language)
+            steps = instructions
+        else:
+            instructions = plugin.instructions({"options": options, "transaction": txn_ctx}) if plugin else []
+            steps = _resolve_steps(plugin, language, instructions)
         base = request.build_absolute_uri("/").rstrip("/")
         callback_url = (f"{base}/payment/{pp_id}/?gateway={gw.gateway_id}&pp_callback=1"
                         f"&gid={gw.gateway_id}")
@@ -261,10 +280,12 @@ def checkout_payment(request, pp_id: str):
                           {"transaction": txn_ctx, "brand": _brand_info(brand), "gateway": gateway_ctx,
                            "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
                            "language": language, "gateway_html": result.get("html", "")})
+        _verify_by = "slip" if (plugin is None and gw.tab == "bank") else \
+            (plugin.info().get("verify_by", "trxid") if plugin else "trxid")
         return render(request, "checkout/gateway.html",
                       {"transaction": txn_ctx, "brand": _brand_info(brand), "gateway": gateway_ctx,
                        "gateway_type": gtype or "automation",
-                       "verify_by": (plugin.info().get("verify_by", "trxid") if plugin else "trxid"),
+                       "verify_by": _verify_by,
                        "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
                        "language": language})
 
@@ -407,12 +428,16 @@ def payment_link_page(request, ref: str, brand_id: str | None = None):
     fields = []
     for row in PaymentLinkField.objects.filter(paymentLinkID=link.ref):
         opts = []
+        accept = ""
         if row.formType in ("select", "file", "checkbox", "radio") and row.value != "--":
             opts = [o.strip() for o in row.value.split(",")]
+        if row.formType == "file" and row.value != "--":
+            accept = ",".join(f".{e.strip()}" for e in row.value.split(",") if e.strip())
         import re as _re
         fields.append({"type": row.formType,
                        "name": _re.sub(r"[^a-z0-9_]", "_", row.fieldName.lower()),
-                       "label": row.fieldName, "options": opts, "required": row.required})
+                       "label": row.fieldName, "options": opts, "required": row.required,
+                       "accept": accept})
     return render(request, "checkout/payment_link.html",
                   {"link": {"pid": link.ref, "status": _link_status(link), "currency": link.currency,
                             "total": M.money_round(str(link.amount)),
@@ -456,10 +481,12 @@ def payment_link_submit(request, ref: str):
                 base = request.build_absolute_uri("/").rstrip("/")
                 form_data.append({"label": row.fieldName, "value": f"{base}/media/storage/{result['file']}"})
         elif row.formType == "checkbox":
-            vals = request.POST.getlist(name)
+            # PHP posts checkbox groups as name[] arrays.
+            vals = request.POST.getlist(name) + request.POST.getlist(f"{name}[]")
             form_data.append({"label": row.fieldName, "value": ", ".join(vals)})
-        elif name in request.POST:
-            v = request.POST.getlist(name)
+        elif name in request.POST or f"{name}[]" in request.POST:
+            key = name if name in request.POST else f"{name}[]"
+            v = request.POST.getlist(key)
             form_data.append({"label": row.fieldName,
                               "value": ", ".join(v) if len(v) > 1 else (v[0].strip() if v else "")})
     pp_id = M.generate_item_id(27, 27)

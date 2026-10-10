@@ -4,51 +4,97 @@
 <p><a href="./">Back to checkout</a></p>
 <p>Pay <strong>{{ transaction.local_net_amount }} {{ transaction.local_currency }}</strong></p>
 {% if instructions %}<ol class="payment-instructions">
-{% for s in instructions %}<li{% if s.action and not s.action.value %} style="display:none"{% endif %}>
-<span class="step-text">{{ s.text }}</span>
-{% if s.copy and s.value %}<button type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText('{{ s.value }}')">Copy</button> <code>{{ s.value }}</code>{% endif %}
-{% if s.action and s.action.value %}<br><img src="{{ s.action.value }}" alt="QR" style="max-width:220px">{% endif %}
-</li>{% endfor %}</ol>{% endif %}
+{% for s in instructions %}<li class="li-{{ s.row|default:forloop.counter }}">
+{% if s.icon %}{{ s.icon|safe }}{% else %}<div class="dot"></div>{% endif %}
+<p>{{ s.text|safe }}
+{% if s.copy and s.value %} <span class="button-icon" onclick="copy_value('{{ s.value }}')">[copy]</span>{% endif %}
+{% if s.action %}{% if s.action.type == "image" and s.action.value %} <span class="button-icon" onclick="pp_show_image('{{ s.action.value }}')">[qr]</span>
+{% else %}<style>.li-{{ s.row|default:forloop.counter }}{display: none !important;}</style>{% endif %}{% endif %}
+</p></li>{% endfor %}</ol>
+<div id="pp-image-modal" class="pp-modal" style="display:none;">
+<div class="pp-modal-content"><span class="pp-close" onclick="pp_close_image()">&times;</span>
+<div class="pp-model-image-b"><img id="pp-modal-image" src="" alt="Preview"></div></div></div>
+<script data-cfasync="false">
+function copy_value(src){ if(navigator.clipboard) navigator.clipboard.writeText(src); }
+function pp_show_image(src){ document.getElementById('pp-modal-image').src = src; document.getElementById('pp-image-modal').style.display = 'flex'; }
+function pp_close_image(){ document.getElementById('pp-image-modal').style.display = 'none'; }
+function success(d){ location.reload(); }
+function failed(t, m){ document.getElementById('verify-msg').textContent = t + ': ' + m; }
+</script>
+{% endif %}
 {% if gateway_html %}{{ gateway_html|safe }}{% endif %}
 {% if gateway_type == "automation" %}
-<form id="verify-form" method="post" action="verify/" enctype="multipart/form-data">{% csrf_token %}
+<form class="payment-form-submit" method="POST" enctype="multipart/form-data">
 <input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
 <input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
-<input name="trxid" placeholder="Transaction ID" required>
-<input name="mobile_number" id="mobile_number" placeholder="Phone number" style="display:none">
-<button type="submit">Verify payment</button></form>
+<div class="form-group mt-3" id="mobile-wrap" style="display:none">
+<label class="form-label">{{ plugin_lang.mobile_number|default:"Mobile Number" }}</label>
+<input type="text" name="mobile_number" placeholder="{{ plugin_lang.mobile_number|default:"Mobile Number" }}">
+</div>
+<div class="form-group mt-3">
+<label class="form-label">{{ plugin_lang.transaction_id|default:"Transaction ID" }}</label>
+<input type="text" name="trxid" placeholder="{{ plugin_lang.enter_transaction_id|default:"Enter transaction ID" }}" required>
+</div>
+<button class="payment-form-btn mt-3" type="submit">{{ plugin_lang.verify|default:"Verify" }}</button></form>
 <div id="verify-msg"></div>
-<script>
-document.getElementById('verify-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
-  const d = await r.json();
-  document.getElementById('verify-msg').textContent = d.title + ': ' + d.message;
-  if (d.visible_number === 'true') document.getElementById('mobile_number').style.display = '';
-  if (d.status === 'true') location.reload();
+<script data-cfasync="false">
+document.addEventListener("DOMContentLoaded", function(){
+  const form = document.querySelector(".payment-form-submit");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    fetch("verify/", {method: "POST", body: new FormData(form)}).then(r=>r.json()).then(data=>{
+      if(data.status === "true"){ success(data); }
+      else if(data.status === "false"){
+        if(data.visible_number === "true"){ document.getElementById("mobile-wrap").style.display = "block"; }
+        failed(data.title, data.message);
+      } else { failed("Unexpected Response", "Please try again later."); }
+    }).catch(()=>failed("Request Error", "Something went wrong. Please try again."));
+  });
 });
 </script>
 {% elif gateway_type == "manual" %}
 {% if verify_by == "slip" %}
-<form method="post" action="verify/" enctype="multipart/form-data">{% csrf_token %}
+<form class="payment-form-submit" method="POST" enctype="multipart/form-data">
 <input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
 <input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
+<div class="form-group mt-3">
+<label class="form-label">{{ plugin_lang.upload_slip|default:"Upload Payment Slip" }}</label>
 <input type="file" name="slip" accept="image/*" required>
-<button type="submit">Submit slip</button></form>
+</div>
+<button class="payment-form-btn mt-3" type="submit">{{ plugin_lang.submit|default:"Submit" }}</button></form>
+<div id="verify-msg"></div>
+<script data-cfasync="false">
+document.addEventListener("DOMContentLoaded", function(){
+  const form = document.querySelector(".payment-form-submit");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    fetch("verify/", {method: "POST", body: new FormData(form)}).then(r=>r.json()).then(data=>{
+      if(data.status === "true"){ success(data); } else if(data.status === "false"){ failed(data.title, data.message); }
+      else { failed("Unexpected Response", "Please try again later."); }
+    }).catch(()=>failed("Request Error", "Something went wrong. Please try again."));
+  });
+});
+</script>
 {% else %}
-<form id="verify-form" method="post" action="verify/">{% csrf_token %}
+<form class="payment-form-submit" method="POST" enctype="multipart/form-data">
 <input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
 <input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
-<input name="trxid" placeholder="Transaction ID" required>
-<button type="submit">Submit</button></form>
+<div class="form-group mt-3">
+<label class="form-label">{{ plugin_lang.transaction_id|default:"Transaction ID" }}</label>
+<input type="text" name="trxid" placeholder="{{ plugin_lang.enter_transaction_id|default:"Enter transaction ID" }}" required>
+</div>
+<button class="payment-form-btn mt-3" type="submit">{{ plugin_lang.submit|default:"Submit" }}</button></form>
 <div id="verify-msg"></div>
-<script>
-document.getElementById('verify-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
-  const d = await r.json();
-  document.getElementById('verify-msg').textContent = d.title + ': ' + d.message;
-  if (d.status === 'true') location.reload();
+<script data-cfasync="false">
+document.addEventListener("DOMContentLoaded", function(){
+  const form = document.querySelector(".payment-form-submit");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    fetch("verify/", {method: "POST", body: new FormData(form)}).then(r=>r.json()).then(data=>{
+      if(data.status === "true"){ success(data); } else if(data.status === "false"){ failed(data.title, data.message); }
+      else { failed("Unexpected Response", "Please try again later."); }
+    }).catch(()=>failed("Request Error", "Something went wrong. Please try again."));
+  });
 });
 </script>
 {% endif %}
