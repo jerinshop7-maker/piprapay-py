@@ -1,10 +1,36 @@
-{% extends "base.html" %}{% block title %}Payment link{% endblock %}
+{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}{% endblock %}
 {% block content %}
-<h1>Payment link {{ link.ref }}</h1>
-<p>Amount: {{ link.amount }} {{ link.currency }}</p>
-<form method="post">{% csrf_token %}
-<input name="full_name" placeholder="Full name" required>
-<input name="email_address" placeholder="Email" required>
-<input name="mobile_number" placeholder="Mobile" required>
-<button type="submit">Pay now</button></form>
+{% if link.status != "active" %}
+<h1>{{ lang.product_not_active|default:"Product Not Active" }}</h1>
+<p>{{ lang.product_not_active_text|default:"This product is currently inactive." }}</p>
+{% else %}
+<h1>{{ link.product.title }}</h1>
+<p>{{ link.product.description }}</p>
+<p>{{ lang.amount|default:"Amount" }}: {{ link.total }} {{ link.currency }}</p>
+<form id="pl-form" method="post" action="submit/" enctype="multipart/form-data">{% csrf_token %}
+<input type="hidden" name="itemid" value="{{ link.pid }}">
+<input name="full-name" placeholder="{{ lang.full_name|default:"Full Name" }}" required>
+<input name="email-address" placeholder="{{ lang.email_address|default:"Email Address" }}" required>
+<input name="mobile-number" placeholder="{{ lang.mobile_number|default:"Mobile Number" }}" required>
+{% for f in fields %}
+<label>{{ f.label }}{% if f.required == "true" %} *{% endif %}</label>
+{% if f.type == "textarea" %}<textarea name="{{ f.name }}"></textarea>
+{% elif f.type == "select" %}<select name="{{ f.name }}">{% for o in f.options %}<option>{{ o }}</option>{% endfor %}</select>
+{% elif f.type == "checkbox" %}{% for o in f.options %}<label><input type="checkbox" name="{{ f.name }}" value="{{ o }}"> {{ o }}</label>{% endfor %}
+{% elif f.type == "radio" %}{% for o in f.options %}<label><input type="radio" name="{{ f.name }}" value="{{ o }}"> {{ o }}</label>{% endfor %}
+{% elif f.type == "file" %}<input type="file" name="{{ f.name }}">
+{% else %}<input type="text" name="{{ f.name }}">
+{% endif %}<br>
+{% endfor %}
+<button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+<script>
+document.getElementById('pl-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
+  const d = await r.json();
+  if (d.status === 'true') location.href = d.redirect;
+  else alert(d.title + ': ' + d.message);
+});
+</script>
+{% endif %}
 {% endblock %}

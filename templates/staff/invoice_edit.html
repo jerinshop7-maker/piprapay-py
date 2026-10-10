@@ -1,1 +1,11 @@
-{% extends "base.html" %}{% block content %}<h1>{% if inv %}Edit{% else %}Create{% endif %} invoice</h1><form method="post">{% csrf_token %}<input name="brand_id" placeholder="Brand ID" value="{{ inv.brand_id|default:"" }}"><input name="currency" value="{{ inv.currency|default:"BDT" }}"><input name="status" value="{{ inv.status|default:"unpaid" }}"><button>Save</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>{% if inv %}Edit{% else %}Create{% endif %} invoice</h1>
+<form method="post">{% csrf_token %}
+<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}" {% if inv.brand_id == b.brand_id %}selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select>
+<select name="gateway_id"><option value="--">—</option>{% for g in gateways %}<option value="{{ g.gateway_id }}" {% if inv.gateway_id == g.gateway_id %}selected{% endif %}>{{ g.display }}</option>{% endfor %}</select>
+<input name="currency" value="{{ inv.currency|default:"BDT" }}"> <input name="due_date" type="date" value="{{ inv.due_date|default:"" }}">
+<input name="shipping" value="{{ inv.shipping|default:"0" }}"> <input name="status" value="{{ inv.status|default:"unpaid" }}">
+<h3>Customer</h3><input name="customer_name" value="{{ customer.name|default:"" }}" placeholder="name"> <input name="customer_email" value="{{ customer.email|default:"" }}" placeholder="email"> <input name="customer_mobile" value="{{ customer.mobile|default:"" }}" placeholder="mobile">
+<h3>Items</h3><div>{% for it in items %}<div><input name="item_description" value="{{ it.description }}"> <input name="item_amount" value="{{ it.amount }}"> <input name="item_quantity" value="{{ it.quantity }}"> <input name="item_discount" value="{{ it.discount }}"> <input name="item_vat" value="{{ it.vat }}"></div>{% endfor %}
+<div>New: <input name="item_description" placeholder="desc"> <input name="item_amount" placeholder="amount"> <input name="item_quantity" placeholder="qty"> <input name="item_discount" placeholder="discount"> <input name="item_vat" placeholder="vat %"></div></div>
+<input name="note" value="{{ inv.note|default:"" }}" placeholder="note"> <input name="private_note" value="{{ inv.private_note|default:"" }}" placeholder="private note">
+<button>Save</button></form>{% endblock %}

@@ -8,13 +8,15 @@ API contract, SMS parser, cron step and theme string.
 ## Quickstart
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt   # Django, requests, Pillow, cryptography
+python manage.py check_requirements
 python manage.py migrate
+python manage.py pp_install        # seeds admin + Default brand + BDT + cron key
 python manage.py test tests
 python manage.py runserver 0.0.0.0:8080
 ```
 
-Create a staff user via shell:
+Or seed manually via shell (same rows the PHP installer writes):
 
 ```bash
 python manage.py shell -c "
@@ -59,11 +61,24 @@ Login at `/login/`, panel at `/admin/dashboard/`.
 
 ### Gateways (48/48, same slugs)
 
-13 API · 30 automation · 5 manual. Full list in `gateways/plugins.py:SPECS`.
-Bespoke HTTP implementations: Stripe, SSLCommerz, OxaPay, NOWPayments (+IPN HMAC),
-bKash-tokenized refund (`gateways/bkash_refund.py`); all others use the generic
-automation/manual pending-verification flow with per-gateway instructions,
-exactly like PHP.
+13 API · 30 automation · 5 manual. Full list in `gateways/plugins.py:SPECS`
+(colors/fields verified against source).
+Bespoke exact HTTP implementations in `gateways/api_gateways.py`: Stripe
+(session + payment-intent re-check), SSLCommerz (validator API), OxaPay
+(invoice + amount-equality callback + HMAC IPN), NOWPayments (coin picker,
+tksort HMAC, confirmed/finished + duplicate guards), aamarPay (trxcheck
+`status_code==2` + `opt_a`), bKash-tokenized (grant/create/execute +
+`-BP-` match + full refund with paymentId extraction, multi-base fallback
+and status polling), EPS (HMAC token + initialize + `ValueA` check),
+Nagad-merchant-API (RSA init/complete/verify via `cryptography`, order map),
+PathaoPay-merchant-API (reference-token header + capture), PayPal
+(order match ±0.01, capture, COMPLETED), PayStation (transaction-status
+verify), shurjoPay (return-via-IPN + verify + cancel marking), Binance
+(order-id form + signed `sapi/v1/pay/transactions` USDT match).
+Automation/manual gateways use verbatim `lang_text` + `instructions()` from
+`gateways/lang_data.json` with the duplicate-trxid guard, `pending_payment`
+mobile flow, slip upload (≤5MB) and webhook dispatch from
+`transaction-verify`.
 
 ### Admin panel (PHP `pp-root/*` → `staff/`)
 
@@ -83,29 +98,47 @@ identical (17 resources / 15 pages).
 
 ### Business logic
 
-- Money: `bcscale(8)` → `Decimal` 8dp (`core/money.py`); tolerance, FX convert, fee/discount math identical.
+- Money: `bcscale(8)` → `Decimal` 8dp (`core/money.py`); `money_round` truncates
+  like bc; IDs are digits-only; tolerance is the range
+  `[checkout, checkout+tolerance]`; domain/expiry/date helpers mirror PHP edge
+  cases (`www.` strip, EOD dates, unparseable expiry → True).
 - `pp_set_transaction_status()` → `core/transactions.set_transaction_status()` (initiated-only guard, webhook queue, `transactions.updated` hook).
-- `MFSMessageVerified()` → `core/sms_engine.mfs_message_verified()` (priority-ordered regexes, 11 providers).
+- `transaction-verify` → `verify_transaction_post()` + `POST /payment/<id>/verify/`
+  (FX/fee math first, duplicate guard, SMS+tolerance → completed, `pending_payment`
+  mobile flow, manual trxid/slip, Code 101-106 JSON).
+- Invoice pay + `invoice/webhook` receiver + payment-link submit/default flows
+  mirror `action-v2` (stock decrement, expiry display, custom fields, file upload).
+- `MFSMessageVerified()` → `core/sms_engine.mfs_message_verified()` (exact PHP
+  regexes; telecash/ipay have none, like PHP).
 - `senderWhitelist()` → `sender_whitelist()` (same 11 senders).
-- `reconcileByLongestChain()` → `reconcile_by_longest_chain()`.
+- `reconcileByLongestChain()` → full BFS algorithm (`moneyToInt`/`intToMoney` semantics).
 - `sendIPN/Multi` (curl_multi) → `ThreadPoolExecutor + requests`.
-- Cron 6 steps in identical order (`cron_app/tasks.py`).
+- Cron 6 steps in identical order (`cron_app/tasks.py`), same lock-then-success
+  shape, `beta` default channel, PHP `version_compare`, `txn.ref` webhook keys.
+- Auth: email-or-username, permission-row gate, `temp_password` fallback,
+  `reset_limit` + `forgot.password` hook, 2FA window 2, `pp_brand` scoping.
+- Companion device API (`/api/companion/<action>/`): OTP pairing, account info,
+  bulk SMS ingest with balance-gated approve/review + reconcile, sender list, delete.
 - Hooks `add_action/do_action/add_filter/apply_filters` → `core/hooks.py`.
-- Twenty-six theme: 9 fields, 5 languages (`themes/twenty_six.py`).
+- Twenty-six theme: 9 fields, 5 languages, full 69-key pack (`themes/lang_data.json`).
+- System update (check/download/install with sha1 + backup + `.maintenance`) and
+  module import (zip + `sql.sql`) in `staff/system_ops.py`; image/backup/zip/SQL
+  helpers in `core/storage.py` (Pillow conversion mirrors Imagick).
 
 ## Layout
 
 ```
 config/        settings/urls/wsgi/asgi
-core/          23 models, money/env/permissions/hooks/transactions/sms_engine/webhooks/totp/views/middleware
-gateways/      base.py, plugins.py (48), registry.py, ipn_views.py, bkash_refund.py
-checkout/      payment/invoice/payment-link/receipt views
-api/           checkout+verify+refund views
-staff/         admin panel views/urls/auth
+core/          23 models, money/env/permissions/hooks/transactions/sms_engine/webhooks/totp/views/middleware/storage + install/requirements commands
+gateways/      base.py, plugins.py (48 specs), lang_data.json (verbatim text), api_gateways.py (13 HTTP ports), registry.py, ipn_views.py, bkash_refund.py
+checkout/      payment/invoice (+pay, webhook)/payment-link (+submit, default)/verify/receipt views
+api/           checkout+verify+refund views, companion device API
+staff/         admin panel views/urls/auth + system_ops.py (update/import/addons)
 cron_app/      tasks.py, views.py, run_cron command
-themes/        twenty_six.py
-templates/     base, core/, checkout/, staff/ (29 pages)
-tests/         test_parity.py (30+ assertions)
+themes/        twenty_six.py + lang_data.json (69 keys)
+templates/     base, core/, checkout/, staff/
+tests/         test_parity.py (46 tests)
+tools/         extract_gateway_lang.py (regenerates lang_data.json from PHP)
 AGENTS.md      agent operating manual
 ```
 

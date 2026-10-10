@@ -1,1 +1,6 @@
-{% extends "base.html" %}{% block content %}<h1>Reports</h1><ul>{% for r in by_status %}<li>{{ r.status }}: {{ r.n }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Reports ({{ preset }})</h1>
+<p><a href="?preset=today">Today</a> <a href="?preset=yesterday">Yesterday</a> <a href="?preset=this_week">Week</a> <a href="?preset=this_month">Month</a> <a href="?preset=this_year">Year</a></p>
+<form method="get"><input name="start" type="date" value="{{ start }}"><input name="end" type="date" value="{{ end }}"><button>Range</button></form>
+<p>Revenue: {{ revenue }} · Completed: {{ completed }} · Success: {{ success_rate }}% · Avg: {{ average }}</p>
+<ul>{% for r in by_status %}<li>{{ r.status }}: {{ r.n }} ({{ r.total }})</li>{% endfor %}</ul>
+<ul>{% for r in by_gateway %}<li>{{ r.gateway_id }}: {{ r.n }} ({{ r.total }})</li>{% endfor %}</ul>{% endblock %}

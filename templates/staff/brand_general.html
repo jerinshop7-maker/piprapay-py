@@ -1,1 +1,13 @@
-{% extends "base.html" %}{% block content %}<h1>General settings</h1><form method="post">{% csrf_token %}<input name="identify_name" value="{{ brand.identify_name|default:"" }}"><button>Save</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>General settings</h1>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<input name="identify_name" value="{{ brand.identify_name|default:"" }}" placeholder="Identify name"> <input name="name" value="{{ brand.name|default:"" }}" placeholder="Name"><br>
+<select name="timezone">{% for tz in timezones %}<option {% if brand.timezone == tz %}selected{% endif %}>{{ tz }}</option>{% endfor %}</select>
+<select name="language"><option value="en">en</option><option value="bn">bn</option><option value="hi">hi</option><option value="ur">ur</option></select>
+<input name="currency_code" value="{{ brand.currency_code|default:"" }}"> <input name="payment_tolerance" value="{{ brand.payment_tolerance|default:"0" }}">
+<select name="autoExchange"><option>disabled</option><option {% if brand.autoExchange == "enabled" %}selected{% endif %}>enabled</option></select><br>
+<input name="support_email_address" value="{{ brand.support_email_address|default:"" }}" placeholder="support email"> <input name="support_phone_number" value="{{ brand.support_phone_number|default:"" }}" placeholder="phone">
+<input name="support_website" value="{{ brand.support_website|default:"" }}" placeholder="website"> <input name="whatsapp_number" value="{{ brand.whatsapp_number|default:"" }}" placeholder="whatsapp">
+<input name="telegram" value="{{ brand.telegram|default:"" }}" placeholder="telegram"> <input name="facebook_messenger" value="{{ brand.facebook_messenger|default:"" }}" placeholder="messenger"> <input name="facebook_page" value="{{ brand.facebook_page|default:"" }}" placeholder="fb page"><br>
+<input name="street_address" value="{{ brand.street_address|default:"" }}" placeholder="street"> <input name="city_town" value="{{ brand.city_town|default:"" }}" placeholder="city"> <input name="postal_code" value="{{ brand.postal_code|default:"" }}" placeholder="postal"> <input name="country" value="{{ brand.country|default:"" }}" placeholder="country"><br>
+Favicon: <input type="file" name="favicon"> Logo: <input type="file" name="logo"><br>
+<button>Save</button></form>{% endblock %}

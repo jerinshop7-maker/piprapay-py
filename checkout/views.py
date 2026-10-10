@@ -1,204 +1,508 @@
 """
 Checkout surfaces — port of index.php cases $path_payment / $path_invoice /
-$path_payment_link, rendered through the twenty-six theme.
+$path_payment_link + pp_gateway_render()/pp_gateways() (pp-functions.php) +
+the twenty-six theme templates.
 
-- payment/<pp_id>            checkout (gateway list -> gateway page -> verify)
-- payment/<pp_id>/callback   API-gateway return URL (pp_callback_url)
-- invoice/<ref>              invoice page
-- payment-link/<ref>[/brand] payment link + default link submission
+Conventions mirrored exactly:
+- ?gateway=<gateway_id> (gateway_id, not slug).
+- ?lang=<code> stores session ui_language (pp_set_lang).
+- ?cancel marks the transaction canceled.
+- API gateways: ?pp_callback present -> callback(), else process_payment().
+- Transaction verify is a JSON endpoint (same-URL fetch in PHP) accepting
+  gateway-id/transaction-id/trxid/mobile_number/slip with Code 101-106 shapes.
 """
 import json
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 from core import money as M
-from core.models import Brand, Gateway, GatewayParameter, Invoice, InvoiceItem, PaymentLink, SmsData, Transaction
-from core.transactions import gateway_options, set_transaction_status, transaction_payload
+from core.env import get_env
+from core.models import (Brand, Currency, Faq, Gateway, Invoice, InvoiceItem, PaymentLink,
+                         PaymentLinkField, Transaction)
+from core.storage import upload_image
+from core.transactions import (build_return_url, compute_gateway_totals, create_invoice_transaction,
+                               gateway_options, handle_invoice_webhook, invoice_line_totals,
+                               set_transaction_status, transaction_payload, verify_transaction_post)
 from gateways.registry import get_gateway
+from themes.twenty_six import get_theme
 
 
-def _brand_context(brand: Brand) -> dict:
+# ---------------------------------------------------------------- helpers
+
+def _theme_lang(request, brand: Brand):
+    theme = get_theme(brand.theme if brand else "twenty-six")
+    if request.GET.get("lang") not in (None, ""):
+        request.session["ui_language"] = re_sub(request.GET["lang"])
+    session_lang = request.session.get("ui_language", "")
+    supported = theme.supported_languages()
+    if session_lang in supported:
+        language = session_lang
+    elif (brand.language if brand else "") in supported:
+        language = brand.language
+    else:
+        language = "en" if "en" in supported else next(iter(supported), "en")
+    return theme, language, theme.build_lang(language)
+
+
+def re_sub(lang: str) -> str:
+    import re as _re
+    return _re.sub(r"[^a-z]", "", (lang or "").lower())
+
+
+def _brand_info(brand: Brand, *, invoice_shape: bool = False) -> dict:
+    """index.php brandInfo. Invoice/payment-link shape uses raw telegram and no
+    messenger/fb_page; payment shape has full support links + URL fallbacks."""
+    name = brand.name if brand.name not in ("--", "", None) else brand.identify_name
+    if invoice_shape:
+        return {
+            "id": brand.brand_id, "name": name, "identifyName": brand.identify_name,
+            "logo": None if brand.logo in ("--", "", None) else brand.logo,
+            "favicon": None if brand.favicon in ("--", "", None) else brand.favicon,
+            "support": {"email": brand.support_email_address, "phone": brand.support_phone_number,
+                        "website": brand.support_website, "whatsapp": brand.whatsapp_number,
+                        "telegram": brand.telegram},
+            "address": {"street": brand.street_address, "city": brand.city_town,
+                        "postal": brand.postal_code, "country": brand.country},
+            "locale": {"timezone": brand.timezone, "language": brand.language,
+                       "currency": brand.currency_code},
+        }
     return {
-        "id": brand.brand_id, "name": brand.name if brand.name != "--" else brand.identify_name,
-        "identifyName": brand.identify_name, "logo": None if brand.logo == "--" else brand.logo,
-        "favicon": None if brand.favicon == "--" else brand.favicon,
+        "id": brand.brand_id, "name": name, "identifyName": brand.identify_name,
+        "logo": ("https://help.piprapay.com/storage/branding_media/8a5c6ee4-8eba-401d-bffb-c43006d5f65d.png"
+                 if brand.logo in ("--", "", None) else brand.logo),
+        "favicon": ("https://help.piprapay.com/favicon/icon-144x144.png"
+                    if brand.favicon in ("--", "", None) else brand.favicon),
         "support": {"email": brand.support_email_address, "phone": brand.support_phone_number,
                     "website": brand.support_website, "whatsapp": brand.whatsapp_number,
                     "telegram": f"https://t.me/{brand.telegram}",
                     "messenger": f"https://m.me/{brand.facebook_messenger}",
                     "fb_page": f"https://facebook.com/{brand.facebook_page}"},
-        "locale": {"timezone": brand.timezone, "language": brand.language, "currency": brand.currency_code},
+        "address": {"street": brand.street_address, "city": brand.city_town,
+                    "postal": brand.postal_code, "country": brand.country},
+        "locale": {"timezone": brand.timezone, "language": brand.language,
+                   "currency": brand.currency_code},
     }
 
 
-def _gateway_context(gw: Gateway) -> dict:
+def _theme_options(brand: Brand) -> dict:
+    theme = get_theme(brand.theme if brand else "twenty-six")
+    return {f["name"]: get_env(f"theme-{f['name']}", brand.brand_id if brand else "both")
+            for f in theme.fields()}
+
+
+def _gateway_list(brand: Brand, txn: Transaction, tab: str) -> list:
+    """Mirror pp_gateways(): FX convert + first-row fee quirk + min/max gating."""
+    gateways = list(Gateway.objects.filter(tab=tab, brand_id=brand.brand_id, status="active"))
+    if not gateways:
+        return []
+    rates = {c.code: M.money_sanitize(str(c.rate)) for c in Currency.objects.filter(brand_id=brand.brand_id)}
+    # NOTE PHP quirk: fixed/percentage fee+discount always come from row [0].
+    first = gateways[0]
+    out = []
+    for row in gateways:
+        txn_amount = M.money_sanitize(str(txn.amount))
+        if txn.currency == row.currency:
+            converted = txn_amount
+        elif row.currency in rates:
+            converted = M.money_div(txn_amount, rates[row.currency])
+        else:
+            converted = "0"
+        pct_disc = M.money_div(M.money_mul(converted, M.money_sanitize(str(first.percentage_discount)), 8), "100", 8)
+        total_discount = M.money_add(M.money_sanitize(str(first.fixed_discount)), pct_disc, 8)
+        pct_fee = M.money_div(M.money_mul(converted, M.money_sanitize(str(first.percentage_charge)), 8), "100", 8)
+        total_fee = M.money_add(M.money_sanitize(str(first.fixed_charge)), pct_fee, 8)
+        converted = M.money_add(M.money_sub(converted, total_discount, 8), total_fee, 8)
+        min_allow, max_allow = M.money_sanitize(str(row.min_allow)), M.money_sanitize(str(row.max_allow))
+        try:
+            from decimal import Decimal
+            has_no_max = Decimal(max_allow or "0") <= 0 or max_allow in ("", "--")
+            above_min = Decimal(M.money_round(converted)) >= Decimal(min_allow or "0")
+            below_max = True if has_no_max else Decimal(M.money_round(converted)) <= Decimal(max_allow)
+        except Exception:
+            above_min, below_max = True, True
+        if above_min and below_max:
+            out.append({
+                "gateway_id": row.gateway_id, "slug": row.slug, "name": row.name, "display": row.display,
+                "logo": row.logo, "currency": row.currency,
+                "min_allow": M.money_round(str(row.min_allow)), "max_allow": M.money_round(str(row.max_allow)),
+                "fixed_discount": M.money_round(str(row.fixed_discount)),
+                "percentage_discount": M.money_round(str(row.percentage_discount)),
+                "fixed_charge": M.money_round(str(row.fixed_charge)),
+                "percentage_charge": M.money_round(str(row.percentage_charge)),
+                "primary_color": row.primary_color, "text_color": row.text_color,
+                "btn_color": row.btn_color, "btn_text_color": row.btn_text_color,
+                "converted": M.money_round(converted),
+            })
+    return out
+
+
+def _transaction_info(txn: Transaction, brand: Brand, gateway_display: str = "") -> dict:
+    try:
+        customer = json.loads(txn.customer_info or "{}")
+    except ValueError:
+        customer = {}
     return {
-        "gateway_id": gw.gateway_id, "slug": gw.slug, "name": gw.name, "display": gw.display,
-        "logo": gw.logo, "currency": gw.currency,
-        "min_allow": M.money_round(str(gw.min_allow)), "max_allow": M.money_round(str(gw.max_allow)),
-        "fixed_discount": M.money_round(str(gw.fixed_discount)),
-        "percentage_discount": M.money_round(str(gw.percentage_discount)),
-        "fixed_charge": M.money_round(str(gw.fixed_charge)),
-        "percentage_charge": M.money_round(str(gw.percentage_charge)),
-        "primary_color": gw.primary_color, "text_color": gw.text_color,
-        "btn_color": gw.btn_color, "btn_text_color": gw.btn_text_color,
-        "options": gateway_options(gw.gateway_id, gw.brand_id),
+        "ref": txn.ref,
+        "customer": {"id": "", "name": customer.get("name", ""), "email": customer.get("email", ""),
+                     "mobile": customer.get("mobile", "")},
+        "payment_method": gateway_display,
+        "currency": txn.currency, "amount": M.money_round(str(txn.amount)),
+        "discount_amount": M.money_round(str(txn.discount_amount)),
+        "processing_fee": M.money_round(str(txn.processing_fee)),
+        "local_net_amount": M.money_round(str(txn.local_net_amount)),
+        "local_currency": txn.local_currency,
+        "return_url": build_return_url(txn.return_url or "", txn.status, txn.ref),
+        "created_date": M.convert_utc_to_user_tz(txn.created_date, brand.timezone or "Asia/Dhaka", "%b %d, %Y %I:%M %p"),
+        "updated_date": M.convert_utc_to_user_tz(txn.updated_date, brand.timezone or "Asia/Dhaka", "%b %d, %Y %I:%M %p"),
+        "status": txn.status, "brandId": brand.brand_id,
     }
 
+
+def _resolve_steps(plugin, language: str, instructions: list) -> list:
+    """Resolve instruction lang keys (buildLangArray equivalent)."""
+    lang_map = {}
+    if plugin:
+        for k, v in plugin.lang_text().items():
+            lang_map[k] = v.get(language, v.get("en", k))
+    steps = []
+    for s in instructions:
+        step = dict(s)
+        step["text"] = lang_map.get(str(s.get("text", "")), str(s.get("text", "")))
+        steps.append(step)
+    return steps
+
+
+# ---------------------------------------------------------------- payment
 
 def checkout_payment(request, pp_id: str):
     txn = Transaction.objects.filter(ref=pp_id).first()
     if not txn:
         return render(request, "core/404.html", status=404)
     brand = Brand.objects.filter(brand_id=txn.brand_id).first()
-    if not txn.status == "initiated" and txn.status not in ("initiated", "completed", "pending", "refunded", "canceled"):
+    if not brand:
         return render(request, "core/404.html", status=404)
+    theme, language, lang = _theme_lang(request, brand)
 
-    if txn.status != "initiated":
-        return render(request, "checkout/status.html",
-                      {"transaction": transaction_payload(txn), "brand": _brand_context(brand)})
-
-    gateways = [ _gateway_context(g) for g in Gateway.objects.filter(brand_id=txn.brand_id, status="active") ]
-    selected_slug = request.GET.get("gateway")
-
-    if request.method == "POST":
-        # Shopper submits sender + trx_id for automation/manual gateways -> pending
-        sender = (request.POST.get("sender") or "").strip()
-        trx_id = (request.POST.get("trx_id") or "").strip().upper()
-        gateway_id = request.POST.get("gateway_id") or ""
-        gw = Gateway.objects.filter(gateway_id=gateway_id, brand_id=txn.brand_id).first()
-        if gw and sender and trx_id:
-            plugin = get_gateway(gw.slug)
-            gtype = (plugin.info().get("gateway_type") if plugin else "automation")
-            if gtype in ("automation", "manual"):
-                txn.sender = sender
-                txn.trx_id = trx_id
-                txn.gateway_id = gateway_id
-                txn.sender_key = plugin.info().get("sender_key", "") if plugin else ""
-                txn.sender_type = plugin.info().get("sender_type", "Personal") if plugin else "Personal"
-                txn.status = "pending"
-                txn.save()
-                # Immediate match attempt against approved sms_data (cron reconciles the rest)
-                sms = SmsData.objects.filter(sender_key=txn.sender_key, type=txn.sender_type,
-                                             trx_id=trx_id, status="approved").first()
-                if sms and M.verify_payment_tolerance(str(txn.local_net_amount or txn.amount),
-                                                      str(sms.amount),
-                                                      brand.payment_tolerance if brand else "0"):
-                    sms.status = "used"
-                    sms.save(update_fields=["status", "updated_date"])
-                    txn.status = "completed"
-                    txn.sender = sms.number
-                    txn.save()
-                return redirect(f"/payment/{pp_id}/")
+    if "cancel" in request.GET and txn.status == "initiated":
+        set_transaction_status(pp_id, "canceled")
         return redirect(f"/payment/{pp_id}/")
 
-    if selected_slug:
-        gw = Gateway.objects.filter(brand_id=txn.brand_id, slug=selected_slug, status="active").first()
-        if not gw:
+    if txn.status != "initiated":
+        payload = transaction_payload(txn)
+        payload["return_url"] = build_return_url(txn.return_url or "", txn.status, txn.ref)
+        return render(request, "checkout/status.html",
+                      {"transaction": payload, "brand": _brand_info(brand),
+                       "lang": lang, "language": language, "theme": theme,
+                       "options": _theme_options(brand)})
+
+    gateway_id = request.GET.get("gateway", "")
+    if gateway_id:
+        gw = Gateway.objects.filter(gateway_id=gateway_id, brand_id=brand.brand_id,
+                                    status="active").first()
+        if not gw or not get_theme(brand.theme):
             return render(request, "core/404.html", status=404)
         plugin = get_gateway(gw.slug)
-        ctx = {"transaction": transaction_payload(txn), "brand": _brand_context(brand),
-               "gateway": _gateway_context(gw),
-               "instructions": plugin.instructions({"options": gateway_options(gw.gateway_id, gw.brand_id),
-                                                    "transaction": transaction_payload(txn)}) if plugin else []}
-        # API gateways start payment immediately (process_payment redirect)
-        if plugin and plugin.info().get("gateway_type") == "api":
-            result = plugin.process_payment({
-                "transaction": transaction_payload(txn),
-                "options": gateway_options(gw.gateway_id, gw.brand_id),
-                "callback_url": request.build_absolute_uri(f"/payment/{pp_id}/callback/?gateway={gw.gateway_id}"),
-                "cancel_url": request.build_absolute_uri(f"/payment/{pp_id}/"),
-            })
+        options = gateway_options(gw.gateway_id, brand.brand_id)
+        totals = compute_gateway_totals(str(txn.amount), txn.currency, gw, brand.brand_id)
+        txn_ctx = dict(transaction_payload(txn),
+                       local_net_amount=M.money_round(totals["converted"]),
+                       local_currency=totals["currency"])
+        gtype = plugin.info().get("gateway_type") if plugin else None
+        plugin_lang = {}
+        if plugin:
+            for k, v in plugin.lang_text().items():
+                plugin_lang[k] = v.get(language, v.get("en", ""))
+        instructions = plugin.instructions({"options": options, "transaction": txn_ctx}) if plugin else []
+        steps = _resolve_steps(plugin, language, instructions)
+        base = request.build_absolute_uri("/").rstrip("/")
+        callback_url = (f"{base}/payment/{pp_id}/?gateway={gw.gateway_id}&pp_callback=1"
+                        f"&gid={gw.gateway_id}")
+        gateway_ctx = {"gateway_id": gw.gateway_id, "slug": gw.slug, "name": gw.name,
+                       "display": gw.display, "logo": gw.logo, "currency": gw.currency,
+                       "options": options, "local_net_amount": txn_ctx["local_net_amount"],
+                       "local_currency": txn_ctx["local_currency"]}
+        if plugin and gtype == "api":
+            if "pp_callback" in request.GET:
+                result = plugin.callback({"transaction": txn_ctx, "options": options,
+                                          "query": request.GET.dict(), "post": request.POST.dict(),
+                                          "callback_url": callback_url,
+                                          "cancel_url": f"{base}/payment/{pp_id}/"})
+                if result.get("complete_now") or result.get("verified"):
+                    set_transaction_status(pp_id, "completed", gw.gateway_id,
+                                           result.get("trx_id", ""), result.get("source_info", []))
+                    return redirect(f"/payment/{pp_id}/")
+                if result.get("canceled"):
+                    set_transaction_status(pp_id, "canceled")
+                    return redirect(f"/payment/{pp_id}/")
+                return render(request, "checkout/gateway.html",
+                              {"transaction": txn_ctx, "brand": _brand_info(brand), "gateway": gateway_ctx,
+                               "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
+                               "language": language, "gateway_html": result.get("html", result.get("action", ""))})
+            result = plugin.process_payment({"transaction": txn_ctx, "options": options,
+                                             "query": request.GET.dict(), "post": request.POST.dict(),
+                                             "lang": plugin_lang,
+                                             "callback_url": callback_url,
+                                             "cancel_url": f"{base}/payment/{pp_id}/",
+                                             "ipn_url": f"{base}/ipn/{gw.gateway_id}/"})
+            if isinstance(result, dict) and result.get("verified") and result.get("complete_now"):
+                set_transaction_status(pp_id, "completed", gw.gateway_id,
+                                       result.get("trx_id", ""), result.get("source_info", []))
+                return redirect(f"/payment/{pp_id}/")
             if result.get("action") == "redirect":
                 return redirect(result["url"])
-            ctx["gateway_html"] = result.get("html", "")
-        return render(request, "checkout/gateway.html", ctx)
+            return render(request, "checkout/gateway.html",
+                          {"transaction": txn_ctx, "brand": _brand_info(brand), "gateway": gateway_ctx,
+                           "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
+                           "language": language, "gateway_html": result.get("html", "")})
+        return render(request, "checkout/gateway.html",
+                      {"transaction": txn_ctx, "brand": _brand_info(brand), "gateway": gateway_ctx,
+                       "gateway_type": gtype or "automation",
+                       "verify_by": (plugin.info().get("verify_by", "trxid") if plugin else "trxid"),
+                       "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
+                       "language": language})
 
+    gw_mfs = _gateway_list(brand, txn, "mfs")
+    gw_bank = _gateway_list(brand, txn, "bank")
+    gw_global = _gateway_list(brand, txn, "global")
+    gw = Gateway.objects.filter(gateway_id=txn.gateway_id, brand_id=brand.brand_id).first()
+    faqs = [{"title": f.title, "description": f.description}
+            for f in Faq.objects.filter(brand_id=brand.brand_id, status="active").order_by("-id")]
     return render(request, "checkout/checkout.html",
-                  {"transaction": transaction_payload(txn), "brand": _brand_context(brand), "gateways": gateways})
+                  {"transaction": _transaction_info(txn, brand, gw.display if gw else ""),
+                   "brand": _brand_info(brand), "faqs": faqs, "options": _theme_options(brand),
+                   "lang": lang, "language": language,
+                   "gateways_mfs": gw_mfs, "gateways_bank": gw_bank, "gateways_global": gw_global})
+
+
+def verify_endpoint(request, pp_id: str):
+    """Same-URL JSON verify (PHP action-v2 transaction-verify)."""
+    if request.method != "POST":
+        return JsonResponse({"status": "false", "title": "Request Failed",
+                             "message": "Invalid request"})
+    base = request.build_absolute_uri("/").rstrip("/")
+    result = verify_transaction_post(
+        gateway_id=request.POST.get("gateway-id", "") or request.POST.get("gateway_id", ""),
+        transaction_ref=request.POST.get("transaction-id", "") or request.POST.get("transaction_id", "") or pp_id,
+        trxid=(request.POST.get("trxid", "") or "").strip(),
+        mobile_number=(request.POST.get("mobile_number", "") or "").strip(),
+        slip_file=request.FILES.get("slip"),
+        site_base=base)
+    return JsonResponse(result)
 
 
 def checkout_callback(request, pp_id: str):
-    """pp_callback_url() target — verifies API gateway return and completes."""
-    txn = Transaction.objects.filter(ref=pp_id).first()
-    if not txn:
-        return render(request, "core/404.html", status=404)
-    gateway_id = request.GET.get("gateway") or txn.gateway_id
-    gw = Gateway.objects.filter(gateway_id=gateway_id).first()
-    plugin = get_gateway(gw.slug) if gw else None
-    if plugin and plugin.info().get("gateway_type") == "api":
-        result = plugin.callback({
-            "transaction": transaction_payload(txn),
-            "options": gateway_options(gw.gateway_id, gw.brand_id),
-            "query": dict(request.GET), "post": dict(request.POST),
-        })
-        if result.get("verified"):
-            set_transaction_status(pp_id, "completed", gateway_id,
-                                   result.get("trx_id", ""), result.get("source_info", []))
-    return redirect(f"/payment/{pp_id}/")
+    """Legacy /payment/<id>/callback/ alias -> gateway page with pp_callback."""
+    gid = request.GET.get("gateway", "") or request.GET.get("gid", "")
+    qs = request.GET.copy()
+    qs["pp_callback"] = "1"
+    if gid and "gateway" not in qs:
+        qs["gateway"] = gid
+    return redirect(f"/payment/{pp_id}/?{qs.urlencode()}")
 
+
+# ---------------------------------------------------------------- invoice
 
 def invoice_page(request, ref: str):
+    if ref == "webhook":
+        try:
+            data = json.loads(request.body.decode() or "")
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({}, status=400)
+        code, body = handle_invoice_webhook(data if isinstance(data, dict) else None)
+        from django.http import HttpResponse
+        return HttpResponse(body, status=code, content_type="text/plain")
     inv = Invoice.objects.filter(ref=ref).first()
     if not inv:
         return render(request, "core/404.html", status=404)
     brand = Brand.objects.filter(brand_id=inv.brand_id).first()
-    items = list(InvoiceItem.objects.filter(invoice_id=ref))
+    if not brand:
+        return render(request, "core/404.html", status=404)
+    theme, language, lang = _theme_lang(request, brand)
     try:
         customer = json.loads(inv.customer_info or "{}")
     except ValueError:
         customer = {}
-    subtotal = "0"
-    for it in items:
-        line = M.money_mul(str(it.amount), str(it.quantity or 1))
-        line = M.money_sub(line, str(it.discount or 0))
-        line = M.money_add(line, str(it.vat or 0))
-        subtotal = M.money_add(subtotal, line)
-    total = M.money_add(subtotal, inv.shipping or "0")
+    gw = Gateway.objects.filter(gateway_id=inv.gateway_id).first()
+    items = list(InvoiceItem.objects.filter(invoice_id=inv.ref, brand_id=inv.brand_id))
+    lines, sums = invoice_line_totals(items)
+    shipping = M.money_sanitize(inv.shipping or "0")
+    grand = M.money_add(M.money_add(M.money_sub(sums["subtotal"], sums["discount"]), sums["vat"]), shipping)
+    due = None
+    if inv.due_date not in ("--", "", None):
+        due = M.convert_utc_to_user_tz(inv.due_date, brand.timezone or "Asia/Dhaka", "%b %d, %Y") \
+            if len(str(inv.due_date)) > 10 else str(inv.due_date)
+    ctx_invoice = {
+        "iid": inv.ref, "gateway": gw.display if gw else "", "status": inv.status,
+        "currency": inv.currency, "due_date": due, "shippingFee": M.money_round(shipping),
+        "note": None if inv.note in ("--", "", None) else inv.note,
+        "privateNote": None if inv.private_note in ("--", "", None) else inv.private_note,
+        "created_date": M.convert_utc_to_user_tz(inv.created_date, brand.timezone or "Asia/Dhaka", "%b %d, %Y"),
+        "updated_date": M.convert_utc_to_user_tz(inv.updated_date, brand.timezone or "Asia/Dhaka", "%b %d, %Y"),
+        "customer": customer, "brandId": brand.brand_id,
+    }
     return render(request, "checkout/invoice.html",
-                  {"invoice": inv, "items": items, "customer": customer,
-                   "brand": _brand_context(brand) if brand else {},
-                   "subtotal": M.money_round(subtotal), "total": M.money_round(total)})
+                  {"invoice": ctx_invoice, "items": lines,
+                   "subtotal": M.money_round(sums["subtotal"]), "totalDiscount": M.money_round(sums["discount"]),
+                   "totalVat": M.money_round(sums["vat"]), "grandTotal": M.money_round(grand),
+                   "brand": _brand_info(brand, invoice_shape=True),
+                   "lang": lang, "language": language, "options": _theme_options(brand)})
+
+
+def invoice_pay(request, ref: str):
+    """action-v2 `invoice` -> {status, redirect} JSON."""
+    if request.method != "POST":
+        return JsonResponse({"status": "false", "title": "Request Failed", "message": "Invalid request"})
+    base = request.build_absolute_uri("/").rstrip("/")
+    itemid = request.POST.get("itemid", "") or ref
+    if not itemid:
+        return JsonResponse({"status": "false", "title": "Incomplete Information",
+                             "message": "Please fill in all required fields before proceeding."})
+    result = create_invoice_transaction(itemid, base)
+    if result.get("ok"):
+        return JsonResponse({"status": "true", "redirect": result["redirect"]})
+    return JsonResponse({"status": "false", "title": result.get("title", "Request Failed"),
+                         "message": result.get("message", "")})
+
+
+# ---------------------------------------------------------------- payment links
+
+def _link_status(link: PaymentLink) -> str:
+    if link.expired_date == "--":
+        return link.status
+    return "expired" if M.is_expired(link.expired_date) else link.status
 
 
 def payment_link_page(request, ref: str, brand_id: str | None = None):
+    if ref == "default":
+        brand = Brand.objects.filter(brand_id=brand_id).first()
+        if not brand:
+            return render(request, "core/404.html", status=404)
+        theme, language, lang = _theme_lang(request, brand)
+        currency = get_env("payment-link-default-currency", brand.brand_id)
+        if currency in ("--", "", None):
+            currency = brand.currency_code
+        return render(request, "checkout/payment_link_default.html",
+                      {"brand": _brand_info(brand, invoice_shape=True), "lang": lang, "language": language,
+                       "currency": currency, "brandId": brand.brand_id, "options": _theme_options(brand)})
     link = PaymentLink.objects.filter(ref=ref).first()
-    if not link or link.status != "active":
-        return render(request, "checkout/link_inactive.html", status=404)
+    if not link:
+        return render(request, "core/404.html", status=404)
     brand = Brand.objects.filter(brand_id=link.brand_id).first()
+    if not brand:
+        return render(request, "core/404.html", status=404)
+    theme, language, lang = _theme_lang(request, brand)
     try:
         product = json.loads(link.product_info or "{}")
+        if not isinstance(product, dict):
+            product = {}
     except ValueError:
         product = {}
-    if request.method == "POST":
-        from core.models import Customer
-        from core.money import generate_item_id
-        name = (request.POST.get("full_name") or "").strip()
-        email = (request.POST.get("email_address") or "").strip()
-        mobile = (request.POST.get("mobile_number") or "").strip()
-        if name and email and mobile:
-            pp_id = generate_item_id(27, 27)
-            Transaction.objects.create(
-                brand_id=link.brand_id, source="payment-link-default", ref=pp_id,
-                customer_info=json.dumps({"name": name, "email": email, "mobile": mobile}),
-                amount=link.amount, currency=link.currency, metadata="{}",
-                return_url="--", webhook_url="--")
-            if not Customer.objects.filter(brand_id=link.brand_id, email=email).exists():
-                Customer.objects.create(ref=generate_item_id(), brand_id=link.brand_id,
-                                        name=name, email=email, mobile=mobile, inserted_via="checkout")
-            return redirect(f"/payment/{pp_id}/")
+    fields = []
+    for row in PaymentLinkField.objects.filter(paymentLinkID=link.ref):
+        opts = []
+        if row.formType in ("select", "file", "checkbox", "radio") and row.value != "--":
+            opts = [o.strip() for o in row.value.split(",")]
+        import re as _re
+        fields.append({"type": row.formType,
+                       "name": _re.sub(r"[^a-z0-9_]", "_", row.fieldName.lower()),
+                       "label": row.fieldName, "options": opts, "required": row.required})
     return render(request, "checkout/payment_link.html",
-                  {"link": link, "product": product, "brand": _brand_context(brand) if brand else {}})
+                  {"link": {"pid": link.ref, "status": _link_status(link), "currency": link.currency,
+                            "total": M.money_round(str(link.amount)),
+                            "quantity": M.money_sanitize(str(link.quantity)),
+                            "expired": link.expired_date, "brandId": brand.brand_id,
+                            "product": {"title": product.get("title", ""),
+                                        "description": product.get("description", "")}},
+                   "fields": fields, "brand": _brand_info(brand, invoice_shape=True),
+                   "lang": lang, "language": language, "options": _theme_options(brand)})
+
+
+def payment_link_submit(request, ref: str):
+    """action-v2 `payment-link` -> stock decrement, expiry/active checks,
+    custom fields (incl. file upload), transaction create."""
+    if request.method != "POST":
+        return JsonResponse({"status": "false", "title": "Request Failed", "message": "Invalid request"})
+    itemid = request.POST.get("itemid", "") or ref
+    if not itemid:
+        return JsonResponse({"status": "false", "title": "Incomplete Information",
+                             "message": "Please fill in all required fields before proceeding."})
+    link = PaymentLink.objects.filter(ref=itemid).first()
+    if not link:
+        return JsonResponse({"status": "false", "title": "Invalid Payment Link ID",
+                             "message": "Please fill in all required fields before proceeding."})
+    if (link.quantity or 0) > 0:
+        link.quantity -= 1
+        link.save(update_fields=["quantity", "updated_date"])
+    else:
+        return JsonResponse({"status": "false", "title": "Product Not Available",
+                             "message": "Cannot generate payment link because the product is out of stock."})
+    if _link_status(link) != "active":
+        return JsonResponse({"status": "false", "title": "Product Not Active",
+                             "message": "This payment link cannot be generated because the product is currently inactive."})
+    form_data = []
+    for row in PaymentLinkField.objects.filter(paymentLinkID=link.ref):
+        import re as _re
+        name = _re.sub(r"[^a-z0-9_]", "_", row.fieldName.lower())
+        if row.formType == "file" and name in request.FILES:
+            result = upload_image(request.FILES[name], 5 * 1024 * 1024)
+            if result.get("status"):
+                base = request.build_absolute_uri("/").rstrip("/")
+                form_data.append({"label": row.fieldName, "value": f"{base}/media/storage/{result['file']}"})
+        elif row.formType == "checkbox":
+            vals = request.POST.getlist(name)
+            form_data.append({"label": row.fieldName, "value": ", ".join(vals)})
+        elif name in request.POST:
+            v = request.POST.getlist(name)
+            form_data.append({"label": row.fieldName,
+                              "value": ", ".join(v) if len(v) > 1 else (v[0].strip() if v else "")})
+    pp_id = M.generate_item_id(27, 27)
+    Transaction.objects.create(
+        brand_id=link.brand_id, source="payment-link", ref=pp_id,
+        customer_info=json.dumps({"name": (request.POST.get("full-name") or "").strip(),
+                                  "email": (request.POST.get("email-address") or "").strip(),
+                                  "mobile": (request.POST.get("mobile-number") or "").strip()}),
+        amount=M.money_sanitize(str(link.amount)), currency=link.currency,
+        source_info=json.dumps(form_data, ensure_ascii=False),
+        metadata=json.dumps({"paymentLink_id": itemid}))
+    base = request.build_absolute_uri("/").rstrip("/")
+    return JsonResponse({"status": "true", "redirect": f"{base}/payment/{pp_id}"})
+
+
+def payment_link_default_submit(request, brand_id: str):
+    """action-v2 `payment-link-default`."""
+    if request.method != "POST":
+        return JsonResponse({"status": "false", "title": "Request Failed", "message": "Invalid request"})
+    itemid = request.POST.get("itemid", "") or brand_id
+    if not itemid:
+        return JsonResponse({"status": "false", "title": "Incomplete Information",
+                             "message": "Please fill in all required fields before proceeding."})
+    brand = Brand.objects.filter(brand_id=itemid).first()
+    if not brand:
+        return JsonResponse({"status": "false", "title": "Invalid Payment Link ID",
+                             "message": "Please fill in all required fields before proceeding."})
+    currency = get_env("payment-link-default-currency", brand.brand_id)
+    if currency in ("--", "", None):
+        currency = brand.currency_code
+    pp_id = M.generate_item_id(27, 27)
+    Transaction.objects.create(
+        brand_id=brand.brand_id, source="payment-link-default", ref=pp_id,
+        customer_info=json.dumps({"name": (request.POST.get("full-name") or "").strip(),
+                                  "email": (request.POST.get("email-address") or "").strip(),
+                                  "mobile": (request.POST.get("mobile-number") or "").strip()}),
+        amount=M.money_sanitize(request.POST.get("amount", "0") or "0"), currency=currency,
+        metadata=json.dumps({"paymentLink_id": itemid}))
+    base = request.build_absolute_uri("/").rstrip("/")
+    return JsonResponse({"status": "true", "redirect": f"{base}/payment/{pp_id}"})
 
 
 def receipt_pdf(request, pp_id: str):
-    """pp_downloadReceiptPDF() — simple printable receipt (PDF via print CSS)."""
+    """Printable receipt (PHP renders FPDF here; HTML documented in AGENTS.md)."""
     txn = Transaction.objects.filter(ref=pp_id).first()
     if not txn:
         return render(request, "core/404.html", status=404)
     brand = Brand.objects.filter(brand_id=txn.brand_id).first()
     resp = render(request, "checkout/receipt.html",
-                  {"transaction": transaction_payload(txn), "brand": _brand_context(brand) if brand else {}})
+                  {"transaction": transaction_payload(txn), "brand": _brand_info(brand) if brand else {}})
     resp["Content-Disposition"] = f'inline; filename="receipt-{pp_id}.html"'
     return resp

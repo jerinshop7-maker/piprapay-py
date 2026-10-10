@@ -1,1 +1,8 @@
-{% extends "base.html" %}{% block content %}<h1>Devices</h1><ul>{% for d in page %}<li>{{ d.device_id }} {{ d.status }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Devices</h1>
+<button id="connect">Connect Device</button><div id="otp"></div>
+<script>document.getElementById('connect').onclick = async () => {
+  const r = await fetch('connect-info/', {method: 'POST', headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}});
+  const d = await r.json(); document.getElementById('otp').textContent = d.otp || d.message; };</script>
+{% csrf_token %}
+<form method="post">{% csrf_token %}<select name="bulk"><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for d in page %}<li><input type="checkbox" name="selected_ids" value="{{ d.id }}"> {{ d.device_id }} {{ d.name }} {{ d.status }} last_sync {{ d.last_sync }} <a href="/admin/devices/balance-verification/?d_id={{ d.device_id }}">Balance verification</a></li>{% endfor %}</ul></form>{% endblock %}

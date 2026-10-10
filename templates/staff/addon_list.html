@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block content %}<h1>Addons</h1>
+<form method="get"><input name="status" value="{{ status }}"><button>Filter</button></form>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for a in page %}<li><input type="checkbox" name="selected_ids" value="{{ a.addon_id }}"> <a href="/admin/addons/{{ a.addon_id }}/">{{ a.name }}</a> {{ a.slug }} {{ a.status }}</li>{% endfor %}</ul></form>
+<h2>Install (zip)</h2><form method="post" enctype="multipart/form-data">{% csrf_token %}<input name="name" placeholder="Name"><input type="file" name="addon_zip" accept=".zip"><button name="upload" value="1">Install</button></form>{% endblock %}

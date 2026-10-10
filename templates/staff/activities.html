@@ -1,1 +1,4 @@
-{% extends "base.html" %}{% block content %}<h1>Activities</h1><ul>{% for l in page %}<li>{{ l.a_id }} {{ l.ip }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Activities</h1>
+<form method="get"><input name="q" value="{{ q }}" placeholder="ip/user/browser"><input name="status" value="{{ status }}"><input name="from" type="date" value="{{ date_from }}"><input name="until" type="date" value="{{ date_until }}"><button>Filter</button></form>
+<ul>{% for l in page %}<li>{{ l.a_id }} {{ l.browser }} {{ l.device }} {{ l.ip }} {{ l.status }} {% if l.cookie == current_cookie %}(current){% endif %}</li>{% endfor %}</ul>
+<h2>Webhooks</h2><ul>{% for w in webhooks %}<li>{{ w.ref }} {{ w.status }} {{ w.attempts }} {{ w.http_code }}</li>{% endfor %}</ul>{% endblock %}

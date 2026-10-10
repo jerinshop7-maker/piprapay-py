@@ -31,7 +31,9 @@ under the same names/slugs.
 
 ```bash
 pip install -r requirements.txt
+python manage.py check_requirements  # mirrors pp-requirement.php table
 python manage.py migrate
+python manage.py pp_install          # mirrors pp-install wizard (admin+brand+BDT+permission+cron key)
 python manage.py createsuperuser          # optional; staff login uses core.Admin instead
 python manage.py run_cron                 # cron step (or GET /cron/<token>/)
 python manage.py test tests               # parity suite (must stay green)
@@ -42,17 +44,42 @@ MySQL (legacy reuse): set `DB_ENGINE=django.db.backends.mysql DB_NAME=.. DB_USER
 
 ## 4. Conventions (do not break)
 
-- **Money**: `Decimal`, 8 places internally (`core/money.py` = PHP `bcscale(8)`). Display via `money_round(x)` (2 dp). Never use float for amounts.
+- **Money**: `Decimal`, 8 places internally (`core/money.py` = PHP `bcscale(8)`).
+  Display via `money_round(x)` which **truncates** like bc (10.005 -> "10.00",
+  NOT half-up). `money_sanitize` is `is_numeric`-only (commas rejected).
+  Never use float for amounts.
 - **`'--'` sentinel** means empty (DB defaults, URLs, images). Preserve it; don't "clean" to `None`/`""` on write paths.
 - **UTC everywhere** (`USE_TZ=True`); user-TZ only at render via `convert_utc_to_user_tz`.
-- **IDs**: `generate_item_id()` (secrets-based) for `ref`/`a_id`/`gateway_id`; `pp_id` is 27 chars.
-- **Passwords**: Django `make_password`/`check_password` (PHP used `password_hash`; re-hash on first login is acceptable, never roll custom crypto).
-- **2FA**: stdlib TOTP in `core/totp.py` — no new deps.
+- **IDs**: `generate_item_id()` = **digits only** via secrets (mirrors PHP
+  `mt_rand(0,9)` loop); `pp_id` is 27 digits.
+- **Tolerance**: `verify_payment_tolerance` accepts paid in
+  `[checkout, checkout+tolerance]` with both > 0 — underpayments never pass.
+- **Passwords**: Django `make_password`/`check_password` (PHP used BCRYPT
+  `password_hash`); `temp_password` fallback login + `reset_limit` + the
+  `forgot.password` hook are ported in `core/views.py`.
+- **2FA**: stdlib TOTP in `core/totp.py` — no new deps. Window default 2
+  (±60s) mirrors `verifyCode(...,2)`.
+- **API auth**: key comes from the `MHS-PIPRAPAY-API-KEY` header (PHP
+  `getAuthorizationHeader()`); `Authorization`/`Bearer` is a fallback only.
 - **Hooks**: `core/hooks.py` (`do_action`/`apply_filters`); cron and transactions emit `transactions.updated`, `system.update.available`. Keep emitting.
-- **Gateway plugins**: add new gateway by adding a `SPECS` entry in `gateways/plugins.py` (slug key) — registry auto-exposes it. API gateways subclass and override `process_payment`/`callback`/`ipn` with `requests` (never `urllib` directly in plugins).
+- **Gateway plugins**: same slugs/titles/types; `GatewayBase` = PHP class contract.
+  Config specs live in `gateways/plugins.py:SPECS` (colors/fields verified
+  against source). Verbatim language strings + instruction steps live in
+  `gateways/lang_data.json` (regenerate via `tools/extract_gateway_lang.py`).
+  Real HTTP for the 13 API gateways lives in `gateways/api_gateways.py`
+  (use `requests`, never `urllib` directly in plugins). Nagad RSA uses
+  `cryptography`; image uploads use `Pillow` (both in requirements.txt).
 - **Permissions**: never rename keys in `core/permissions.py:PERMISSION_SCHEMA` (17 resources / 15 pages) — staff UI depends on them.
-- **SMS parsing**: regexes in `core/sms_engine.py:FORMATS` are priority-ordered per provider; add specific patterns above generic ones.
+- **SMS parsing**: exact PHP regexes in `core/sms_engine.py:FORMATS`
+  (telecash/ipay have none — always False, like PHP); output keys are
+  `mfs/type/raw` + mapped keys verbatim. `reconcile_by_longest_chain` is the
+  full BFS algorithm, not a shortcut.
 - **Templates**: checkout pages mirror `twenty-six/*.php` filenames (`checkout.html`, `gateway.html`, `status.html`, `invoice.html`, `payment_link.html`).
+- **Known wire deviations** (rules identical, transport differs): staff panel
+  and checkout forms POST HTML instead of PHP's AJAX `action=` JSON; receipt
+  is printable HTML instead of FPDF; cron responds after work with the same
+  `{status:"true",message}` shape; install is `pp_install` instead of the web
+  wizard; `pp_demo_mode` gates are not ported.
 
 ## 5. Definition of done for any change
 
@@ -68,3 +95,12 @@ MySQL (legacy reuse): set `DB_ENGINE=django.db.backends.mysql DB_NAME=.. DB_USER
 - Return/webhook URLs must be whitelisted in `pp_domain` or the API returns `INVALID_URL` — same here.
 - Cron uses a file lock (`media/storage/cron.lock`, 10 min) and echoes JSON immediately in PHP; here `run_cron()` returns the dict and the view serialises it.
 - `pp_downloadReceiptPDF` is a printable receipt here (`/payment/<id>/receipt/`); wire a real PDF lib only if asked.
+- `pp_gateways()` prices every gateway in a tab with the FIRST row's fee/discount
+  (`response[0]` quirk) — mirrored intentionally in `_gateway_list`.
+- `?gateway=` takes a `gateway_id` (not the slug), like the theme templates.
+- Cron webhook/hook payloads carry the live `completed` status (PHP sent the
+  stale pre-update `pending` — treated as a PHP bug, not mirrored).
+- `update.sql`/`sql.sql` runners execute verbatim; MySQL-only statements will
+  fail on SQLite — same as running them by hand.
+- `tools/extract_gateway_lang.py` regenerates `gateways/lang_data.json` from the
+  PHP source when gateway text changes upstream.

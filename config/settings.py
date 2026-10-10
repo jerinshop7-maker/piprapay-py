@@ -17,7 +17,7 @@ PIPRAPAY_PATHS = {
     "cron": "cron",
     "homepage_redirect": "",
 }
-PIPRAPAY_VERSION = {"version_name": "1.0.0-django", "version_code": "100"}
+PIPRAPAY_VERSION = {"version_name": "v3.0.0-beta", "version_code": "3.0.0", "channel": "beta"}
 PIPRAPAY_UPDATE_MANIFEST_URL = "https://updates.piprapay.com/manifest.json"
 
 INSTALLED_APPS = [
@@ -40,6 +40,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "core.middleware.PipraPaySecurityHeadersMiddleware",
+    "core.middleware.PipraPayMaintenanceMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

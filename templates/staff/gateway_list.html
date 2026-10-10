@@ -1,1 +1,6 @@
-{% extends "base.html" %}{% block content %}<h1>Gateways</h1><ul>{% for g in page %}<li><a href="/admin/gateways/{{ g.gateway_id }}/">{{ g.display }}</a> {{ g.slug }} {{ g.status }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Gateways</h1>
+<p><a href="?">All</a> {% for t,n in tabs.items %}<a href="?tab={{ t }}">{{ t }} ({{ n }})</a> {% endfor %}</p>
+<p>Install plugin: {% for slug,gw in plugins.items %}{{ slug }} {% endfor %}</p>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for g in page %}<li><input type="checkbox" name="selected_ids" value="{{ g.gateway_id }}"> <a href="/admin/gateways/{{ g.gateway_id }}/">{{ g.display }}</a> {{ g.slug }} {{ g.tab }} {{ g.status }}</li>{% endfor %}</ul></form>
+<a href="/admin/gateways/create-bank/">New Bank</a>{% endblock %}

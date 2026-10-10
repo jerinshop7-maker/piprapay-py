@@ -1,12 +1,56 @@
-{% extends "base.html" %}{% block title %}{{ gateway.display }} — Checkout{% endblock %}
+{% extends "base.html" %}{% block title %}{{ gateway.display }} — {{ lang.checkout|default:"Checkout" }}{% endblock %}
 {% block content %}
 <h1>{{ gateway.display }}</h1>
+<p><a href="./">Back to checkout</a></p>
 <p>Pay <strong>{{ transaction.local_net_amount }} {{ transaction.local_currency }}</strong></p>
-{% if instructions %}<ol>{% for s in instructions %}<li>{{ s.text }}</li>{% endfor %}</ol>{% endif %}
+{% if instructions %}<ol class="payment-instructions">
+{% for s in instructions %}<li{% if s.action and not s.action.value %} style="display:none"{% endif %}>
+<span class="step-text">{{ s.text }}</span>
+{% if s.copy and s.value %}<button type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText('{{ s.value }}')">Copy</button> <code>{{ s.value }}</code>{% endif %}
+{% if s.action and s.action.value %}<br><img src="{{ s.action.value }}" alt="QR" style="max-width:220px">{% endif %}
+</li>{% endfor %}</ol>{% endif %}
 {% if gateway_html %}{{ gateway_html|safe }}{% endif %}
-<form method="post">{% csrf_token %}
-<input type="hidden" name="gateway_id" value="{{ gateway.gateway_id }}">
-<input name="sender" placeholder="Sender number" required>
-<input name="trx_id" placeholder="Transaction ID" required>
+{% if gateway_type == "automation" %}
+<form id="verify-form" method="post" action="verify/" enctype="multipart/form-data">{% csrf_token %}
+<input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
+<input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
+<input name="trxid" placeholder="Transaction ID" required>
+<input name="mobile_number" id="mobile_number" placeholder="Phone number" style="display:none">
 <button type="submit">Verify payment</button></form>
+<div id="verify-msg"></div>
+<script>
+document.getElementById('verify-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
+  const d = await r.json();
+  document.getElementById('verify-msg').textContent = d.title + ': ' + d.message;
+  if (d.visible_number === 'true') document.getElementById('mobile_number').style.display = '';
+  if (d.status === 'true') location.reload();
+});
+</script>
+{% elif gateway_type == "manual" %}
+{% if verify_by == "slip" %}
+<form method="post" action="verify/" enctype="multipart/form-data">{% csrf_token %}
+<input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
+<input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
+<input type="file" name="slip" accept="image/*" required>
+<button type="submit">Submit slip</button></form>
+{% else %}
+<form id="verify-form" method="post" action="verify/">{% csrf_token %}
+<input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
+<input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
+<input name="trxid" placeholder="Transaction ID" required>
+<button type="submit">Submit</button></form>
+<div id="verify-msg"></div>
+<script>
+document.getElementById('verify-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
+  const d = await r.json();
+  document.getElementById('verify-msg').textContent = d.title + ': ' + d.message;
+  if (d.status === 'true') location.reload();
+});
+</script>
+{% endif %}
+{% endif %}
 {% endblock %}

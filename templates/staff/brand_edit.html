@@ -1,1 +1,2 @@
-{% extends "base.html" %}{% block content %}<h1>Brand</h1><form method="post">{% csrf_token %}<input name="identify_name" value="{{ brand.identify_name|default:"" }}"><button>Save</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>{% if brand %}Rename brand{% else %}Create brand{% endif %}</h1>
+<form method="post">{% csrf_token %}<input name="identify_name" value="{{ brand.identify_name|default:"" }}" required><button>Save</button></form>{% endblock %}

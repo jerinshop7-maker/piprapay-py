@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block content %}<h1>Addon {{ addon.name }}</h1>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<select name="status"><option {% if addon.status == "active" %}selected{% endif %}>active</option><option {% if addon.status == "inactive" %}selected{% endif %}>inactive</option></select>
+<h3>Options</h3>{% for p in params %}<label>{{ p.option_name }}</label><input name="opt_{{ p.option_name }}" value="{{ p.value }}"><br>{% endfor %}
+<button>Save</button></form>{% endblock %}

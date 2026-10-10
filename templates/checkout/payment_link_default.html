@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}{% endblock %}
+{% block content %}
+<h1>{{ lang.payment_link|default:"Payment Link" }}</h1>
+<form id="pld-form" method="post" action="submit/">{% csrf_token %}
+<input type="hidden" name="itemid" value="{{ brandId }}">
+<input name="full-name" placeholder="{{ lang.full_name|default:"Full Name" }}" required>
+<input name="email-address" placeholder="{{ lang.email_address|default:"Email Address" }}" required>
+<input name="mobile-number" placeholder="{{ lang.mobile_number|default:"Mobile Number" }}" required>
+<input name="amount" type="number" step="any" placeholder="{{ lang.amount|default:"Amount" }}" required>
+<p>{{ lang.currency|default:"Currency" }}: {{ currency }}</p>
+<button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+<script>
+document.getElementById('pld-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
+  const d = await r.json();
+  if (d.status === 'true') location.href = d.redirect;
+  else alert(d.title + ': ' + d.message);
+});
+</script>
+{% endblock %}

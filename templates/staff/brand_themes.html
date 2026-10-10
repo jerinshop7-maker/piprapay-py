@@ -1,1 +1,6 @@
-{% extends "base.html" %}{% block content %}<h1>Themes</h1><form method="post">{% csrf_token %}<button>Save</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Themes (active: {{ active_slug }})</h1>
+<h2>Gallery</h2><ul>{% for slug,info in gallery.items %}<li>{{ info.title }} {% if slug == active_slug %}(active){% else %}<form method="post" style="display:inline">{% csrf_token %}<button name="activate" value="{{ slug }}">Activate</button></form>{% endif %}</li>{% endfor %}</ul>
+<h2>Settings</h2><form method="post" enctype="multipart/form-data">{% csrf_token %}
+<select name="brand_id"><option value="both">Global</option>{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select><br>
+{% for f in fields %}<label>{{ f.label }} ({{ f.name }})</label>{% if f.type == "image" %}<input type="file" name="{{ f.name }}">{% else %}<input name="{{ f.name }}">{% endif %}<br>{% endfor %}
+<button>Save</button></form>{% endblock %}

@@ -5,6 +5,15 @@ kept identical so checkout/invoice/payment-link copy matches PHP exactly.
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+_LANG_PATH = Path(__file__).with_name("lang_data.json")
+try:
+    _LANG: dict = json.loads(_LANG_PATH.read_text(encoding="utf-8"))
+except OSError:
+    _LANG = {}
+
 
 class ThemeBase:
     slug = ""
@@ -56,6 +65,8 @@ class TwentySixTheme(ThemeBase):
         return {"en": "English", "bn": "বাংলা", "hi": "हिन्दी", "ur": "اردو", "ar": "العربية"}
 
     def lang_text(self):
+        if _LANG:
+            return dict(_LANG)
         return {
             "payment_link": {"en": "Payment Link", "bn": "পেমেন্ট লিঙ্ক", "hi": "भुगतान लिंक", "ur": "ادائیگی کا لنک", "ar": "رابط الدفع"},
             "checkout": {"en": "Checkout", "bn": "চেকআউট", "hi": "चेकआउट", "ur": "چیک آؤٹ", "ar": "الدفع"},

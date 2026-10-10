@@ -1,1 +1,4 @@
-{% extends "base.html" %}{% block content %}<h1>Domains</h1><ul>{% for d in page %}<li>{{ d.domain }} {{ d.status }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Domains</h1>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for d in page %}<li><input type="checkbox" name="selected_ids" value="{{ d.id }}"> {{ d.domain }} {{ d.status }}</li>{% endfor %}</ul></form>
+<h2>Whitelist</h2><form method="post">{% csrf_token %}<input name="domain" placeholder="example.com" required><select name="status"><option>active</option><option>inactive</option></select><button>Add</button></form>{% endblock %}

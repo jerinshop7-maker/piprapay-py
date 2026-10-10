@@ -1,12 +1,13 @@
 """
-senderWhitelist() + MFSMessageVerified() port from pp-functions.php.
+Exact port of senderWhitelist() + MFSMessageVerified() + reconcileByLongestChain().
 
-senderWhitelist() returns the 11 known SMS sender providers (bKash, Nagad,
-Rocket, Upay, Tap, Cellfin, OkWallet, mCash, PathaoPay, TeleCash, Ipay).
-
-MFSMessageVerified() parses carrier SMS text into structured data using the
-same regex priority order as PHP (most-specific pattern first per provider).
-Returns dict on match, False otherwise.
+Verified against pp-functions.php:888-1249:
+- 9 providers have formats (telecash + ipay have NONE -> always False).
+- Output keys: {mfs, type, raw} + mapped keys verbatim (sender/trxid/ref/fee/
+  balance/datetime/receiver). trxid is NOT uppercased; only amount/balance/fee
+  are comma-stripped.
+- reconcile: moneyToInt/money_sanitize semantics, BFS longest chain from
+  canonical balance, bulk-approve chain, current_balance=intToMoney(last,2).
 """
 from __future__ import annotations
 
@@ -56,128 +57,145 @@ def sender_whitelist(sender=None, provider_key=None, mode="provider", provider_n
     return PROVIDERS
 
 
-# Regex formats — same priority order as PHP $formats array.
+# Exact PHP $formats (commented-out Merchant/Agent blocks excluded, as in PHP).
 FORMATS = {
     "bkash": [
         {"type": "Personal", "priority": 100,
          "pattern": r"You have received Tk ([\d,.]+) from (\d+)\.(?:\s*Ref[:\-]?\s*(\S+))? Fee Tk ([\d,.]+)\. Balance Tk ([\d,.]+)\. TrxID ([A-Z0-9]+) at ([\d\/:\s]+)",
          "map": ["amount", "sender", "ref", "fee", "balance", "trxid", "datetime"]},
-        {"type": "Agent", "priority": 90,
+        {"type": "Personal", "priority": 90,
          "pattern": r"Cash In Tk ([\d,.]+) from (\d+) successful\. Fee Tk ([\d,.]+)\. Balance Tk ([\d,.]+)\. TrxID ([A-Z0-9]+) at ([\d\/:\s]+)",
          "map": ["amount", "sender", "fee", "balance", "trxid", "datetime"]},
         {"type": "Merchant", "priority": 80,
-         "pattern": r"You have received payment Tk ([\d,.]+) from (\d+)\. Ref (.*?)\. Balance Tk ([\d,.]+)\. TrxID ([A-Z0-9]+) at ([\d\/:\s]+)",
-         "map": ["amount", "sender", "ref", "balance", "trxid", "datetime"]},
+         "pattern": r"You have received payment Tk ([\d,.]+) from (\d+)\.(?:\s*Ref[:\-]?\s*(\S+))? Fee Tk ([\d,.]+)\. Balance Tk ([\d,.]+)\. TrxID ([A-Z0-9]+) at ([\d\/:\s]+)",
+         "map": ["amount", "sender", "ref", "fee", "balance", "trxid", "datetime"]},
     ],
     "nagad": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received from (\S+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
-        {"type": "Merchant", "priority": 80,
-         "pattern": r"Payment of Tk\.?([\d,.]+) to (\S+) successful.*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
+         "pattern": r"Money Received\. Amount: Tk ([\d,.]+) Sender: (\d+)(?:\s*Ref[:\-]?\s*(\S+))? TxnID: ([A-Z0-9]+) Balance: Tk ([\d,.]+) ([\d\/:\s]+)",
+         "map": ["amount", "sender", "ref", "trxid", "balance", "datetime"]},
+        {"type": "Personal", "priority": 90,
+         "pattern": r"Cash In Received\. Amount: Tk ([\d,.]+) Uddokta: (\d+) TxnID: ([A-Z0-9]+) Balance: ([\d,.]+) ([\d\/:\s]+)",
+         "map": ["amount", "sender", "trxid", "balance", "datetime"]},
     ],
     "rocket": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received from (\d+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
-        {"type": "Agent", "priority": 90,
-         "pattern": r"Cash-in Tk\.?([\d,.]+) from (\d+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
+         "pattern": r"Tk([\d,.]+) received from A\/C:([*\d]+) Fee:Tk([\d,.]+)\, Your A\/C Balance: Tk([\d,.]+) TxnId:([A-Z0-9]+)(?: Date:([\w\-:\s]+))?",
+         "map": ["amount", "sender", "fee", "balance", "trxid", "datetime"]},
     ],
     "upay": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received from (\d+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
+         "pattern": r"Tk\. ([\d,.]+) has been received from (\d+)\.(?:\s*Ref[:\-]?\s*(\S+))? Balance Tk\. ([\d,.]+)\. TrxID ([A-Z0-9]+) at ([\d\/:\s]+)\.",
+         "map": ["amount", "sender", "ref", "balance", "trxid", "datetime"]},
     ],
     "tap": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"received ([\d,.]+).*from (\S+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
+         "pattern": r"Received Tk ([\d,.]+) from (\d+)\. Balance Tk\. ([\d,.]+)\. TxID: ([A-Z0-9]+)\.",
+         "map": ["amount", "sender", "balance", "trxid"]},
     ],
     "cellfin": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+).*credited.*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "trxid"]},
+         "pattern": r"Islami Bank CellFin Received ([\d,.]+) Tk From CellFin: (\d+) To CellFin: (\d+) TrxId: ([A-Z0-9]+)",
+         "map": ["amount", "sender", "receiver", "trxid"]},
     ],
     "okwallet": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received from (\d+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
+         "pattern": r"\(OK Wallet\) Successfully received Tk ([\d,.]+) from A\/C (\d+)\.(?:\s*Ref[:\-]?\s*(\S+))? Balance Tk ([\d,.]+)\. TrxID ([A-Z0-9]+)",
+         "map": ["amount", "sender", "ref", "balance", "trxid"]},
     ],
     "mcash": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received.*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "trxid"]},
+         "pattern": r"IBBL mCash You have received Tk: ([\d,.]+) From: (\d+)(?:\s*Reference:\s*(\S*))? Balance Tk: ([\d,.]+) TrxID: ([A-Z0-9]+)",
+         "map": ["amount", "sender", "ref", "balance", "trxid"]},
     ],
     "pathaopay": [
         {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received from (\S+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
+         "pattern": r"You have received BDT ([\d,.]+) from (\+?\d+)\. Balance BDT ([\d,.]+) TrxID ([A-Z0-9]+)",
+         "map": ["amount", "sender", "balance", "trxid"]},
     ],
-    "telecash": [
-        {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received.*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "trxid"]},
-    ],
-    "ipay": [
-        {"type": "Personal", "priority": 100,
-         "pattern": r"Tk\.?([\d,.]+) received from (\S+).*TrxID\.?\s*([A-Z0-9]+)",
-         "map": ["amount", "sender", "trxid"]},
-    ],
+    # telecash + ipay intentionally have no formats (PHP has none) -> always False.
 }
 
 
-def _num(s: str) -> str:
-    return (s or "").replace(",", "").strip()
-
-
 def mfs_message_verified(mfs: str, message: str):
-    """Parse an MFS SMS. Returns dict {type, amount, sender, trx_id, balance, ...} or False."""
+    """Parse an MFS SMS. Returns {mfs,type,raw,...mapped} or False. Exact PHP port."""
     key = (mfs or "").lower().strip()
+    if key not in FORMATS:
+        return False
     msg = re.sub(r"\s+", " ", (message or "").strip())
-    formats = sorted(FORMATS.get(key, []), key=lambda f: f.get("priority", 0), reverse=True)
+    formats = sorted(FORMATS[key], key=lambda f: f.get("priority", 0), reverse=True)
     for fmt in formats:
         m = re.search(fmt["pattern"], msg, re.IGNORECASE)
         if not m:
             continue
-        out = {"type": fmt["type"], "provider": key}
+        data = {"mfs": key, "type": fmt["type"], "raw": msg}
         groups = m.groups()
-        for i, field in enumerate(fmt["map"]):
-            val = groups[i] if i < len(groups) else ""
-            val = (val or "").strip()
-            if field == "amount":
-                out["amount"] = _num(val)
-            elif field == "sender":
-                out["number"] = val
-            elif field in ("trxid", "trx_id"):
-                out["trx_id"] = val.upper()
-            elif field == "balance":
-                out["balance"] = _num(val)
-            elif field == "fee":
-                out["fee"] = _num(val)
-            else:
-                out[field] = val
-        out.setdefault("amount", "0")
-        out.setdefault("trx_id", "--")
-        return out
+        for i, map_key in enumerate(fmt["map"]):
+            data[map_key] = groups[i] if i < len(groups) else None
+        for field in ("amount", "balance", "fee"):
+            if field in data and data[field] is not None:
+                data[field] = data[field].replace(",", "")
+        return data
     return False
 
 
 def reconcile_by_longest_chain(device_id: str, sender_key: str, gateway_type: str):
-    """Port of reconcileByLongestChain(): derive running balance chain for a device/sender.
+    """Exact port of reconcileByLongestChain() (pp-functions.php:1169-1249)."""
+    from core import money as M
+    from core.models import BalanceVerification, SmsData
 
-    Returns the reconciled balance string. Pure-python version: walks SmsData
-    rows chronologically and keeps the last reported balance per (device, sender_key, type).
-    """
-    from core.models import SmsData, BalanceVerification
+    rule = BalanceVerification.objects.filter(
+        device_id=device_id, sender_key=sender_key, type=gateway_type).first()
+    canonical = 0
+    if rule and rule.current_balance:
+        canonical = M.money_to_int(str(rule.current_balance))
 
-    rows = SmsData.objects.filter(device_id=device_id, sender_key=sender_key, type=gateway_type).order_by("id")
-    last_balance = "0"
+    rows = list(SmsData.objects.filter(
+        device_id=device_id, sender_key=sender_key, type=gateway_type,
+        status__in=["approved", "awaiting-review"], source="app").order_by("id"))
+    if not rows:
+        return
+
+    sms_list = []
     for r in rows:
-        if r.balance and r.balance != "--":
-            last_balance = r.balance
-    BalanceVerification.objects.filter(device_id=device_id, sender_key=sender_key, type=gateway_type).update(
-        current_balance=last_balance if last_balance != "--" else 0
-    )
-    return last_balance
+        amount_int = M.money_to_int(str(r.amount or "0"))
+        balance_int = M.money_to_int(str(r.balance or "0"))
+        if amount_int <= 0 or balance_int <= 0:
+            continue
+        sms_list.append({"id": r.id, "amount_int": amount_int,
+                         "balance_int": balance_int,
+                         "prev": balance_int - amount_int, "bal": balance_int})
+
+    nxt: dict[int, list[dict]] = {}
+    for s in sms_list:
+        nxt.setdefault(s["prev"], []).append(s)
+
+    best_chain: list[dict] = []
+    queue = [canonical]
+    while queue:
+        current = queue.pop(0)
+        if current not in nxt:
+            continue
+        for _sms in nxt[current]:
+            chain: list[dict] = []
+            temp_current = current
+            temp_next = {k: list(v) for k, v in nxt.items()}
+            while temp_current in temp_next and temp_next[temp_current]:
+                sms_in_chain = temp_next[temp_current].pop(0)
+                chain.append(sms_in_chain)
+                temp_current = sms_in_chain["bal"]
+            if len(chain) > len(best_chain):
+                best_chain = chain
+
+    if not best_chain:
+        return
+
+    ids = [s["id"] for s in best_chain]
+    if ids:
+        SmsData.objects.filter(id__in=ids).update(status="approved", reason="--")
+
+    final_balance = M.int_to_money(best_chain[-1]["bal"], 2)
+    BalanceVerification.objects.filter(
+        device_id=device_id, sender_key=sender_key, type=gateway_type).update(
+        current_balance=final_balance)
+    return final_balance

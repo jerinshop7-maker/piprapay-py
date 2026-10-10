@@ -1,1 +1,5 @@
-{% extends "base.html" %}{% block content %}<h1>Staff</h1><ul>{% for s in page %}<li><a href="/admin/staff/{{ s.a_id }}/">{{ s.username }}</a> {{ s.role }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Staff</h1>
+<form method="get"><input name="q" value="{{ q }}"><input name="status" value="{{ status }}"><button>Filter</button></form>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="suspended">Suspend</option><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for s in page %}<li><input type="checkbox" name="selected_ids" value="{{ s.a_id }}"> <a href="/admin/staff/{{ s.a_id }}/">{{ s.username }}</a> {{ s.role }} {{ s.status }} <a href="/admin/staff/{{ s.a_id }}/brands/">Grants</a></li>{% endfor %}</ul></form>
+<a href="/admin/staff/create/">Create</a>{% endblock %}

@@ -1,1 +1,7 @@
-{% extends "base.html" %}{% block content %}<h1>FAQ</h1><ul>{% for f in faqs %}<li>{{ f.title }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>FAQ</h1>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for f in faqs %}<li><input type="checkbox" name="selected_ids" value="{{ f.id }}"> {{ f.title }} {{ f.status }}</li>{% endfor %}</ul></form>
+<h2>Create</h2><form method="post">{% csrf_token %}
+<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
+<input name="title" placeholder="Title" required> <textarea name="description" placeholder="Description"></textarea>
+<select name="status"><option>active</option><option>inactive</option></select><button>Create</button></form>{% endblock %}

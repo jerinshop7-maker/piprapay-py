@@ -1,1 +1,7 @@
-{% extends "base.html" %}{% block content %}<h1>Transactions</h1><form method="get"><input name="q" value="{{ q }}"><button>Search</button></form><ul>{% for t in page %}<li><a href="/admin/transaction/{{ t.id }}/">{{ t.ref }}</a> {{ t.status }} {{ t.amount }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Transactions</h1>
+<p>Tabs: <a href="?">All</a> {% for s,n in tabs.items %}<a href="?status={{ s }}">{{ s }} ({{ n }})</a> {% endfor %}</p>
+<form method="get"><input name="q" value="{{ q }}" placeholder="ref/trx/sender/customer"><input name="status" value="{{ status }}" placeholder="status"><input name="from" type="date" value="{{ date_from }}"><input name="until" type="date" value="{{ date_until }}"><button>Filter</button></form>
+<form method="post">{% csrf_token %}
+<select name="bulk"><option value="approved">Approve</option><option value="canceled">Cancel</option><option value="refunded">Refund</option><option value="ipnsend">Send IPN</option><option value="deleted">Delete</option></select>
+<button>Apply to selected</button>
+<ul>{% for t in page %}<li><input type="checkbox" name="selected_ids" value="{{ t.id }}"> <a href="/admin/transaction/{{ t.id }}/">{{ t.ref }}</a> {{ t.status }} {{ t.amount }} {{ t.currency }}</li>{% endfor %}</ul></form>{% endblock %}

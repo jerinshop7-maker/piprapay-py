@@ -1,9 +1,27 @@
-{% extends "base.html" %}{% block title %}Checkout {{ transaction.pp_id }}{% endblock %}
+{% extends "base.html" %}{% block title %}{{ lang.checkout|default:"Checkout" }} — {{ brand.name }}{% endblock %}
 {% block content %}
-<h1>Checkout — {{ transaction.amount }} {{ transaction.currency }}</h1>
-<p>Order {{ transaction.pp_id }} · {{ transaction.full_name }}</p>
-<h2>Select payment method</h2>
-<ul>{% for g in gateways %}
-<li><a href="?gateway={{ g.slug }}">{{ g.display|default:g.name }} ({{ g.currency }})</a></li>
-{% empty %}<li>No gateways available.</li>{% endfor %}</ul>
+<h1>{{ lang.checkout|default:"Checkout" }} — {{ transaction.amount }} {{ transaction.currency }}</h1>
+<p>{{ transaction.ref }} · {{ transaction.customer.name }}</p>
+<p><a href="?cancel=1">Cancel payment</a> · <a href="?lang=en">EN</a> <a href="?lang=bn">BN</a></p>
+<h2>{{ lang.mobile_banking|default:"Mobile Banking" }}</h2>
+<ul>{% for g in gateways_mfs %}
+<li><a href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }} ({{ g.currency }} {{ g.converted }})</a></li>
+{% empty %}<li>—</li>{% endfor %}</ul>
+<h2>{{ lang.net_banking|default:"Net Banking" }}</h2>
+<ul>{% for g in gateways_bank %}
+<li><a href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }} ({{ g.currency }} {{ g.converted }})</a></li>
+{% empty %}<li>—</li>{% endfor %}</ul>
+<h2>{{ lang.global|default:"Global" }}</h2>
+<ul>{% for g in gateways_global %}
+<li><a href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }} ({{ g.currency }} {{ g.converted }})</a></li>
+{% empty %}<li>—</li>{% endfor %}</ul>
+<h3>Support</h3>
+<ul>
+{% if brand.support.email %}<li>{{ brand.support.email }}</li>{% endif %}
+{% if brand.support.phone %}<li>{{ brand.support.phone }}</li>{% endif %}
+{% if brand.support.website %}<li>{{ brand.support.website }}</li>{% endif %}
+</ul>
+<p>{{ lang.total|default:"Total" }}: {{ transaction.amount }} {{ transaction.currency }}</p>
+<h3>FAQ</h3>
+{% for f in faqs %}<details><summary>{{ f.title }}</summary><p>{{ f.description }}</p></details>{% endfor %}
 {% endblock %}

@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block content %}<h1>Brand grants: {{ member.username }}</h1>
+<form method="post">{% csrf_token %}<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select><button name="add_brand" value="1">Add brand</button></form>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="suspended">Suspend</option><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for r in rows %}<li><input type="checkbox" name="selected_ids" value="{{ r.id }}"> {{ r.brand_id }} {{ r.status }} <a href="/admin/staff/{{ member.a_id }}/permissions/?permission={{ r.id }}">Edit permissions</a></li>{% endfor %}</ul></form>{% endblock %}

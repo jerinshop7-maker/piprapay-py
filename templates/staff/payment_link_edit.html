@@ -1,1 +1,14 @@
-{% extends "base.html" %}{% block content %}<h1>Payment link</h1><form method="post">{% csrf_token %}<input name="brand_id" value="{{ link.brand_id|default:"" }}"><input name="amount" value="{{ link.amount|default:"0" }}"><button>Save</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>{% if link %}Edit{% else %}Create{% endif %} payment link</h1>
+<form method="post">{% csrf_token %}
+<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}" {% if link.brand_id == b.brand_id %}selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select><br>
+<input name="title" value="{{ product.title|default:"" }}" placeholder="Title"> <input name="description" value="{{ product.description|default:"" }}" placeholder="Description"><br>
+<input name="amount" value="{{ link.amount|default:"0" }}" placeholder="Amount"> <input name="quantity" value="{{ link.quantity|default:"0" }}" placeholder="Qty">
+<input name="currency" value="{{ link.currency|default:"BDT" }}"> <input name="expired_date" type="date" value="{{ link.expired_date|default:"" }}">
+<select name="status"><option {% if link.status == "active" %}selected{% endif %}>active</option><option {% if link.status == "inactive" %}selected{% endif %}>inactive</option></select>
+<h3>Custom fields</h3><div id="items">
+{% for f in fields %}<div>Field #{{ f.id }}: {{ f.formType }} {{ f.fieldName }} ({{ f.required }}) <input type="hidden" name="items[{{ f.id }}][fieldID]" value="{{ f.id }}">
+<input name="items[{{ f.id }}][formType]" value="{{ f.formType }}" placeholder="formType"> <input name="items[{{ f.id }}][fieldName]" value="{{ f.fieldName }}" placeholder="fieldName"> <input name="items[{{ f.id }}][required]" value="{{ f.required }}" placeholder="required">
+<label>Delete <input type="checkbox" name="deleted_items" value="{{ f.id }}"></label></div>{% endfor %}</div>
+<p>Add new: formType (text|textarea|select|file|checkbox|radio), fieldName, required, fileExtensions[] / addOptions[] (repeat inputs).</p>
+<div>New item uid "n1": <input name="items[n1][formType]" placeholder="formType"> <input name="items[n1][fieldName]" placeholder="fieldName"> <input name="items[n1][required]" value="true"> <input name="items[n1][addOptions]" placeholder="option"> <input name="items[n1][fileExtensions]" placeholder="ext"></div>
+<button>Save</button></form>{% endblock %}

@@ -1,7 +1,22 @@
 {% extends "base.html" %}{% block title %}Payment {{ transaction.status }}{% endblock %}
 {% block content %}
-<h1>Payment {{ transaction.status }}</h1>
-<p>Order {{ transaction.pp_id }} · {{ transaction.total }} {{ transaction.currency }}</p>
-<p>Gateway: {{ transaction.gateway }} · Txn: {{ transaction.transaction_id }}</p>
-<p><a href="/payment/{{ transaction.pp_id }}/receipt/">Download receipt</a></p>
+{% if transaction.status == "completed" %}<h1>{{ lang.payment_successful|default:"Payment Successful!" }}</h1>
+{% elif transaction.status == "pending" %}<h1>{{ lang.payment_pending|default:"Payment Pending" }}</h1>
+{% elif transaction.status == "refunded" %}<h1>{{ lang.payment_refunded|default:"Payment Refunded" }}</h1>
+{% elif transaction.status == "canceled" %}<h1>{{ lang.payment_canceled|default:"Payment Canceled" }}</h1>
+{% else %}<h1>Payment {{ transaction.status }}</h1>{% endif %}
+<p>Order {{ transaction.pp_id }}</p>
+{% if transaction.status != "canceled" %}
+<table>
+<tr><td>Method</td><td>{{ transaction.gateway }}</td></tr>
+<tr><td>Amount</td><td>{{ transaction.amount }} {{ transaction.currency }}</td></tr>
+<tr><td>Discount</td><td>{{ transaction.discount_amount }}</td></tr>
+<tr><td>Fee</td><td>{{ transaction.fee }}</td></tr>
+<tr><td>Net</td><td>{{ transaction.total }} {{ transaction.currency }}</td></tr>
+<tr><td>Net local</td><td>{{ transaction.local_net_amount }} {{ transaction.local_currency }}</td></tr>
+<tr><td>Status</td><td>{{ transaction.status }}</td></tr>
+</table>
+<p><a href="/payment/{{ transaction.pp_id }}/receipt/">{{ lang.download_receipt|default:"Download Receipt" }}</a></p>
+{% endif %}
+{% if transaction.return_url and transaction.return_url != "--" %}<p><a href="{{ transaction.return_url }}">Go to site</a></p>{% endif %}
 {% endblock %}

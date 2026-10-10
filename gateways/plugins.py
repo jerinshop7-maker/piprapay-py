@@ -2,22 +2,24 @@
 All 48 gateway plugins — 1:1 port of
 pp-content/pp-modules/pp-gateways/<slug>/class.php.
 
-Each PHP class maps to a Python class with the same slug, title, currency,
-tab, gateway_type, sender_key/sender_type, colors and config fields.
-
-API gateways implement real process_payment()/callback() with `requests`
-(PHP used curl). Automation/manual gateways use the generic instruction +
-pending-verification flow (PHP instructions()/lang_text()).
+Verified field-by-field against source: titles, colors, tabs, types,
+sender_key/sender_type, verify_by, config fields. Language strings and
+instruction steps live in gateways/lang_data.json (extracted verbatim from
+PHP via tools/extract_gateway_lang.py); bespoke API-gateway HTTP logic lives
+in gateways/api_gateways.py.
 """
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
-
-import requests
+from pathlib import Path
 
 from gateways.base import GatewayBase
+
+_LANG_PATH = Path(__file__).with_name("lang_data.json")
+try:
+    LANG_DATA: dict = json.loads(_LANG_PATH.read_text(encoding="utf-8"))
+except OSError:
+    LANG_DATA = {}
 
 
 def _t(name, label, ftype="text", **kw):
@@ -31,148 +33,181 @@ def _mode_field(default="live"):
               value=default, required=True, multiple=False)
 
 
-def _mobile_field():
-    return _t("mobile_number", "Merchant Number", "text")
+def automation_extra_fields() -> list:
+    """Mirror gateways/edit.php:59-84 auto-injected automation fields."""
+    return [
+        _t("mobile_number", "Mobile Number", "text", value="", required=True,
+           placeholder="Enter mobile number"),
+        _t("pending_payment", "Allow Pending Payment?", "select",
+           options={"enable": "Enable", "disable": "Disable"},
+           value="disable", required=True, multiple=False),
+    ]
 
 
-def _qr_field():
-    return _t("qr_code", "Qr Code", "image")
+def bank_fields() -> list:
+    """Mirror create-bank.php / edit.php bank-tab fallback fields."""
+    return [
+        _t("bank_name", "Bank Name", "text", value="", required=True, placeholder="Enter bank name"),
+        _t("account_holder_name", "Account Holder Name", "text", value="", required=True,
+           placeholder="Enter account holder name"),
+        _t("account_number", "Account Number", "text", value="", required=True,
+           placeholder="Enter account number"),
+        _t("branch_name", "Branch Name", "text", value="", required=True, placeholder="Enter branch name"),
+        _t("routing_number", "Routing Number", "text", value="", required=True, placeholder=""),
+        _t("swift_code", "SWIFT/BIC Code", "text", value="", required=False, placeholder=""),
+    ]
 
 
-# slug -> spec mirroring class.php info()/color()/fields()
+# slug -> spec mirroring class.php info()/color()/fields().
+# Colors/fields verified against source (see audit). Gateways without a
+# fields() method in PHP have NO config fields here (only automation extras
+# are injected at edit time, exactly like PHP).
 SPECS = {
     "aamarpay": {"title": "aamarPay Gateway", "currency": "BDT", "tab": "mfs", "type": "api",
-                 "color": ("#17447f", "#FFFFFF", "#17447f", "#FFFFFF"),
+                 "color": ("#f39700", "#504e52", "#f39700", "#504e52"),
                  "fields": [_t("store_id", "Store ID"), _t("signature_key", "Signature Key"), _mode_field()]},
     "binance-personal": {"title": "Binance Personal", "currency": "USD", "tab": "global", "type": "api",
-                 "color": ("#F0B90B", "#000000", "#F0B90B", "#000000"),
-                 "fields": [_t("binance_id", "Binance ID"), _qr_field()]},
+                 "color": ("#f0b90b", "#000000", "#f0b90b", "#000000"),
+                 "fields": [_t("binance_uid", "Binance UID"), _t("api_key", "Api Key"),
+                            _t("secret_key", "Secret Key"), _t("qr_code", "Qr Code", "image")]},
     "bkash-agent": {"title": "Bkash Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "bkash", "sender_type": "Agent",
                  "color": ("#D12053", "#FFFFFF", "#D12053", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "bkash-api-tokenized": {"title": "Bkash Api (Tokenized)", "currency": "BDT", "tab": "mfs", "type": "api",
                  "color": ("#D12053", "#FFFFFF", "#D12053", "#FFFFFF"),
                  "fields": [_t("username", "Username"), _t("password", "Password"), _t("app_key", "App Key"),
-                            _t("app_secret_key", "App Secret Key"), _mode_field()]},
+                            _t("app_secret_key", "App Secret Key"), _mode_field(),
+                            _t("auto_refund", "Auto Refund API", "select",
+                               options={"on": "On", "off": "Off"}, value="on", required=False, multiple=False)]},
     "bkash-merchant": {"title": "Bkash Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "bkash", "sender_type": "Merchant",
                  "color": ("#D12053", "#FFFFFF", "#D12053", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "bkash-personal": {"title": "Bkash Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "bkash", "sender_type": "Personal",
                  "color": ("#D12053", "#FFFFFF", "#D12053", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "cellfin-merchant": {"title": "Cellfin Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "cellfin", "sender_type": "Merchant",
-                 "color": ("#006A4E", "#FFFFFF", "#006A4E", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#00803d", "#FFFFFF", "#00803d", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "cellfin-personal": {"title": "Cellfin Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "cellfin", "sender_type": "Personal",
-                 "color": ("#006A4E", "#FFFFFF", "#006A4E", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#00803d", "#FFFFFF", "#00803d", "#FFFFFF"),
+                 "fields": []},
     "eps": {"title": "EPS Gateway", "currency": "BDT", "tab": "mfs", "type": "api",
-                 "color": ("#1B2A4A", "#FFFFFF", "#1B2A4A", "#FFFFFF"),
-                 "fields": [_t("merchant_id", "Merchant ID"), _t("merchant_password", "Merchant Password"), _mode_field()]},
+                 "color": ("#ee2d42", "#FFFFFF", "#ee2d42", "#FFFFFF"),
+                 "fields": [_t("merchant_id", "Merchant ID"), _t("store_id", "Store id"),
+                            _t("username", "Username"), _t("password", "Password"),
+                            _t("hashkey", "Hash key"), _mode_field()]},
     "ipay-merchant": {"title": "Ipay Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "ipay", "sender_type": "Merchant",
-                 "color": ("#00A651", "#FFFFFF", "#00A651", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#019789", "#FFFFFF", "#019789", "#FFFFFF"),
+                 "fields": []},
     "ipay-personal": {"title": "Ipay Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "ipay", "sender_type": "Personal",
-                 "color": ("#00A651", "#FFFFFF", "#00A651", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#019789", "#FFFFFF", "#019789", "#FFFFFF"),
+                 "fields": []},
     "mcash-agent": {"title": "mCash Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "mcash", "sender_type": "Agent",
-                 "color": ("#E31837", "#FFFFFF", "#E31837", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#66b330", "#FFFFFF", "#66b330", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "mcash-merchant": {"title": "mCash Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "mcash", "sender_type": "Merchant",
-                 "color": ("#E31837", "#FFFFFF", "#E31837", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#66b330", "#FFFFFF", "#66b330", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "mcash-personal": {"title": "mCash Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "mcash", "sender_type": "Personal",
-                 "color": ("#E31837", "#FFFFFF", "#E31837", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#66b330", "#FFFFFF", "#66b330", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "nagad-agent": {"title": "Nagad Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "nagad", "sender_type": "Agent",
-                 "color": ("#F6921E", "#FFFFFF", "#F6921E", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ed1c24", "#FFFFFF", "#ed1c24", "#FFFFFF"),
+                 "fields": []},
     "nagad-merchant": {"title": "Nagad Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "nagad", "sender_type": "Merchant",
-                 "color": ("#F6921E", "#FFFFFF", "#F6921E", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ed1c24", "#FFFFFF", "#ed1c24", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "nagad-merchant-api": {"title": "Nagad Merchant Api", "currency": "BDT", "tab": "mfs", "type": "api",
-                 "color": ("#F6921E", "#FFFFFF", "#F6921E", "#FFFFFF"),
-                 "fields": [_t("merchant_id", "Merchant ID"), _t("merchant_number", "Merchant Number"),
-                            _t("public_key", "Public Key", "textarea"), _t("private_key", "Private Key", "textarea"), _mode_field()]},
+                 "color": ("#ed1c24", "#FFFFFF", "#ed1c24", "#FFFFFF"),
+                 "fields": [_t("app_account", "App Account"), _t("merchant_id", "Merchant ID"),
+                            _t("private_key", "Private Key"), _t("public_key", "Public Key"), _mode_field()]},
     "nagad-personal": {"title": "Nagad Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "nagad", "sender_type": "Personal",
-                 "color": ("#F6921E", "#FFFFFF", "#F6921E", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ed1c24", "#FFFFFF", "#ed1c24", "#FFFFFF"),
+                 "fields": []},
     "nowpayments": {"title": "NOWPayments Crypto", "currency": "USD", "tab": "global", "type": "api",
-                 "color": ("#00CEFB", "#000000", "#00CEFB", "#000000"),
+                 "color": ("#6c35c3", "#FFFFFF", "#6c35c3", "#FFFFFF"),
                  "fields": [_t("api_key", "NOWPayments API Key"), _t("ipn_secret_key", "IPN Secret Key"), _mode_field()]},
     "okwallet-agent": {"title": "OkWallet Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "okwallet", "sender_type": "Agent",
-                 "color": ("#7B3FF2", "#FFFFFF", "#7B3FF2", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ffde2d", "#000000", "#ffde2d", "#000000"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "okwallet-merchant": {"title": "OkWallet Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "okwallet", "sender_type": "Merchant",
-                 "color": ("#7B3FF2", "#FFFFFF", "#7B3FF2", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ffde2d", "#000000", "#ffde2d", "#000000"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "okwallet-personal": {"title": "OkWallet Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "okwallet", "sender_type": "Personal",
-                 "color": ("#7B3FF2", "#FFFFFF", "#7B3FF2", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ffde2d", "#000000", "#ffde2d", "#000000"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "oxapay": {"title": "OxaPay Gateway", "currency": "USD", "tab": "global", "type": "api",
-                 "color": ("#00D178", "#000000", "#00D178", "#000000"),
+                 "color": ("#1a34c2", "#FFFFFF", "#1a34c2", "#FFFFFF"),
                  "fields": [_t("api_key", "Merchant Api Key"),
                             _t("fee_paid_by_payer", "Fee Paid By", "select", options={"0": "Merchant", "1": "Payer"}, value="1", required=True, multiple=False),
-                            _t("under_paid_coverage", "Under Paid Coverage", "text", value="0")]},
+                            _t("under_paid_coverage", "Under Paid Coverage", "text", value="0"),
+                            _t("mixed_payment", "Mixed Payment", "select", options={"allow": "Allow", "disallow": "Disallow"}, value="disallow", required=True, multiple=False),
+                            _mode_field()]},
     "pathaopay-merchant": {"title": "PathaoPay Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "pathaopay", "sender_type": "Merchant",
-                 "color": ("#E8332A", "#FFFFFF", "#E8332A", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#3b82de", "#FFFFFF", "#3b82de", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "pathaopay-merchant-api": {"title": "PathaoPay Merchant Api", "currency": "BDT", "tab": "mfs", "type": "api",
-                 "color": ("#E8332A", "#FFFFFF", "#E8332A", "#FFFFFF"),
-                 "fields": [_t("api_key", "API Key"), _t("api_secret", "API Secret"), _mode_field()]},
+                 "color": ("#3b82de", "#FFFFFF", "#3b82de", "#FFFFFF"),
+                 "fields": [_t("api_key", "Api Key"), _t("secret_key", "Secret Key"), _mode_field()]},
     "pathaopay-personal": {"title": "PathaoPay Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "pathaopay", "sender_type": "Personal",
-                 "color": ("#E8332A", "#FFFFFF", "#E8332A", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#3b82de", "#FFFFFF", "#3b82de", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "payeer-manual": {"title": "Payeer Manual", "currency": "USD", "tab": "global", "type": "manual",
-                 "color": ("#0EA5E9", "#FFFFFF", "#0EA5E9", "#FFFFFF"),
-                 "fields": [_t("payeer_id", "Payeer Account")]},
+                 "verify_by": "trxid",
+                 "color": ("#64b3df", "#FFFFFF", "#64b3df", "#FFFFFF"),
+                 "fields": [_t("recipient_payeer_account", "Recipient Payeer Account")]},
     "payoneer-manual": {"title": "Payoneer Manual", "currency": "USD", "tab": "global", "type": "manual",
-                 "color": ("#FF4800", "#FFFFFF", "#FF4800", "#FFFFFF"),
-                 "fields": [_t("payoneer_email", "Payoneer Email")]},
+                 "verify_by": "trxid",
+                 "color": ("#252526", "#FFFFFF", "#252526", "#FFFFFF"),
+                 "fields": [_t("payoneer_email", "Enter payoneer email address")]},
     "paypal-api": {"title": "PayPal API", "currency": "USD", "tab": "global", "type": "api",
                  "color": ("#003087", "#FFFFFF", "#003087", "#FFFFFF"),
                  "fields": [_t("client_id", "PayPal Client ID"), _t("client_secret", "PayPal Client Secret"), _mode_field()]},
     "paypal-manual": {"title": "PayPal Manual", "currency": "USD", "tab": "global", "type": "manual",
-                 "color": ("#003087", "#FFFFFF", "#003087", "#FFFFFF"),
-                 "fields": [_t("paypal_email", "PayPal Email")]},
+                 "verify_by": "trxid",
+                 "color": ("#253b80", "#FFFFFF", "#253b80", "#FFFFFF"),
+                 "fields": [_t("paypal_email", "Enter paypal email address")]},
     "paystation": {"title": "PayStation Gateway", "currency": "BDT", "tab": "mfs", "type": "api",
-                 "color": ("#6236FF", "#FFFFFF", "#6236FF", "#FFFFFF"),
-                 "fields": [_t("merchant_id", "Merchant ID"), _t("store_password", "Store Password"), _mode_field()]},
+                 "color": ("#351e53", "#FFFFFF", "#351e53", "#FFFFFF"),
+                 "fields": [_t("merchant_id", "Merchant ID"), _t("merchant_password", "Merchant Password"),
+                            _t("checkout_items", "Checkout items"),
+                            _t("pay_with_charge", "Who pay fees?", "select", options={"0": "Customer", "1": "Merchant"}, value="0", required=True, multiple=False),
+                            _mode_field()]},
     "rocket-agent": {"title": "Rocket Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "rocket", "sender_type": "Agent",
-                 "color": ("#8C3494", "#FFFFFF", "#8C3494", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#8b3392", "#FFFFFF", "#8b3392", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "rocket-merchant": {"title": "Rocket Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "rocket", "sender_type": "Merchant",
-                 "color": ("#8C3494", "#FFFFFF", "#8C3494", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#8b3392", "#FFFFFF", "#8b3392", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "rocket-personal": {"title": "Rocket Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "rocket", "sender_type": "Personal",
-                 "color": ("#8C3494", "#FFFFFF", "#8C3494", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#8b3392", "#FFFFFF", "#8b3392", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "shurjopay": {"title": "shurjoPay Gateway", "currency": "BDT", "tab": "mfs", "type": "api",
-                 "color": ("#E2136E", "#FFFFFF", "#E2136E", "#FFFFFF"),
+                 "color": ("#229454", "#FFFFFF", "#229454", "#FFFFFF"),
                  "fields": [_t("prefix", "Transaction Prefix"), _t("username", "Username"), _t("password", "Password"), _mode_field()]},
     "sslcommerz": {"title": "SSLCommerz Gateway", "currency": "BDT", "tab": "mfs", "type": "api",
-                 "color": ("#042656", "#FFFFFF", "#042656", "#FFFFFF"),
+                 "color": ("#295cab", "#FFFFFF", "#295cab", "#FFFFFF"),
                  "fields": [_t("store_id", "Store ID"), _t("store_password", "Store Password"),
                             _t("product_category", "Product Category"), _mode_field()]},
     "stripe": {"title": "Stripe Gateway", "currency": "USD", "tab": "global", "type": "api",
@@ -180,51 +215,61 @@ SPECS = {
                  "fields": [_t("secret_key", "Stripe Secret Key"), _t("webhook_secret", "Stripe Webhook Secret")]},
     "tap-agent": {"title": "Tap Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "tap", "sender_type": "Agent",
-                 "color": ("#FF6B00", "#FFFFFF", "#FF6B00", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#5fa845", "#FFFFFF", "#5fa845", "#FFFFFF"),
+                 "fields": []},
     "tap-merchant": {"title": "Tap Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "tap", "sender_type": "Merchant",
-                 "color": ("#FF6B00", "#FFFFFF", "#FF6B00", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#5fa845", "#FFFFFF", "#5fa845", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "tap-personal": {"title": "Tap Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "tap", "sender_type": "Personal",
-                 "color": ("#FF6B00", "#FFFFFF", "#FF6B00", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#5fa845", "#FFFFFF", "#5fa845", "#FFFFFF"),
+                 "fields": []},
     "taptap-send-manual": {"title": "TapTap Send Manual", "currency": "USD", "tab": "global", "type": "manual",
-                 "color": ("#00C853", "#FFFFFF", "#00C853", "#FFFFFF"),
-                 "fields": [_t("recipient_info", "Recipient Info")]},
+                 "verify_by": "trxid",
+                 "color": ("#03691f", "#FFFFFF", "#03691f", "#FFFFFF"),
+                 "fields": [_t("recipient_country", "Enter recipient country"),
+                            _t("payment_method", "Payment Method", "select",
+                               options={"Bkash": "Bkash", "Nagad": "Nagad", "Rocket": "Rocket", "Upay": "Upay"},
+                               value="Bkash", required=False, multiple=False),
+                            _t("mfs_number", "MFS Number")]},
     "telecash-agent": {"title": "Telecash Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "telecash", "sender_type": "Agent",
-                 "color": ("#006064", "#FFFFFF", "#006064", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ed1495", "#FFFFFF", "#ed1495", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "telecash-merchant": {"title": "Telecash Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "telecash", "sender_type": "Merchant",
-                 "color": ("#006064", "#FFFFFF", "#006064", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ed1495", "#FFFFFF", "#ed1495", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "telecash-personal": {"title": "Telecash Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "telecash", "sender_type": "Personal",
-                 "color": ("#006064", "#FFFFFF", "#006064", "#FFFFFF"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#ed1495", "#FFFFFF", "#ed1495", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "upay-agent": {"title": "Upay Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "upay", "sender_type": "Agent",
-                 "color": ("#FDB913", "#000000", "#FDB913", "#000000"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#0d56a3", "#FFFFFF", "#0d56a3", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "upay-merchant": {"title": "Upay Merchant", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "upay", "sender_type": "Merchant",
-                 "color": ("#FDB913", "#000000", "#FDB913", "#000000"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#0d56a3", "#FFFFFF", "#0d56a3", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "upay-personal": {"title": "Upay Personal", "currency": "BDT", "tab": "mfs", "type": "automation",
                  "sender_key": "upay", "sender_type": "Personal",
-                 "color": ("#FDB913", "#000000", "#FDB913", "#000000"),
-                 "fields": [_mobile_field(), _qr_field()]},
+                 "color": ("#0d56a3", "#FFFFFF", "#0d56a3", "#FFFFFF"),
+                 "fields": [_t("qr_code", "Qr Code", "image")]},
     "wise-manual": {"title": "Wise Manual", "currency": "USD", "tab": "global", "type": "manual",
+                 "verify_by": "trxid",
                  "color": ("#163300", "#FFFFFF", "#163300", "#FFFFFF"),
-                 "fields": [_t("wise_email", "Wise Email")]},
+                 "fields": [_t("recipient_wise_account", "Recipient Wise Account")]},
 }
 
 
 class _SpecGateway(GatewayBase):
     _spec: dict = {}
+
+    @property
+    def _lang(self) -> dict:
+        return LANG_DATA.get(self.slug, {})
 
     def info(self):
         s = self._spec
@@ -234,6 +279,8 @@ class _SpecGateway(GatewayBase):
             d["sender_key"] = s["sender_key"]
         if s.get("sender_type"):
             d["sender_type"] = s["sender_type"]
+        if s.get("verify_by"):
+            d["verify_by"] = s["verify_by"]
         return d
 
     def color(self):
@@ -243,23 +290,45 @@ class _SpecGateway(GatewayBase):
     def fields(self):
         return list(self._spec.get("fields", []))
 
-    def supported_languages(self):
+    def supported_languages(self) -> dict:
+        langs = self._lang.get("supported_languages")
+        if isinstance(langs, dict) and langs:
+            return dict(langs)
         if self._spec.get("type") in ("automation", "manual"):
             return {"en": "English", "bn": "বাংলা"}
         return {"en": "English"}
 
-    def instructions(self, data):
-        opts = data.get("options", {})
-        txn = data.get("transaction", {})
-        steps = [
-            {"icon": "", "text": f"Send {txn.get('local_net_amount', '')} {txn.get('local_currency', '')} to {opts.get('mobile_number', '')}", "copy": True, "value": opts.get("mobile_number", "")},
-            {"icon": "", "text": "Complete the payment from your wallet/app.", "copy": False},
-            {"icon": "", "text": "Enter the Transaction ID below and press Verify.", "copy": False},
-        ]
-        if opts.get("qr_code"):
-            steps.insert(1, {"icon": "", "text": "Or scan the QR code.", "copy": False,
-                             "action": {"type": "image", "label": "QR", "value": opts.get("qr_code")}})
-        return steps
+    def lang_text(self) -> dict:
+        lt = self._lang.get("lang_text")
+        return dict(lt) if isinstance(lt, dict) else {}
+
+    def instructions(self, data: dict) -> list:
+        """Rebuild PHP instructions() from extracted step specs + live data."""
+        out = []
+        for spec in self._lang.get("instructions", []):
+            step = {"icon": "", "text": spec.get("text", "")}
+            if "copy" in spec:
+                step["copy"] = spec["copy"]
+            if spec.get("value"):
+                scope, key = spec["value"]
+                step["value"] = (data.get(scope, {}) or {}).get(key, "")
+            if spec.get("action"):
+                step["action"] = {"type": spec["action"], "label": "",
+                                  "value": (data.get((spec.get("action_value") or [None, None])[0], {}) or {}).get(
+                                      (spec.get("action_value") or [None, None])[1], "")}
+            if spec.get("vars"):
+                step["vars"] = {f"{{{v}}}": self._var_value(v, data) for v in spec["vars"]}
+            out.append(step)
+        return out
+
+    @staticmethod
+    def _var_value(var: str, data: dict) -> str:
+        opts = data.get("options", {}) or {}
+        txn = data.get("transaction", {}) or {}
+        if var in opts:
+            return str(opts.get(var, ""))
+        mapping = {"amount": txn.get("local_net_amount", ""), "currency": txn.get("local_currency", "")}
+        return str(mapping.get(var, opts.get(var, "")))
 
 
 def _make_class(slug: str, spec: dict):
@@ -273,122 +342,7 @@ for _slug, _spec in SPECS.items():
     CLASSES[_slug] = _cls
     globals()[_cls.__name__] = _cls
 
+# Bespoke API implementations (exact HTTP ports) register over the specs.
+from gateways.api_gateways import register as _register_api  # noqa: E402
 
-# ---- Bespoke API implementations (real HTTP, mirroring PHP curl logic) ----
-
-class StripeGateway(CLASSES["stripe"]):
-    def process_payment(self, data):
-        txn = data.get("transaction", {})
-        opts = data.get("options", {})
-        amount_cents = int(round(float(txn.get("local_net_amount", 0) or 0) * 100))
-        payload = {
-            "payment_method_types[]": "card",
-            "line_items[0][price_data][currency]": str(txn.get("local_currency", "USD")).lower(),
-            "line_items[0][price_data][product_data][name]": "Digital Product",
-            "line_items[0][price_data][unit_amount]": amount_cents,
-            "line_items[0][quantity]": 1,
-            "mode": "payment",
-            "success_url": data.get("callback_url", "") + "?session_id={CHECKOUT_SESSION_ID}",
-            "cancel_url": data.get("cancel_url", ""),
-            "metadata[invoice_id]": txn.get("ref", ""),
-        }
-        try:
-            r = requests.post("https://api.stripe.com/v1/checkout/sessions", data=payload,
-                              auth=(opts.get("secret_key", ""), ""), timeout=20)
-            session = r.json()
-        except Exception as e:
-            return {"action": "render", "html": f"<center>Error creating session: {e}</center>"}
-        if session.get("id"):
-            return {"action": "redirect", "url": session.get("url")}
-        return {"action": "render", "html": f"<center>Error creating session: {session}</center>"}
-
-    def callback(self, data):
-        opts = data.get("options", {})
-        session_id = (data.get("query", {}) or {}).get("session_id", "")
-        try:
-            s = requests.get(f"https://api.stripe.com/v1/checkout/sessions/{session_id}",
-                             auth=(opts.get("secret_key", ""), ""), timeout=20).json()
-        except Exception:
-            return {"verified": False}
-        if s.get("payment_status") == "paid" and s.get("metadata", {}).get("invoice_id") == data.get("transaction", {}).get("ref"):
-            pi = s.get("payment_intent", "")
-            return {"verified": True, "trx_id": pi,
-                    "source_info": [{"label": "Session ID", "value": s.get("id", "")}]}
-        return {"verified": False}
-
-
-class SslcommerzGateway(CLASSES["sslcommerz"]):
-    def _base(self, options):
-        return ("https://sandbox.sslcommerz.com" if options.get("mode") == "sandbox"
-                else "https://securepay.sslcommerz.com")
-
-    def process_payment(self, data):
-        txn, opts = data.get("transaction", {}), data.get("options", {})
-        payload = {"store_id": opts.get("store_id"), "store_passwd": opts.get("store_password"),
-                   "total_amount": txn.get("local_net_amount"), "currency": txn.get("local_currency"),
-                   "tran_id": txn.get("ref"), "success_url": data.get("callback_url"),
-                   "fail_url": data.get("cancel_url"), "cancel_url": data.get("cancel_url"),
-                   "product_category": opts.get("product_category", "general"),
-                   "cus_name": "Customer", "cus_email": "customer@example.com"}
-        try:
-            r = requests.post(self._base(opts) + "/gwprocess/v4/api.php", data=payload, timeout=20).json()
-        except Exception as e:
-            return {"action": "render", "html": f"<center>Gateway error: {e}</center>"}
-        if r.get("GatewayPageURL"):
-            return {"action": "redirect", "url": r["GatewayPageURL"]}
-        return {"action": "render", "html": f"<center>Gateway error: {r}</center>"}
-
-    def callback(self, data):
-        q = data.get("query", {}) or {}
-        if q.get("status") == "VALID" and q.get("tran_id") == data.get("transaction", {}).get("ref"):
-            return {"verified": True, "trx_id": q.get("bank_tran_id", q.get("tran_id", "")),
-                    "source_info": [{"label": "Bank Tran ID", "value": q.get("bank_tran_id", "")}]}
-        return {"verified": False}
-
-
-class OxapayGateway(CLASSES["oxapay"]):
-    def process_payment(self, data):
-        txn, opts = data.get("transaction", {}), data.get("options", {})
-        try:
-            r = requests.post("https://api.oxapay.com/v1/payment/invoice",
-                              json={"merchant": opts.get("api_key"), "amount": float(txn.get("local_net_amount", 0) or 0),
-                                    "currency": txn.get("local_currency"), "callbackUrl": data.get("callback_url"),
-                                    "returnUrl": data.get("callback_url"),
-                                    "orderId": txn.get("ref")}, timeout=20).json()
-        except Exception as e:
-            return {"action": "render", "html": f"<center>Gateway error: {e}</center>"}
-        if r.get("paymentUrl"):
-            return {"action": "redirect", "url": r["paymentUrl"]}
-        return {"action": "render", "html": f"<center>Gateway error: {r}</center>"}
-
-
-class NowpaymentsGateway(CLASSES["nowpayments"]):
-    def process_payment(self, data):
-        txn, opts = data.get("transaction", {}), data.get("options", {})
-        try:
-            r = requests.post("https://api.nowpayments.io/v1/invoice",
-                              json={"price_amount": float(txn.get("local_net_amount", 0) or 0),
-                                    "price_currency": str(txn.get("local_currency", "USD")).lower(),
-                                    "order_id": txn.get("ref"), "success_url": data.get("callback_url")},
-                              headers={"x-api-key": opts.get("api_key", "")}, timeout=20).json()
-        except Exception as e:
-            return {"action": "render", "html": f"<center>Gateway error: {e}</center>"}
-        if r.get("invoice_url"):
-            return {"action": "redirect", "url": r["invoice_url"]}
-        return {"action": "render", "html": f"<center>Gateway error: {r}</center>"}
-
-    def ipn(self, data):
-        raw, sig = data.get("raw_body", b""), (data.get("headers", {}) or {}).get("x-nowpayments-sig", "")
-        secret = (data.get("options", {}) or {}).get("ipn_secret_key", "")
-        expect = hmac.new(secret.encode(), raw, hashlib.sha512).hexdigest()
-        body = json.loads(raw.decode() or "{}")
-        if sig and hmac.compare_digest(sig, expect) and body.get("payment_status") == "finished":
-            return {"verified": True, "trx_id": str(body.get("payment_id", "")),
-                    "source_info": [{"label": "NOWPayments ID", "value": str(body.get("payment_id", ""))}]}
-        return {"verified": False}
-
-
-CLASSES["stripe"] = StripeGateway
-CLASSES["sslcommerz"] = SslcommerzGateway
-CLASSES["oxapay"] = OxapayGateway
-CLASSES["nowpayments"] = NowpaymentsGateway
+_register_api(CLASSES)

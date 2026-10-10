@@ -1,1 +1,9 @@
-{% extends "base.html" %}{% block content %}<h1>Staff</h1><form method="post">{% csrf_token %}<input name="full_name" value="{{ member.full_name|default:"" }}"><button>Save</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>{% if member %}Edit{% else %}Create{% endif %} staff</h1>
+<form method="post">{% csrf_token %}
+<input name="full_name" value="{{ member.full_name|default:"" }}" placeholder="Full name" required>
+<input name="username" value="{{ member.username|default:"" }}" placeholder="Username" required>
+<input name="email" value="{{ member.email|default:"" }}" placeholder="Email" required>
+<input name="password" type="password" placeholder="Password (blank keeps on edit)">
+<select name="status"><option>active</option><option>suspend</option></select><br>
+Brands: {% for b in brands %}<label><input type="checkbox" name="brands" value="{{ b.brand_id }}" {% if b.brand_id in assigned %}checked{% endif %}> {{ b.identify_name }}</label>{% endfor %}<br>
+<button>Save</button></form>{% endblock %}

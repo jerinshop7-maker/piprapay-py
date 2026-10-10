@@ -1,4 +1,5 @@
-"""TOTP 2FA with stdlib only (mirrors PHP 2fa.php behaviour)."""
+"""TOTP 2FA with stdlib only. Window default 2 (±60s) mirrors
+PHPGangsta_GoogleAuthenticator::verifyCode($secret, $code, 2)."""
 from __future__ import annotations
 
 import base64
@@ -9,9 +10,9 @@ import struct
 import time
 
 
-def generate_secret(length: int = 20) -> str:
-    raw = secrets.token_bytes(length)
-    return base64.b32encode(raw).decode().rstrip("=")
+def generate_secret(length: int = 16) -> str:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def _hotp(secret: str, counter: int, digits: int = 6) -> str:
@@ -28,11 +29,13 @@ def totp_now(secret: str, interval: int = 30) -> str:
     return _hotp(secret, int(time.time()) // interval)
 
 
-def verify_totp(secret: str, code: str, window: int = 1, interval: int = 30) -> bool:
+def verify_totp(secret: str, code: str, window: int = 2, interval: int = 30) -> bool:
     code = (code or "").strip()
+    if len(code) != 6 or not code.isdigit():
+        return False
     now = int(time.time()) // interval
     for i in range(-window, window + 1):
-        if _hotp(secret, now + i) == code:
+        if hmac.compare_digest(_hotp(secret, now + i), code):
             return True
     return False
 

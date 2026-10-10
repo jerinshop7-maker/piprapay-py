@@ -1,1 +1,6 @@
-{% extends "base.html" %}{% block content %}<h1>Invoices</h1><ul>{% for i in page %}<li><a href="/admin/invoice/{{ i.ref }}/">{{ i.ref }}</a> {{ i.status }}</li>{% endfor %}</ul><a href="/admin/invoice/create/">Create</a>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Invoices</h1>
+<p>{% for s,n in tabs.items %}<a href="?status={{ s }}">{{ s }} ({{ n }})</a> {% endfor %}</p>
+<form method="get"><input name="q" value="{{ q }}"><button>Search</button></form>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for i in page %}<li><input type="checkbox" name="selected_ids" value="{{ i.ref }}"> <a href="/admin/invoice/{{ i.ref }}/">{{ i.ref }}</a> {{ i.status }}</li>{% endfor %}</ul></form>
+<a href="/admin/invoice/create/">Create</a>{% endblock %}

@@ -1,1 +1,11 @@
-{% extends "base.html" %}{% block content %}<h1>My account</h1><form method="post">{% csrf_token %}<input name="full_name" value="{{ admin.full_name }}"><button>Save</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>My account</h1>
+<form method="post">{% csrf_token %}
+<input name="full_name" value="{{ admin.full_name }}"> <input name="username" value="{{ admin.username }}"> <input name="email" value="{{ admin.email }}">
+<input name="password" type="password" placeholder="New password (blank keeps)">
+<h2>2FA ({{ admin.twofa_status }})</h2>
+{% if show_secret %}<p>Secret: <code>{{ admin.twofa_secret }}</code></p><p>otpauth: <code>{{ qr_url }}</code></p>{% endif %}
+<select name="twofa"><option value="">—</option><option value="enable">Enable</option><option value="disable">Disable</option></select>
+<input name="twofa_code" placeholder="6-digit code">
+<button>Save</button></form>
+<h2>Browser sessions</h2><ul>{% for s in sessions %}<li>{{ s.browser }} {{ s.device }} {{ s.ip }} {{ s.status }} {% if s.cookie == current_cookie %}(current){% endif %}</li>{% endfor %}</ul>
+<form method="post">{% csrf_token %}<button name="logout_others" value="1">Log out other sessions</button></form>{% endblock %}

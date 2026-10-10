@@ -1,1 +1,5 @@
-{% extends "base.html" %}{% block content %}<h1>Dashboard</h1><p>Transactions: {{ total_transactions }} · Completed: {{ completed }} · Pending: {{ pending }} · 30d volume: {{ volume_30d }}</p><ul>{% for t in recent %}<li>{{ t.ref }} — {{ t.status }} — {{ t.amount }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Dashboard</h1>
+<p>Transactions: {{ total_transactions }} · Completed: {{ completed }} · Pending: {{ pending }} · 30d volume: {{ volume_30d }}</p>
+<p>Last cron: {{ last_cron }}</p>
+<form method="get"><select name="brand"><option value="">All brands</option>{% for b in brands %}<option value="{{ b.brand_id }}" {% if brand_id == b.brand_id %}selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select><button>Switch</button></form>
+<ul>{% for t in recent %}<li>{{ t.ref }} — {{ t.status }} — {{ t.amount }}</li>{% endfor %}</ul>{% endblock %}

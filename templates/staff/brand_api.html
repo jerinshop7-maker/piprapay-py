@@ -1,1 +1,10 @@
-{% extends "base.html" %}{% block content %}<h1>API keys</h1><ul>{% for k in keys %}<li>{{ k.name }} {{ k.status }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>API keys</h1>
+<ul>{% for k in keys %}<li>{{ k.name }} {{ k.api_key }} {{ k.status }} {{ k.expired_date }} {{ k.api_scopes }}</li>{% endfor %}</ul>
+<h2>Create</h2><form method="post">{% csrf_token %}
+<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
+<input name="name" placeholder="Name" required> <input name="expired_date" type="date">
+<label><input type="checkbox" name="scopes" value="create_payment" checked> create_payment</label>
+<label><input type="checkbox" name="scopes" value="verify_payment" checked> verify_payment</label>
+<label><input type="checkbox" name="scopes" value="refund_payment"> refund_payment</label>
+<select name="status"><option>active</option><option>inactive</option></select>
+<button>Create</button></form>{% endblock %}

@@ -1,0 +1,3237 @@
+{
+ "aamarpay": {
+  "instructions": []
+ },
+ "binance-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা",
+   "hi": "हिन्दी",
+   "ur": "اردو",
+   "ar": "العربية"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Binance Mobile App or Website",
+    "bn": "আপনার Binance মোবাইল অ্যাপ বা ওয়েবসাইটে যান",
+    "hi": "अपने Binance मोबाइल ऐप या वेबसाइट पर जाएं",
+    "ur": "اپنی Binance موبائل ایپ یا ویب سائٹ پر جائیں",
+    "ar": "انتقل إلى تطبيق Binance على هاتفك أو إلى الموقع الإلكتروني"
+   },
+   "2": {
+    "en": "Choose \"Send to Binance user\"",
+    "bn": "\"Send to Binance user\" অপশনটি নির্বাচন করুন",
+    "hi": "\"Send to Binance user\" विकल्प चुनें",
+    "ur": "\"Send to Binance user\" کا انتخاب کریں",
+    "ar": "اختر خيار \"الإرسال إلى مستخدم Binance\""
+   },
+   "3": {
+    "en": "Enter the Binance UID \"{binance_uid}\"",
+    "bn": "Binance UID লিখুন \"{binance_uid}\"",
+    "hi": "Binance UID दर्ज करें \"{binance_uid}\"",
+    "ur": "Binance UID درج کریں \"{binance_uid}\"",
+    "ar": "أدخل Binance UID \"{binance_uid}\""
+   },
+   "4": {
+    "en": "Or scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন",
+    "hi": "या QR कोड स्कैन करें",
+    "ur": "یا QR کوڈ اسکین کریں",
+    "ar": "أو قم بمسح رمز QR"
+   },
+   "5": {
+    "en": "Enter amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}",
+    "hi": "राशि दर्ज करें: {amount} {currency}",
+    "ur": "رقم درج کریں: {amount} {currency}",
+    "ar": "أدخل المبلغ: {amount} {currency}"
+   },
+   "6": {
+    "en": "Check all details carefully and confirm the transfer",
+    "bn": "সব তথ্য ভালোভাবে যাচাই করে ট্রান্সফার নিশ্চিত করুন",
+    "hi": "सभी विवरण ध्यान से जांचें और ट्रांसफर की पुष्टि करें",
+    "ur": "تمام تفصیلات غور سے چیک کریں اور ٹرانسفر کی تصدیق کریں",
+    "ar": "تحقق من جميع التفاصيل بعناية ثم أكد التحويل"
+   },
+   "7": {
+    "en": "Enter the transaction ID in the box below and click \"Submit\"",
+    "bn": "নিচের বক্সে ট্রানজ্যাকশন আইডি লিখুন এবং \"Submit\" চাপুন",
+    "hi": "नीचे दिए गए बॉक्स में ट्रांज़ैक्शन ID दर्ज करें और \"Submit\" पर क्लिक करें",
+    "ur": "نیچے دیے گئے باکس میں ٹرانزیکشن ID درج کریں اور \"Submit\" پر کلک کریں",
+    "ar": "أدخل معرف المعاملة في الحقل أدناه ثم اضغط على \"Submit\""
+   },
+   "order_id": {
+    "en": "Order ID",
+    "bn": "অর্ডার আইডি",
+    "hi": "ऑर्डर आईडी",
+    "ur": "آرڈر آئی ڈی",
+    "ar": "معرّف الطلب"
+   },
+   "enter_order_id": {
+    "en": "Enter Order ID",
+    "bn": "অর্ডার আইডি লিখুন",
+    "hi": "ऑर्डर आईडी दर्ज करें",
+    "ur": "آرڈر آئی ڈی درج کریں",
+    "ar": "أدخل معرّف الطلب"
+   },
+   "verify": {
+    "en": "Verify",
+    "bn": "যাচাই করুন",
+    "hi": "सत्यापित करें",
+    "ur": "تصدیق کریں",
+    "ar": "تحقق"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "binance_uid"
+    ],
+    "vars": [
+     "binance_uid"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "bkash-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your bKash Mobile App.",
+    "bn": "আপনার বিকাশ মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your bKash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার বিকাশ পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "bkash-api-tokenized": {
+  "instructions": []
+ },
+ "bkash-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your bKash Mobile App.",
+    "bn": "আপনার বিকাশ মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your bKash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার বিকাশ পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "bkash-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your bKash Mobile App.",
+    "bn": "আপনার বিকাশ মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your bKash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার বিকাশ পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "cellfin-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Cellfin Mobile App.",
+    "bn": "আপনার সেলফিন মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Fund Transfer\"",
+    "bn": "“Fund Transfer” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Choose \"CellFin\"",
+    "bn": "“CellFin” নির্বাচন করুন"
+   },
+   "4": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "5": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "6": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "7": {
+    "en": "Now enter your Cellfin PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার সেলফিন পিন লিখুন।"
+   },
+   "8": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": false
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "5",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "7",
+    "copy": false
+   },
+   {
+    "text": "8",
+    "copy": false
+   }
+  ]
+ },
+ "cellfin-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Cellfin Mobile App.",
+    "bn": "আপনার সেলফিন মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Fund Transfer\"",
+    "bn": "“Fund Transfer” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Choose \"CellFin\"",
+    "bn": "“CellFin” নির্বাচন করুন"
+   },
+   "4": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Cellfin PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার সেলফিন পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": false
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "eps": {
+  "instructions": []
+ },
+ "ipay-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your iPay Mobile App.",
+    "bn": "আপনার আইপে মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "5": {
+    "en": "Now enter your iPay PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার আইপে পিন লিখুন।"
+   },
+   "6": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   }
+  ]
+ },
+ "ipay-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your iPay Mobile App.",
+    "bn": "আপনার আইপে মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "5": {
+    "en": "Now enter your iPay PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার আইপে পিন লিখুন।"
+   },
+   "6": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   }
+  ]
+ },
+ "mcash-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your mCash Mobile App.",
+    "bn": "আপনার এমক্যাশ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your mCash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার এমক্যাশ  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "mcash-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your mCash Mobile App.",
+    "bn": "আপনার এমক্যাশ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your mCash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার এমক্যাশ  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "mcash-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your mCash Mobile App.",
+    "bn": "আপনার এমক্যাশ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your mCash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার এমক্যাশ  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "nagad-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Nagad Mobile App.",
+    "bn": "আপনার নগদ মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "5": {
+    "en": "Now enter your Nagad PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার নগদ পিন লিখুন।"
+   },
+   "6": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   }
+  ]
+ },
+ "nagad-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Nagad Mobile App.",
+    "bn": "আপনার নগদ মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Nagad PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার নগদ পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "nagad-merchant-api": {
+  "instructions": []
+ },
+ "nagad-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Nagad Mobile App.",
+    "bn": "আপনার নগদ মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "5": {
+    "en": "Now enter your Nagad PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার নগদ পিন লিখুন।"
+   },
+   "6": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   }
+  ]
+ },
+ "nowpayments": {
+  "instructions": []
+ },
+ "okwallet-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your OkWallet Mobile App.",
+    "bn": "আপনার ওকে ওয়ালেট মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your OkWallet PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার ওকে ওয়ালেট পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "okwallet-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your OkWallet Mobile App.",
+    "bn": "আপনার ওকে ওয়ালেট মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your OkWallet PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার ওকে ওয়ালেট পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "okwallet-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your OkWallet Mobile App.",
+    "bn": "আপনার ওকে ওয়ালেট মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your OkWallet PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার ওকে ওয়ালেট পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "oxapay": {
+  "instructions": []
+ },
+ "pathaopay-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your PathaoPay Mobile App.",
+    "bn": "আপনার পাঠাও পে  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Payment\"",
+    "bn": "“Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your PathaoPay PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার পাঠাও পে  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "pathaopay-merchant-api": {
+  "instructions": []
+ },
+ "pathaopay-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your PathaoPay Mobile App.",
+    "bn": "আপনার পাঠাও পে  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your PathaoPay PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার পাঠাও পে  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "payeer-manual": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা",
+   "hi": "हिन्दी",
+   "ur": "اردو",
+   "ar": "العربية"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Log in to your Payeer account at Payeer.com",
+    "bn": "আপনার Payeer একাউন্টে লগইন করুন Payeer.com এ",
+    "hi": "अपने Payeer अकाउंट में लॉग इन करें Payeer.com पर",
+    "ur": "اپنے Payeer اکاؤنٹ میں لاگ ان کریں Payeer.com پر",
+    "ar": "قم بتسجيل الدخول إلى حساب Payeer الخاص بك على Payeer.com"
+   },
+   "2": {
+    "en": "Go to the \"Send Money\" or \"Transfer\" section",
+    "bn": "\"Send Money\" বা \"Transfer\" সেকশনে যান",
+    "hi": "\"Send Money\" या \"Transfer\" सेक्शन में जाएं",
+    "ur": "\"Send Money\" یا \"Transfer\" سیکشن میں جائیں",
+    "ar": "انتقل إلى قسم \"إرسال الأموال\" أو \"تحويل\""
+   },
+   "3": {
+    "en": "Enter the recipient's Payeer account ID: {recipient_payeer_account}",
+    "bn": "গ্রাহকের Payeer অ্যাকাউন্ট আইডি লিখুন: {recipient_payeer_account}",
+    "hi": "प्राप्तकर्ता का Payeer अकाउंट ID दर्ज करें: {recipient_payeer_account}",
+    "ur": "وصول کنندہ کے Payeer اکاؤنٹ ID درج کریں: {recipient_payeer_account}",
+    "ar": "أدخل معرف حساب Payeer للمستلم: {recipient_payeer_account}"
+   },
+   "4": {
+    "en": "Enter the amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}",
+    "hi": "राशि दर्ज करें: {amount} {currency}",
+    "ur": "رقم درج کریں: {amount} {currency}",
+    "ar": "أدخل المبلغ: {amount} {currency}"
+   },
+   "5": {
+    "en": "Select the currency and your Payeer balance to pay from",
+    "bn": "মূল্য নির্বাচন করুন এবং কোন Payeer ব্যালেন্স থেকে পরিশোধ করবেন তা নির্বাচন করুন",
+    "hi": "मुद्रा और अपने Payeer बैलेंस का चयन करें जिससे भुगतान करना है",
+    "ur": "کرنسی اور اپنے Payeer بیلنس کا انتخاب کریں جس سے ادائیگی کریں",
+    "ar": "اختر العملة ورصيد Payeer الخاص بك للدفع منه"
+   },
+   "6": {
+    "en": "Check all details carefully and confirm the transfer",
+    "bn": "সব তথ্য যাচাই করুন এবং ট্রান্সফার নিশ্চিত করুন",
+    "hi": "सारी जानकारी जांचें और ट्रांसफर की पुष्टि करें",
+    "ur": "تمام تفصیلات چیک کریں اور ٹرانسفر کی تصدیق کریں",
+    "ar": "تحقق من جميع التفاصيل وأكد التحويل"
+   },
+   "7": {
+    "en": "Enter the transaction ID in the box below and click \"Submit\"",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং \"Submit\" চাপুন",
+    "hi": "नीचे बॉक्स में ट्रांज़ैक्शन ID दर्ज करें और \"Submit\" पर क्लिक करें",
+    "ur": "ٹرانزیکشن ID نیچے والے باکس میں درج کریں اور \"Submit\" پر کلک کریں",
+    "ar": "أدخل معرف المعاملة في الصندوق أدناه وانقر على \"Submit\""
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "recipient_payeer_account"
+    ],
+    "vars": [
+     "recipient_payeer_account"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "payoneer-manual": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা",
+   "hi": "हिन्दी",
+   "ur": "اردو",
+   "ar": "العربية"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Payoneer Mobile App or Website",
+    "bn": "আপনার Payoneer মোবাইল অ্যাপ বা ওয়েবসাইটে যান",
+    "hi": "अपने Payoneer मोबाइल ऐप या वेबसाइट पर जाएं",
+    "ur": "اپنی Payoneer موبائل ایپ یا ویب سائٹ پر جائیں",
+    "ar": "انتقل إلى تطبيق Payoneer على هاتفك أو إلى الموقع الإلكتروني"
+   },
+   "2": {
+    "en": "Click \"Pay\"",
+    "bn": "\"Pay\" অপশনে ক্লিক করুন",
+    "hi": "\"Pay\" विकल्प पर क्लिक करें",
+    "ur": "\"Pay\" پر کلک کریں",
+    "ar": "اضغط على خيار \"Pay\""
+   },
+   "3": {
+    "en": "Choose \"Pay to a Payoneer recipient\"",
+    "bn": "\"Payoneer প্রাপকের কাছে পেমেন্ট\" অপশনটি নির্বাচন করুন",
+    "hi": "\"Payoneer प्राप्तकर्ता को भुगतान\" विकल्प चुनें",
+    "ur": "\"Payoneer وصول کنندہ کو ادائیگی\" کا انتخاب کریں",
+    "ar": "اختر خيار \"الدفع إلى مستلم Payoneer\""
+   },
+   "4": {
+    "en": "Enter the email address \"{payoneer_email}\"",
+    "bn": "ইমেইল ঠিকানা লিখুন \"{payoneer_email}\"",
+    "hi": "ईमेल पता दर्ज करें \"{payoneer_email}\"",
+    "ur": "ای میل ایڈریس درج کریں \"{payoneer_email}\"",
+    "ar": "أدخل عنوان البريد الإلكتروني \"{payoneer_email}\""
+   },
+   "5": {
+    "en": "Enter amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}",
+    "hi": "राशि दर्ज करें: {amount} {currency}",
+    "ur": "رقم درج کریں: {amount} {currency}",
+    "ar": "أدخل المبلغ: {amount} {currency}"
+   },
+   "6": {
+    "en": "Check all details carefully and confirm the transfer",
+    "bn": "সব তথ্য ভালোভাবে যাচাই করে ট্রান্সফার নিশ্চিত করুন",
+    "hi": "सभी विवरण ध्यान से जांचें और ट्रांसफर की पुष्टि करें",
+    "ur": "تمام تفصیلات غور سے چیک کریں اور ٹرانسفر کی تصدیق کریں",
+    "ar": "تحقق من جميع التفاصيل بعناية ثم أكد التحويل"
+   },
+   "7": {
+    "en": "Enter the transaction ID in the box below and click \"Submit\"",
+    "bn": "নিচের বক্সে ট্রানজ্যাকশন আইডি লিখুন এবং \"Submit\" চাপুন",
+    "hi": "नीचे दिए गए बॉक्स में ट्रांज़ैक्शन ID दर्ज करें और \"Submit\" पर क्लिक करें",
+    "ur": "نیچے دیے گئے باکس میں ٹرانزیکشن ID درج کریں اور \"Submit\" پر کلک کریں",
+    "ar": "أدخل معرف المعاملة في الحقل أدناه ثم اضغط على \"Submit\""
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": false
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "options",
+     "payoneer_email"
+    ],
+    "vars": [
+     "payoneer_email"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "paypal-api": {
+  "instructions": []
+ },
+ "paypal-manual": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা",
+   "hi": "हिन्दी",
+   "ur": "اردو",
+   "ar": "العربية"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your PayPal Mobile App or Website",
+    "bn": "আপনার PayPal মোবাইল অ্যাপ বা ওয়েবসাইটে যান",
+    "hi": "अपने PayPal मोबाइल ऐप या वेबसाइट पर जाएं",
+    "ur": "اپنی PayPal موبائل ایپ یا ویب سائٹ پر جائیں",
+    "ar": "انتقل إلى تطبيق PayPal على هاتفك أو إلى الموقع الإلكتروني"
+   },
+   "2": {
+    "en": "Choose \"Send Payment\"",
+    "bn": "\"Send Payment\" অপশনটি নির্বাচন করুন",
+    "hi": "\"Send Payment\" विकल्प चुनें",
+    "ur": "\"Send Payment\" کا انتخاب کریں",
+    "ar": "اختر خيار \"إرسال دفعة\""
+   },
+   "3": {
+    "en": "Enter the email address \"{paypal_email}\"",
+    "bn": "ইমেইল ঠিকানা লিখুন \"{paypal_email}\"",
+    "hi": "ईमेल पता दर्ज करें \"{paypal_email}\"",
+    "ur": "ای میل ایڈریس درج کریں \"{paypal_email}\"",
+    "ar": "أدخل عنوان البريد الإلكتروني \"{paypal_email}\""
+   },
+   "4": {
+    "en": "Enter amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}",
+    "hi": "राशि दर्ज करें: {amount} {currency}",
+    "ur": "رقم درج کریں: {amount} {currency}",
+    "ar": "أدخل المبلغ: {amount} {currency}"
+   },
+   "5": {
+    "en": "Check all details carefully and confirm the transfer",
+    "bn": "সব তথ্য ভালোভাবে যাচাই করে ট্রান্সফার নিশ্চিত করুন",
+    "hi": "सभी विवरण ध्यान से जांचें और ट्रांसफर की पुष्टि करें",
+    "ur": "تمام تفصیلات غور سے چیک کریں اور ٹرانسفر کی تصدیق کریں",
+    "ar": "تحقق من جميع التفاصيل بعناية ثم أكد التحويل"
+   },
+   "6": {
+    "en": "Enter the transaction ID in the box below and click \"Submit\"",
+    "bn": "নিচের বক্সে ট্রানজ্যাকশন আইডি লিখুন এবং \"Submit\" চাপুন",
+    "hi": "नीचे दिए गए बॉक्स में ट्रांज़ैक्शन ID दर्ज करें और \"Submit\" पर क्लिक करें",
+    "ur": "نیچے دیے گئے باکس میں ٹرانزیکشن ID درج کریں اور \"Submit\" پر کلک کریں",
+    "ar": "أدخل معرف المعاملة في الحقل أدناه ثم اضغط على \"Submit\""
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "paypal_email"
+    ],
+    "vars": [
+     "paypal_email"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   }
+  ]
+ },
+ "paystation": {
+  "instructions": []
+ },
+ "rocket-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Rocket Mobile App.",
+    "bn": "আপনার রকেট  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Rocket PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার রকেট  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "rocket-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Rocket Mobile App.",
+    "bn": "আপনার রকেট  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Rocket PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার রকেট  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "rocket-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Rocket Mobile App.",
+    "bn": "আপনার রকেট  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Rocket PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার রকেট  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "shurjopay": {
+  "instructions": []
+ },
+ "sslcommerz": {
+  "instructions": []
+ },
+ "stripe": {
+  "instructions": []
+ },
+ "tap-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Tap Mobile App.",
+    "bn": "আপনার টেপ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "5": {
+    "en": "Now enter your Tap PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার টেপ  পিন লিখুন।"
+   },
+   "6": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   }
+  ]
+ },
+ "tap-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Tap Mobile App.",
+    "bn": "আপনার টেপ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Tap PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার টেপ  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "tap-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Tap Mobile App.",
+    "bn": "আপনার টেপ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "5": {
+    "en": "Now enter your Tap PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার টেপ  পিন লিখুন।"
+   },
+   "6": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": false
+   },
+   {
+    "text": "6",
+    "copy": false
+   }
+  ]
+ },
+ "taptap-send-manual": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা",
+   "hi": "हिन्दी",
+   "ur": "اردو",
+   "ar": "العربية"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your TapTap Send Mobile App",
+    "bn": "আপনার TapTap Send মোবাইল অ্যাপে যান",
+    "hi": "अपने TapTap Send मोबाइल ऐप पर जाएं",
+    "ur": "اپنی TapTap Send موبائل ایپ پر جائیں",
+    "ar": "انتقل إلى تطبيق TapTap Send على هاتفك"
+   },
+   "2": {
+    "en": "Choose recipient country \"{recipient_country}\"",
+    "bn": "প্রাপকের দেশ নির্বাচন করুন \"{recipient_country}\"",
+    "hi": "प्राप्तकर्ता का देश चुनें \"{recipient_country}\"",
+    "ur": "وصول کنندہ کا ملک منتخب کریں \"{recipient_country}\"",
+    "ar": "اختر بلد المستلم \"{recipient_country}\""
+   },
+   "3": {
+    "en": "Enter amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}",
+    "hi": "राशि दर्ज करें: {amount} {currency}",
+    "ur": "رقم درج کریں: {amount} {currency}",
+    "ar": "أدخل المبلغ: {amount} {currency}"
+   },
+   "4": {
+    "en": "Choose the recipient payout method: {payment_method}",
+    "bn": "প্রাপকের পেমেন্ট পদ্ধতি নির্বাচন করুন: {payment_method}",
+    "hi": "प्राप्तकर्ता की भुगतान विधि चुनें: {payment_method}",
+    "ur": "وصول کنندہ کا ادائیگی کا طریقہ منتخب کریں: {payment_method}",
+    "ar": "اختر طريقة استلام المستلم: {payment_method}"
+   },
+   "5": {
+    "en": "Enter the recipient payout number: {mfs_number}",
+    "bn": "প্রাপকের পেআউট নম্বর লিখুন: {mfs_number}",
+    "hi": "प्राप्तकर्ता का भुगतान नंबर दर्ज करें: {mfs_number}",
+    "ur": "وصول کنندہ کا ادائیگی نمبر درج کریں: {mfs_number}",
+    "ar": "أدخل رقم استلام المستلم: {mfs_number}"
+   },
+   "6": {
+    "en": "Check all details carefully and confirm the transfer",
+    "bn": "সব তথ্য ভালোভাবে যাচাই করে ট্রান্সফার নিশ্চিত করুন",
+    "hi": "सभी विवरण ध्यान से जांचें और ट्रांसफर की पुष्टि करें",
+    "ur": "تمام تفصیلات غور سے چیک کریں اور ٹرانسفر کی تصدیق کریں",
+    "ar": "تحقق من جميع التفاصيل بعناية ثم أكد التحويل"
+   },
+   "7": {
+    "en": "Enter the transaction ID in the box below and click \"Submit\"",
+    "bn": "নিচের বক্সে ট্রানজ্যাকশন আইডি লিখুন এবং \"Submit\" চাপুন",
+    "hi": "नीचे दिए गए बॉक्स में ट्रांज़ैक्शन ID दर्ज करें और \"Submit\" पर क्लिक करें",
+    "ur": "نیچے دیے گئے باکس میں ٹرانزیکشن ID درج کریں اور \"Submit\" پر کلک کریں",
+    "ar": "أدخل معرف المعاملة في الحقل أدناه ثم اضغط على \"Submit\""
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false,
+    "vars": [
+     "recipient_country"
+    ]
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "options",
+     "payment_method"
+    ],
+    "vars": [
+     "payment_method"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "options",
+     "mfs_number"
+    ],
+    "vars": [
+     "mfs_number"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "telecash-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Telecash Mobile App.",
+    "bn": "আপনার টেলিক্যাশ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Telecash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার টেলিক্যাশ  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "telecash-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Telecash Mobile App.",
+    "bn": "আপনার টেলিক্যাশ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Telecash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার টেলিক্যাশ  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "telecash-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Telecash Mobile App.",
+    "bn": "আপনার টেলিক্যাশ  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Telecash PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার টেলিক্যাশ  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "upay-agent": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Upay Mobile App.",
+    "bn": "আপনার উপায়  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Cash Out\"",
+    "bn": "“Cash Out” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Upay PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার উপায়  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "upay-merchant": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Upay Mobile App.",
+    "bn": "আপনার উপায়  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Make Payment\"",
+    "bn": "“Make Payment” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Upay PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার উপায়  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "upay-personal": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Upay Mobile App.",
+    "bn": "আপনার উপায়  মোবাইল অ্যাপে যান।"
+   },
+   "2": {
+    "en": "Choose \"Send Money\"",
+    "bn": "“Send Money” নির্বাচন করুন"
+   },
+   "3": {
+    "en": "Enter the Number: {mobile_number}",
+    "bn": "নম্বর লিখুন: {mobile_number}"
+   },
+   "4": {
+    "en": "Or Scan the QR Code",
+    "bn": "অথবা কিউআর কোড স্ক্যান করুন"
+   },
+   "5": {
+    "en": "Enter the Amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}"
+   },
+   "6": {
+    "en": "Now enter your Upay PIN to confirm.",
+    "bn": "এখন নিশ্চিত করতে আপনার উপায়  পিন লিখুন।"
+   },
+   "7": {
+    "en": "Put the Transaction ID in the box below and press Verify",
+    "bn": "ট্রানজ্যাকশন আইডি নিচের বক্সে লিখুন এবং যাচাই করুন চাপুন।"
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": true,
+    "value": [
+     "options",
+     "mobile_number"
+    ],
+    "vars": [
+     "mobile_number"
+    ]
+   },
+   {
+    "text": "4",
+    "value": [
+     "options",
+     "qr_code"
+    ],
+    "action": "image",
+    "action_value": [
+     "options",
+     "qr_code"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ },
+ "wise-manual": {
+  "supported_languages": {
+   "en": "English",
+   "bn": "বাংলা",
+   "hi": "हिन्दी",
+   "ur": "اردو",
+   "ar": "العربية"
+  },
+  "lang_text": {
+   "1": {
+    "en": "Go to your Wise Mobile App or Website",
+    "bn": "আপনার Wise মোবাইল অ্যাপ বা ওয়েবসাইটে যান",
+    "hi": "अपने Wise मोबाइल ऐप या वेबसाइट पर जाएं",
+    "ur": "اپنے Wise موبائل ایپ یا ویب سائٹ پر جائیں",
+    "ar": "انتقل إلى تطبيق Wise على الهاتف أو الموقع الإلكتروني"
+   },
+   "2": {
+    "en": "Click \"Send\"",
+    "bn": "\"Send\" বাটনে ক্লিক করুন",
+    "hi": "\"Send\" पर क्लिक करें",
+    "ur": "\"Send\" پر کلک کریں",
+    "ar": "انقر على \"إرسال\""
+   },
+   "3": {
+    "en": "Choose Currency \"{currency}\"",
+    "bn": "মুদ্রা নির্বাচন করুন \"{currency}\"",
+    "hi": "मुद्रा चुनें \"{currency}\"",
+    "ur": "کرنسی منتخب کریں \"{currency}\"",
+    "ar": "اختر العملة \"{currency}\""
+   },
+   "4": {
+    "en": "Enter amount: {amount} {currency}",
+    "bn": "পরিমাণ লিখুন: {amount} {currency}",
+    "hi": "राशि दर्ज करें: {amount} {currency}",
+    "ur": "رقم درج کریں: {amount} {currency}",
+    "ar": "أدخل المبلغ: {amount} {currency}"
+   },
+   "5": {
+    "en": "Enter the recipient's Wise account: {recipient_wise_account}",
+    "bn": "প্রাপকের Wise অ্যাকাউন্ট লিখুন: {recipient_wise_account}",
+    "hi": "प्राप्तकर्ता का Wise खाता दर्ज करें: {recipient_wise_account}",
+    "ur": "وصول کنندہ کا Wise اکاؤنٹ درج کریں: {recipient_wise_account}",
+    "ar": "أدخل حساب Wise الخاص بالمستلم: {recipient_wise_account}"
+   },
+   "6": {
+    "en": "Check all details carefully and confirm the transfer",
+    "bn": "সব তথ্য ভালোভাবে যাচাই করে ট্রান্সফার নিশ্চিত করুন",
+    "hi": "सभी विवरण ध्यान से जांचें और ट्रांसफर की पुष्टि करें",
+    "ur": "تمام تفصیلات غور سے چیک کریں اور ٹرانسفر کی تصدیق کریں",
+    "ar": "تحقق من جميع التفاصيل بعناية ثم أكد التحويل"
+   },
+   "7": {
+    "en": "Enter the transaction ID in the box below and click \"Submit\"",
+    "bn": "নিচের বক্সে ট্রানজ্যাকশন আইডি লিখুন এবং \"Submit\" চাপুন",
+    "hi": "नीचे दिए गए बॉक्स में ट्रांज़ैक्शन ID दर्ज करें और \"Submit\" पर क्लिक करें",
+    "ur": "نیچے دیے گئے باکس میں ٹرانزیکشن ID درج کریں اور \"Submit\" پر کلک کریں",
+    "ar": "أدخل رقم المعاملة في المربع أدناه ثم انقر على \"إرسال\""
+   }
+  },
+  "instructions": [
+   {
+    "text": "1",
+    "copy": false
+   },
+   {
+    "text": "2",
+    "copy": false
+   },
+   {
+    "text": "3",
+    "copy": false,
+    "vars": [
+     "currency"
+    ]
+   },
+   {
+    "text": "4",
+    "copy": true,
+    "value": [
+     "transaction",
+     "local_net_amount"
+    ],
+    "vars": [
+     "amount"
+    ]
+   },
+   {
+    "text": "5",
+    "copy": true,
+    "value": [
+     "options",
+     "recipient_wise_account"
+    ],
+    "vars": [
+     "recipient_wise_account"
+    ]
+   },
+   {
+    "text": "6",
+    "copy": false
+   },
+   {
+    "text": "7",
+    "copy": false
+   }
+  ]
+ }
+}

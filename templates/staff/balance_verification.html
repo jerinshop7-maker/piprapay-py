@@ -1,1 +1,8 @@
-{% extends "base.html" %}{% block content %}<h1>Balance verification</h1><ul>{% for b in page %}<li>{{ b.device_id }} {{ b.sender_key }} {{ b.current_balance }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Balance verification {% if d_id %}({{ d_id }}){% endif %}</h1>
+<ul>{% for b in page %}<li>{{ b.device_id }} {{ b.sender_key }} {{ b.type }} {{ b.current_balance }} {{ b.simslot }} {{ b.status }}</li>{% endfor %}</ul>
+<h2>Add rule</h2><form method="post">{% csrf_token %}
+<input name="device_id" value="{{ d_id }}" placeholder="device id">
+<select name="sender_key">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select>
+<select name="type"><option>Personal</option><option>Agent</option><option>Merchant</option></select>
+<input name="current_balance" placeholder="balance"> <input name="simslot" placeholder="Any/Sim1/Sim2">
+<select name="status"><option>active</option><option>inactive</option></select><button>Create</button></form>{% endblock %}

@@ -12,6 +12,7 @@ urlpatterns = [
     path("forgot/", core_views.admin_forgot, name="forgot"),
     path("2fa/", core_views.admin_2fa, name="2fa"),
     path("404/", core_views.page_404, name="page-404"),
+    path("set-brand/", core_views.set_brand, name="set-brand"),
 
     # IPN per gateway  (index.php case 'ipn' -> ipn/<gateway_id>)
     path("ipn/<str:gateway_id>/", include("gateways.ipn_urls")),
@@ -30,7 +31,12 @@ urlpatterns = [
 
     # Maintenance / requirement helpers
     path("health/", lambda r: HttpResponse("ok"), name="health"),
+
+    # homepageRedirect (explicit ?page=homepageRedirect + traversal rewrite target)
+    path("", core_views.homepage_redirect, name="home"),
 ]
+
+handler404 = "core.views.page_404"
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

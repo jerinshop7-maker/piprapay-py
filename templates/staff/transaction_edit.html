@@ -1,1 +1,14 @@
-{% extends "base.html" %}{% block content %}<h1>Transaction {{ txn.ref }}</h1><p>{{ txn.status }} · {{ txn.amount }} {{ txn.currency }}</p><form method="post">{% csrf_token %}<button name="action" value="approve">Approve</button><button name="action" value="cancel">Cancel</button><button name="action" value="refund">Refund</button><button name="action" value="send_ipn">Send IPN</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Transaction {{ txn.ref }}</h1>
+<p>{{ txn.status }} · {{ txn.amount }} {{ txn.currency }} · Date: {{ txn.created_date }}</p>
+<h2>Transaction Details</h2>
+<ul><li>Gateway: {{ txn.gateway_id }}</li><li>Sender: {{ txn.sender }} ({{ txn.sender_key }} {{ txn.sender_type }})</li>
+<li>TrxID: {{ txn.trx_id }}</li>{% if txn.trx_slip %}<li>Slip: <a href="{{ txn.trx_slip }}">view</a></li>{% endif %}
+<li>Fee: {{ txn.processing_fee }} · Discount: {{ txn.discount_amount }} · Net local: {{ txn.local_net_amount }} {{ txn.local_currency }}</li></ul>
+<h2>Customer</h2><p>{{ customer.name }} · {{ customer.email }} · {{ customer.mobile }}</p>
+<h2>Metadata</h2><pre>{{ metadata }}</pre>
+<h2>More Info</h2><ul>{% for i in source_info %}<li>{{ i.label }}: {{ i.value }}</li>{% endfor %}</ul>
+<h2>Endpoint</h2><p>Return: {{ txn.return_url }} · Webhook: {{ txn.webhook_url }}</p>
+<form method="post">{% csrf_token %}
+<input name="sender" value="{{ txn.sender }}" placeholder="sender"> <input name="trx_id" value="{{ txn.trx_id }}" placeholder="trx_id"><br>
+<button name="action" value="approve">Approve</button><button name="action" value="cancel">Cancel</button><button name="action" value="refund">Refund</button><button name="action" value="send_ipn">Send IPN</button></form>
+<form method="post" onsubmit="return confirm('Delete?')">{% csrf_token %}<button name="delete" value="{{ txn.id }}">Delete</button></form>{% endblock %}

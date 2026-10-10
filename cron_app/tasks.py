@@ -12,6 +12,7 @@ Steps (same order as PHP):
 from __future__ import annotations
 
 import json
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -45,6 +46,31 @@ def release_lock() -> None:
         pass
 
 
+def _php_version_compare(a: str, b: str) -> int:
+    """Mirror PHP version_compare() for dotted numeric codes: -1/0/1."""
+    def parts(s: str):
+        out = []
+        for chunk in re.split(r"[.\-+_]", str(s)):
+            m = re.match(r"\d+", chunk)
+            out.append(int(m.group(0)) if m else 0)
+        return out
+
+    pa, pb = parts(a), parts(b)
+    for x, y in zip(pa, pb):
+        if x != y:
+            return 1 if x > y else -1
+    if len(pa) != len(pb):
+        longer, shorter = (pa, pb) if len(pa) > len(pb) else (pb, pa)
+        if any(v != 0 for v in longer[len(shorter):]):
+            return 1 if len(pa) > len(pb) else -1
+    return 0
+
+
+def _leading_int(raw, default: int = 1) -> int:
+    m = re.match(r"\s*[+-]?\d+", str(raw or ""))
+    return int(m.group(0)) if m else default
+
+
 def check_updates() -> None:
     auto = get_env("system-settings-automatic_update")
     if auto != "yes":
@@ -63,12 +89,14 @@ def check_updates() -> None:
     try:
         manifest = requests.get(settings.PIPRAPAY_UPDATE_MANIFEST_URL, timeout=15).json()
         channel = get_env("system-settings-update_channel") or "stable"
-        if channel not in ("stable", "beta"):
+        if channel in ("", "--", "stable"):
             channel = "stable"
+        else:
+            channel = "beta"
         ch = (manifest.get("channels") or {}).get(channel) or {}
         current = settings.PIPRAPAY_VERSION["version_code"]
         latest = ch.get("latest_version_code")
-        if latest and str(latest) > str(current):
+        if latest and _php_version_compare(str(latest), str(current)) > 0:
             hooks.do_action("system.update.available", {
                 "current_version_name": settings.PIPRAPAY_VERSION["version_name"],
                 "current_version_code": current,
@@ -76,6 +104,8 @@ def check_updates() -> None:
                 "latest_version_code": latest})
             set_env("last-update-version-name", ch.get("latest_version_name", ""))
             set_env("last-update-version", str(latest))
+            if ch.get("hash"):
+                set_env("last-update-version-hash", str(ch["hash"]))
         else:
             set_env("last-update-version-name", settings.PIPRAPAY_VERSION["version_name"])
             set_env("last-update-version", str(current))
@@ -117,7 +147,7 @@ def verify_pending() -> list:
                 "date": M.convert_utc_to_user_tz(row.created_date, brand.timezone if brand and brand.timezone not in ("--", "") else "Asia/Dhaka", "%b %d, %Y %I:%M %p")}
         done.append(item)
         if row.webhook_url and row.webhook_url != "--":
-            WebhookLog.objects.create(ref=str(row.id)[:15], brand_id=row.brand_id,
+            WebhookLog.objects.create(ref=row.ref[:15], brand_id=row.brand_id,
                                       payload=json.dumps(item), url=row.webhook_url)
     if done:
         hooks.do_action("transactions.updated", done)
@@ -137,17 +167,22 @@ def refresh_currency() -> None:
         except (ValueError, TypeError):
             pass
         set_env("last-auto-exchange", now, brand.brand_id)
+        if last in ("--", "", None):
+            # PHP initialises the stamp but skips the fetch on this run.
+            continue
         jobs.append(brand)
 
     def _fetch(brand):
         try:
             url = f"https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{brand.currency_code.lower()}.json"
-            data = requests.get(url, timeout=10).json()
+            # Mirror PHP: SSL verify off, 10s timeout.
+            data = requests.get(url, timeout=10, verify=False).json()
             rates = data.get(brand.currency_code.lower(), {})
             for code, rate in rates.items():
                 if code == brand.currency_code.lower() or not rate or rate <= 0:
                     continue
-                converted = round(1 / rate, 4)
+                # number_format(1/rate, 4): half-up, 4 decimals.
+                converted = format(round(1 / rate, 4), ".4f")
                 Currency.objects.filter(brand_id=brand.brand_id, code=code).update(rate=converted)
         except Exception:
             pass
@@ -162,8 +197,9 @@ def reconcile_balances() -> None:
 
 
 def retry_webhooks() -> None:
+    # PHP: (int) cast of the env value ('3abc' -> 3); ''/'--' -> 1.
     limit_raw = get_env("geneal-application-settings-webhook_attempts_limit")
-    limit = int(limit_raw) if str(limit_raw).isdigit() else 1
+    limit = _leading_int("--" if limit_raw in ("", "--", None) else limit_raw, 1)
     pendings = list(WebhookLog.objects.filter(status="pending", attempts__lt=limit).order_by("id")[:15])
     jobs = []
     for row in pendings:
@@ -189,15 +225,17 @@ def retry_webhooks() -> None:
 
 
 def run_cron() -> dict:
+    # PHP echoes {"status":"true","message":"Cron run executed."} BEFORE work,
+    # and returns the same shape even when the lock is fresh. Mirror exactly.
     if not acquire_lock():
-        return {"status": "locked"}
+        return {"status": "true", "message": "Cron run executed."}
     try:
         set_env("last-cron-invocation", M.get_current_datetime())
         check_updates()
-        verified = verify_pending()
+        verify_pending()
         refresh_currency()
         reconcile_balances()
         retry_webhooks()
-        return {"status": "true", "message": "Cron run executed.", "verified": len(verified)}
+        return {"status": "true", "message": "Cron run executed."}
     finally:
         release_lock()

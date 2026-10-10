@@ -1,1 +1,17 @@
-{% extends "base.html" %}{% block content %}<h1>SMS data</h1><ul>{% for s in page %}<li>{{ s.sender_key }} {{ s.trx_id }} {{ s.amount }} {{ s.status }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>SMS data</h1>
+<form method="get"><input name="q" value="{{ q }}"><input name="status" value="{{ status }}"><button>Filter</button></form>
+<form method="post">{% csrf_token %}<select name="bulk"><option value="approved">Approve</option><option value="awaiting-review">Review</option><option value="used">Used</option><option value="deleted">Delete</option></select><button>Apply</button>
+<ul>{% for s in page %}<li><input type="checkbox" name="selected_ids" value="{{ s.id }}"> {{ s.sender_key }} {{ s.trx_id }} {{ s.amount }} {{ s.status }} {{ s.entry_type }} {{ s.reason }}</li>{% endfor %}</ul></form>
+<h2>Add (automatic: paste SMS)</h2><form method="post">{% csrf_token %}
+<input type="hidden" name="entry_type" value="automatic">
+<select name="sender_key">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select>
+<textarea name="message" placeholder="Paste SMS"></textarea>
+<select name="status"><option>approved</option><option>awaiting-review</option></select>
+<button>Create</button></form>
+<h2>Add (manual)</h2><form method="post">{% csrf_token %}
+<input type="hidden" name="entry_type" value="manual">
+<select name="sender_key">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select>
+<select name="type"><option>Personal</option><option>Agent</option><option>Merchant</option></select>
+<input name="number" placeholder="number"> <input name="amount" placeholder="amount"> <input name="trx_id" placeholder="trx id">
+<select name="status"><option>approved</option><option>awaiting-review</option></select>
+<button>Create</button></form>{% endblock %}

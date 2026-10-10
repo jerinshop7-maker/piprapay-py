@@ -1,1 +1,7 @@
-{% extends "base.html" %}{% block content %}<h1>Currencies</h1><ul>{% for c in currencies %}<li>{{ c.brand_id }} {{ c.code }} {{ c.rate }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "base.html" %}{% block content %}<h1>Currencies</h1>
+<form method="post">{% csrf_token %}<button name="bulk_sync" value="1">Sync selected</button> <button name="bulk_import" value="1">Import defaults</button>
+<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
+<ul>{% for c in currencies %}<li><input type="checkbox" name="selected_ids" value="{{ c.id }}"> {{ c.brand_id }} {{ c.code }} {{ c.symbol }} {{ c.rate }}</li>{% endfor %}</ul></form>
+<h2>Upsert</h2><form method="post">{% csrf_token %}
+<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
+<input name="code" placeholder="CODE"> <input name="symbol" placeholder="$"> <input name="rate" placeholder="rate"><button>Save</button></form>{% endblock %}
