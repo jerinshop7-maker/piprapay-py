@@ -4,8 +4,11 @@ Step 1 (database) is `python manage.py migrate` (Django owns the schema, same
 23 pp_* tables). This command seeds: admin (BCRYPT via Django hasher) +
 permission row (full schema) + default brand + BDT currency, then prints the
 dashboard login target. Interactive; --noinput accepts env/defaults.
+Unattended deploys may set PP_ADMIN_PASSWORD (used only when creating the
+first admin; never printed).
 """
 import getpass
+import os
 
 from django.contrib.auth.hashers import make_password
 from django.core.management.base import BaseCommand
@@ -31,8 +34,8 @@ class Command(BaseCommand):
             self.stdout.write("Admin already exists — nothing to do.")
             return
         if options["noinput"]:
-            username, email, name, password = (options["username"], options["email"],
-                                              options["name"], generate_strong_password(12))
+            username, email, name = options["username"], options["email"], options["name"]
+            password = os.environ.get("PP_ADMIN_PASSWORD") or generate_strong_password(12)
         else:
             username = input("Admin username [admin]: ") or "admin"
             email = input(f"Admin email [{options['email']}]: ") or options["email"]

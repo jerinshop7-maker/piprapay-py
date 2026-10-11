@@ -69,7 +69,9 @@ MySQL (legacy reuse): set `DB_ENGINE=django.db.backends.mysql DB_NAME=.. DB_USER
   `gateways/lang_data.json` (regenerate via `tools/extract_gateway_lang.py`).
   Real HTTP for the 13 API gateways lives in `gateways/api_gateways.py`
   (use `requests`, never `urllib` directly in plugins). Nagad RSA uses
-  `cryptography`; image uploads use `Pillow` (all in requirements.txt). Static
+  `cryptography`; image uploads use `Pillow` (all in requirements.txt). Serving
+  uses `gunicorn` and Postgres uses `psycopg[binary]` (both in requirements.txt;
+  `DATABASE_URL` is parsed by `config/settings.py` with stdlib only). Static
   assets are served by `WhiteNoise` (`whitenoise.middleware.WhiteNoiseMiddleware`
   + `CompressedStaticFilesStorage`); re-run `collectstatic` after changing
   `static/` or `templates/` asset references.

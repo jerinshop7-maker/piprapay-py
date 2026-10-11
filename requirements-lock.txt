@@ -5,8 +5,11 @@ bcrypt==5.0.0
 cffi==2.1.1
 cryptography==50.0.2
 Django==5.2.18
+gunicorn==23.0.0
 numpy==2.5.3
 pillow==12.3.0
+psycopg==3.3.6
+psycopg-binary==3.3.6
 pycparser==3.0
 requests==2.34.2
 sqlparse==0.6.0

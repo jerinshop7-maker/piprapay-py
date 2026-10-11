@@ -32,6 +32,33 @@ Admin.objects.create(a_id=generate_item_id(), full_name='Admin', username='admin
 
 Login at `/login/`, panel at `/admin/dashboard/`.
 
+## Deploying on Railway
+
+`Procfile` → `start.sh`: `migrate` → `pp_install --noinput` (first boot only,
+no-op afterwards) → `collectstatic` → `gunicorn` on `$PORT`. Set these service
+variables (production environment):
+
+```bash
+DATABASE_URL=${{Postgres.DATABASE_URL}}   # reference the Postgres service
+DJANGO_SECRET_KEY=<random 50+ chars>      # required with DJANGO_SECURE=1
+DJANGO_ALLOWED_HOSTS=<service-domain>     # no '*' with DJANGO_SECURE=1
+DJANGO_SECURE=1
+DJANGO_CSRF_ORIGINS=https://<service-domain>  # else admin/payer POSTs 403
+PP_ADMIN_USER=admin                    # first-boot seed only
+PP_ADMIN_EMAIL=admin@example.com       # first-boot seed only
+PP_ADMIN_PASSWORD=<strong password>    # first-boot seed only; delete afterwards
+```
+
+Then `railway up <repo-dir> --service piprapay`, generate a domain
+(`railway domain`), and log in at `https://<service-domain>/login/`.
+Delete `PP_ADMIN_PASSWORD` once the admin logs in.
+
+Notes: `SECURE_PROXY_SSL_HEADER` is set automatically with `DJANGO_SECURE=1`
+(TLS terminates at Railway's proxy). `media/` uploads (gateway logos, payment
+slips) live on ephemeral disk — attach a Railway volume at `/app/media` if
+they must survive redeploys. SQLite (`db.sqlite3`) is dev-only; production
+uses the Postgres service above.
+
 ## 100% comparison matrix
 
 ### Routes (`index.php` → `config/urls.py`)

@@ -3,4 +3,6 @@ requests>=2.31,<3
 Pillow>=10,<13
 cryptography>=41,<51
 bcrypt>=4,<6
+gunicorn>=21,<24
+psycopg[binary]>=3.1,<4
 whitenoise>=6,<7

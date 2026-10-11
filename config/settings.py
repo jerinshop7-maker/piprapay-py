@@ -86,6 +86,19 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 _DB_ENGINE = os.environ.get("DB_ENGINE", "django.db.backends.sqlite3")
+_DB_URL = os.environ.get("DATABASE_URL", "")
+# Railway/Heroku-style DATABASE_URL (e.g. postgres://user:pass@host:port/name).
+# Parsed with stdlib only; takes precedence over the individual DB_* vars.
+if _DB_URL:
+    from urllib.parse import unquote, urlparse
+    _u = urlparse(_DB_URL)
+    _DB_ENGINE = {"postgres": "django.db.backends.postgresql",
+                  "postgresql": "django.db.backends.postgresql"}.get(_u.scheme, _DB_ENGINE)
+    os.environ["DB_NAME"] = unquote(_u.path[1:])
+    os.environ["DB_USER"] = unquote(_u.username or "")
+    os.environ["DB_PASSWORD"] = unquote(_u.password or "")
+    os.environ["DB_HOST"] = _u.hostname or ""
+    os.environ["DB_PORT"] = str(_u.port or "")
 DATABASES = {
     "default": {
         "ENGINE": _DB_ENGINE,
@@ -130,6 +143,10 @@ SESSION_COOKIE_HTTPONLY = True
 _SECURE = os.environ.get("DJANGO_SECURE", "0") == "1"
 validate_production_settings(_SECURE, SECRET_KEY, ALLOWED_HOSTS)
 SECURE_SSL_REDIRECT = _SECURE
+if _SECURE:
+    # TLS is terminated at the hosting proxy (Railway); trust its proto header
+    # so redirects/absolute URLs use https instead of looping back to http.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = _SECURE
 CSRF_COOKIE_SECURE = _SECURE
 if _SECURE:
