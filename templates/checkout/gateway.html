@@ -3,7 +3,10 @@
 <style>.btn-primary,.payment-form-btn{background-color:{{ gateway.btn_color|default:"#5f38f9" }};color:{{ gateway.btn_text_color|default:"#FFFFFF" }};}
 .payment-instructions{border-color:{{ gateway.primary_color|default:"#5f38f9" }};}
 #toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:.25rem;z-index:99;}
-.pp-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;}</style>
+.pp-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+.pp-modal-content{background:#fff;padding:1rem;border-radius:.5rem;animation:bpZoomIn .2s ease;}
+@keyframes bpZoomIn{from{transform:scale(.9);}to{transform:scale(1);}}
+.pp-close{color:#e00;cursor:pointer;float:right;font-size:1.25rem;}</style>
 <h1>{{ gateway.display }}</h1>
 <p><a href="./">Back to checkout</a></p>
 {% if supported_langs %}<p><select id="gw-lang" onchange="location.href='?gateway={{ gateway.gateway_id }}&lang='+this.value">
@@ -15,7 +18,7 @@
 {% if s.icon %}{{ s.icon|safe }}{% else %}<div class="dot"></div>{% endif %}
 <p>{{ s.text|safe }}
 {% if s.copy and s.value %} <span class="button-icon" onclick="copy_value('{{ s.value|escapejs }}')">[copy]</span>{% endif %}
-{% if s.action %}{% if s.action.type == "image" and s.action.value %} <span class="button-icon" onclick="pp_show_image('{{ s.action.value|escapejs }}')">[qr]</span>
+{% if s.action %}{% if s.action.type == "image" and s.action.value %} <span class="button-icon" onclick="pp_show_image('{{ s.action.value|escapejs }}')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M7 17l0 .01" /><path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M7 7l0 .01" /><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M17 7l0 .01" /><path d="M14 14l3 0" /><path d="M20 14l0 .01" /><path d="M14 14l0 3" /><path d="M14 20l3 0" /><path d="M17 17l3 0" /><path d="M20 17l0 3" /></svg></span>
 {% else %}<style>.li-{{ s.row|default:forloop.counter }}{display: none !important;}</style>{% endif %}{% endif %}
 </p></li>{% endfor %}</ol>
 <div id="pp-image-modal" class="pp-modal" style="display:none;">

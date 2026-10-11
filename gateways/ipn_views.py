@@ -20,7 +20,7 @@ from gateways.registry import get_gateway
 from themes.twenty_six import get_theme
 
 
-def _brand_info(brand: Brand | None) -> dict:
+def _brand_info(brand: Brand | None, language: str = "") -> dict:
     # PHP passes the RAW name (no '--' fallback) in the actually-dispatched
     # $response['brand']; logo/favicon fall back only on '--'.
     if not brand:
@@ -63,9 +63,23 @@ def ipn_entry(request, gateway_id: str):
         return _invalid()
 
     theme = get_theme(brand.theme)
-    language = theme.resolve_language(brand.language or "en")
+    # resolveModuleLanguage(brand.language, GATEWAY langs): the plugin's
+    # supported_languages win when present, else the theme's.
+    supported = plugin.supported_languages() if plugin else {}
+    if not supported:
+        supported = theme.supported_languages()
+    raw = (brand.language or "").strip()
+    language = raw if raw in supported else ("en" if "en" in supported else next(iter(supported), "en"))
     options = gateway_options(gw.gateway_id, gw.brand_id)
     info = theme.build_lang(language)
+    try:
+        raw_body = request.body
+    except Exception:
+        raw_body = b""
+    try:
+        post_data = request.POST.dict()
+    except Exception:
+        post_data = {}
     data = {
         "gateway": {"gateway_id": gw.gateway_id, "slug": gw.slug, "name": gw.name,
                     "display": gw.display, "logo": gw.logo, "currency": gw.currency,
@@ -78,14 +92,14 @@ def ipn_entry(request, gateway_id: str):
                     "primary_color": gw.primary_color, "text_color": gw.text_color,
                     "btn_color": gw.btn_color, "btn_text_color": gw.btn_text_color,
                     "options": options},
-        "brand": _brand_info(brand),
+        "brand": _brand_info(brand, language),
         "options": options,
-        "lang": theme.build_lang(language),
+        "lang": info,
         "query": request.GET.dict(),
-        "post": request.POST.dict(),
+        "post": post_data,
         "headers": {k[5:].replace("_", "-").lower(): v for k, v in request.META.items()
                     if k.startswith("HTTP_")},
-        "raw_body": request.body,
+        "raw_body": raw_body,
         "callback_url": request.build_absolute_uri(),
     }
     result = plugin.ipn(data) or {}

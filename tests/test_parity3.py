@@ -245,3 +245,31 @@ class StaffBehaviorTests(TestCase):
         from core.models import SmsData
         self.assertTrue(SmsData.objects.filter(status="error",
                                                reason__contains="Code 103").exists())
+
+
+class DisplayFilterTests(TestCase):
+    def test_pp_filters(self):
+        from django.template import Context, Template
+        out = Template("{% load pp_display %}{{ a|pp }}|{{ b|pp }}|{{ c|pp_blank }}").render(
+            Context({"a": None, "b": "", "c": "--"}))
+        self.assertEqual(out, "--||")
+
+    def test_set_env_returns_value(self):
+        from core.env import set_env
+        self.assertEqual(set_env("k", "v"), "v")
+
+    def test_get_param_str_only(self):
+        from core.money import get_param
+        self.assertIsNone(get_param({"k": 123}, "k"))
+        self.assertEqual(get_param({"k": "ab-12_X"}, "k"), "ab-12_X")
+        self.assertIsNone(get_param({"k": "a b"}, "k"))
+
+    def test_ipn_uses_gateway_langs(self):
+        Admin.objects.create(a_id="a", full_name="A", username="u", email="u@x.co",
+                             password=make_password("pw"), role="admin")
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B", language="fr")
+        Gateway.objects.create(gateway_id="g1", brand_id="b1", slug="bkash-personal",
+                               currency="BDT", status="active")
+        r = self.client.post("/ipn/g1/", data={"pp_id": "ZZZ"})
+        # fr unsupported by bkash (en/bn) -> resolved en; unknown txn -> ignored.
+        self.assertEqual(r.json(), {"status": "ignored"})

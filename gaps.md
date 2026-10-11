@@ -21,7 +21,6 @@ edge-case, or message-text-only difference.
 - [ ] **G1-011** — Maintenance middleware exempts `/admin/system-settings/`;
   PHP has no exemption. Accepted: the exemption is required to ever disable
   maintenance without SSH. _(MINOR)_
-- [ ] **G1-022** — IPN context language comes from the theme, not the gateway
   plugin's `supported_languages`/`lang_text` hooks. Open: no plugin consumes
   `lang` on the IPN path today, so no behavioral effect yet.
   `gateways/ipn_views.py:60-76`. _(MINOR)_
@@ -79,7 +78,6 @@ edge-case, or message-text-only difference.
 - [ ] **G3-011/018/020/022** — No cookie helpers, `getAdminPath`,
   MySQL-charset function, or `dateformat` default use (all callers pass
   explicit formats). Dead/low-use surface. _(MINOR)_
-- [ ] **G3-013/014/015** — No global NULL→`'--'` mapping on ORM read/insert/
   update (PHP `getData`/`insertData`/`updateData` coerce). Code consistently
   checks `in ("--", "", None)`;ADMIN_TEMPLATE_DEFAULT_FILTERS unset spots may
   render `None`/blank instead of `--`. Open display sweep. _(MINOR)_
@@ -121,7 +119,6 @@ edge-case, or message-text-only difference.
 - [ ] **G4-030/031/035/036/037/038** — Rate sanitize, extra `converted` key,
   missing-class dead render, stored-vs-computed display fees, float comma
   format. Cosmetic/edge. _(MINOR)_
-- [ ] **G4-040** — QR action shows `[qr]` text, not the Tabler SVG label.
   Presentational. _(MINOR)_
 - [ ] **G4-041/042/043/044/045/047/052/055** — Empty-`<ol>` render, spinner/
   restore/toast details, `verify/` vs same-URL POST, `action-v2` hidden
@@ -166,7 +163,6 @@ edge-case, or message-text-only difference.
 
 ## Area 7 — Staff admin N–Z + companion (adapter 5600-9671)
 
-- [ ] **G7-010** — SMS list does not map `"--"` cells to `""`. Open display
   minor. _(MINOR)_
 - [ ] **G7-011** — Bulk status transitions are whitelisted
   (approved/awaiting-review/used); PHP writes any verbatim actionID.
@@ -237,7 +233,6 @@ edge-case, or message-text-only difference.
   CSS (buttons now conditional), escaping (Django autoescape covers),
   total banner style, watermark (wired), `hitLanguage` direct links.
   _(MINOR)_
-- [ ] **G10-033** — QR modal without blur/zoom CSS. _(MINOR)_
 - [ ] **G10-034/041** — Receipt is printable HTML, not FPDF. Accepted
   (documented). _(MINOR)_
 - [ ] **G10-036/042** — Status SVG icons; canceled-table hide matches.
@@ -339,3 +334,11 @@ edge-case, or message-text-only difference.
 - Cron: verified `local_net`, explicit stamps, int codes.
 - Tests: 88 parity tests green; `?page=`, installer, pairing, webhook,
   cascade, gateway-condition coverage added.
+
+- Continuation pass: `pp`/`pp_blank` display filters (`core/templatetags/`)
+  normalize NULL/`--` cells (G3-013/014/015, G7-010); `get_param` requires
+  strings (G3-025); `set_env` returns the value (G4-005); QR action renders
+  the Tabler QR SVG + blurred modal (G4-040, G10-033); brand rows carry
+  deleteable flags with disabled checkboxes (G6-030); IPN language resolves
+  against gateway `supported_languages` (G1-022); IPN reads `request.body`
+  before POST (fixes form-POST IPNs like Binance).

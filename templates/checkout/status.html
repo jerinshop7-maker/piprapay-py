@@ -1,18 +1,19 @@
-{% extends "base.html" %}{% block title %}Payment {{ transaction.status|title }}{% endblock %}
+{% extends "base.html" %}
+{% load pp_display %}{% block title %}Payment {{ transaction.status|title }}{% endblock %}
 {% block content %}
 {% if transaction.status == "completed" %}<h1>{{ lang.payment_successful|default:"Payment Successful!" }}</h1>
 {% elif transaction.status == "pending" %}<h1>{{ lang.payment_pending|default:"Payment Pending" }}</h1>
 {% elif transaction.status == "refunded" %}<h1>{{ lang.payment_refunded|default:"Payment Refunded" }}</h1>
 {% elif transaction.status == "canceled" %}<h1>{{ lang.payment_canceled|default:"Payment Canceled" }}</h1>
 {% else %}<h1>Payment {{ transaction.status|title }}</h1>{% endif %}
-<p>Order {{ transaction.pp_id }}</p>
+<p>Order {{ transaction.pp_id|pp }}</p>
 {% if transaction.status == "completed" %}<p>{{ lang.change_status_completed|default:"" }}</p>
 {% elif transaction.status == "pending" %}<p>{{ lang.change_status_pending|default:"" }}</p>
 {% elif transaction.status == "refunded" %}<p>{{ lang.change_status_refunded|default:"" }}</p>
 {% elif transaction.status == "canceled" %}<p>{{ lang.change_status_cancled|default:"" }}</p>{% endif %}
 {% if transaction.status != "canceled" %}
 <table>
-<tr><td>{{ lang.payment_method|default:"Method" }}</td><td>{{ transaction.gateway|default:"N/A" }}</td></tr>
+<tr><td>{{ lang.payment_method|default:"Method" }}</td><td>{{ transaction.gateway|pp|default:"N/A" }}</td></tr>
 <tr><td>{{ lang.amount|default:"Amount" }}</td><td>{{ transaction.amount }} {{ transaction.currency }}</td></tr>
 <tr><td>{{ lang.discount|default:"Discount" }}</td><td>{{ transaction.discount_amount }} {{ transaction.currency }}</td></tr>
 <tr><td>{{ lang.processing_fee|default:"Fee" }}</td><td>{{ transaction.fee }} {{ transaction.currency }}</td></tr>

@@ -24,7 +24,9 @@ def get_env(option_name: str, brand_id: str = "both") -> str:
         return ""
 
 
-def set_env(option_name: str, value: str, brand_id: str = "both") -> None:
+def set_env(option_name: str, value: str, brand_id: str = "both") -> str:
+    value = str(value)
     EnvOption.objects.update_or_create(
-        option_name=option_name, brand_id=brand_id, defaults={"value": str(value)}
+        option_name=option_name, brand_id=brand_id, defaults={"value": value}
     )
+    return value

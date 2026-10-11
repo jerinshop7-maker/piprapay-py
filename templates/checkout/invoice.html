@@ -1,4 +1,5 @@
-{% extends "base.html" %}{% block title %}{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}{% endblock %}
+{% extends "base.html" %}
+{% load pp_display %}{% block title %}{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}{% endblock %}
 {% block content %}
 <h1>{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}</h1>
 <p><span class="badge {% if invoice.status == "paid" %}bg-green{% else %}bg-red{% endif %}">{{ invoice.status }}</span></p>
@@ -7,9 +8,9 @@
 <h2>{{ lang.bill_from|default:"Bill From" }}</h2>
 <p>{{ brand.name }}</p>
 <h2>{{ lang.bill_to|default:"Bill To" }}</h2>
-<p>{{ invoice.customer.name }} · {{ invoice.customer.email }} · {{ invoice.customer.mobile }}</p>
+<p>{{ invoice.customer.name|pp }} · {{ invoice.customer.email|pp }} · {{ invoice.customer.mobile|pp }}</p>
 <table><tr><th>{{ lang.description|default:"Description" }}</th><th>{{ lang.qty|default:"Qty" }}</th><th>{{ lang.unit_price|default:"Unit Price" }}</th><th>{{ lang.discount|default:"Discount" }}</th><th>{{ lang.tax|default:"Tax" }}</th><th>{{ lang.total|default:"Total" }}</th></tr>
-{% for it in items %}<tr><td>{{ it.description }}</td><td>{{ it.quantity }}</td><td>{{ it.unitPrice }} {{ invoice.currency }}</td><td>{{ it.discount }} {{ invoice.currency }}</td><td>{{ it.vat }} {{ invoice.currency }}</td><td>{{ it.total }} {{ invoice.currency }}</td></tr>{% endfor %}</table>
+{% for it in items %}<tr><td>{{ it.description|pp }}</td><td>{{ it.quantity }}</td><td>{{ it.unitPrice }} {{ invoice.currency }}</td><td>{{ it.discount }} {{ invoice.currency }}</td><td>{{ it.vat }} {{ invoice.currency }}</td><td>{{ it.total }} {{ invoice.currency }}</td></tr>{% endfor %}</table>
 {% if invoice.status == "paid" %}<p>{{ lang.total|default:"Total" }}: {{ grandTotal }} {{ invoice.currency }}</p>
 {% else %}<p><strong>{{ lang.total_due|default:"Total Due" }}: {{ grandTotal }} {{ invoice.currency }}</strong></p>{% endif %}
 <p>{{ lang.subtotal|default:"Subtotal" }}: {{ subtotal }} · {{ lang.shipping|default:"Shipping" }}: {{ invoice.shippingFee }} · {{ lang.tax|default:"Tax" }}: {{ totalVat }} · {{ lang.discount|default:"Discount" }}: {{ totalDiscount }}</p>

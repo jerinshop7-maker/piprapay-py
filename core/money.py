@@ -333,11 +333,12 @@ def dateformat(value: str, fmt: str = "%Y-%m-%d") -> bool:
 
 
 def get_param(params: dict, key: str):
-    """Mirror getParam(): trimmed [a-zA-Z0-9_-]+ allowlist or None."""
+    """Mirror getParam(): non-string input -> None; trimmed [a-zA-Z0-9_-]+
+    allowlist or None."""
     v = params.get(key)
-    if v is None:
+    if not isinstance(v, str):
         return None
-    v = str(v).strip()
+    v = v.strip()
     return v if re.fullmatch(r"[a-zA-Z0-9_-]+", v) else None
 
 
