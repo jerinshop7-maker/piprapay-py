@@ -21,6 +21,7 @@ urlpatterns = [
     path("brands/", views.brand_list, name="staff-brands"),
     path("brands/create/", views.brand_edit, name="staff-brand-create"),
     path("brands/<str:brand_id>/", views.brand_edit, name="staff-brand-edit"),
+    path("brand-setting/", views.brand_setting_index, name="staff-brand-setting"),
     path("brand-setting/general/", views.brand_general, name="staff-brand-general"),
     path("brand-setting/api/", views.brand_api, name="staff-brand-api"),
     path("brand-setting/currency/", views.brand_currency, name="staff-brand-currency"),

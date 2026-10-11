@@ -144,7 +144,7 @@ cron_app/      tasks.py, views.py, run_cron command
 themes/        twenty_six.py + lang_data.json (69 keys)
 templates/     base, core/, checkout/, staff/
 tests/         test_parity.py, test_parity2.py, test_parity3.py, test_gateways.py,
-               test_coverage.py, test_security.py, test_workflows.py (196 tests)
+               test_coverage.py, test_security.py, test_workflows.py, test_ui.py (205 tests)
 reports/       parity/security audit (findings.json, executive-summary.md, …)
 tools/         extract_gateway_lang.py (regenerates lang_data.json from PHP)
 AGENTS.md      agent operating manual

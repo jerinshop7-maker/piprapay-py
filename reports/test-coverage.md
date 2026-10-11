@@ -42,13 +42,35 @@ $ python -m compileall -q .                              -> exit 0
 $ python manage.py check                                 -> exit 0 (no issues)
 $ python manage.py makemigrations --check --dry-run      -> No changes detected (exit 0)
 $ python manage.py test tests
-Ran 196 tests in 50.485s
+Ran 205 tests in 54.075s
 OK
 ```
 
-All 196 tests pass; migration set is complete. (187 after the parity fixes,
+All 205 tests pass; migration set is complete. (187 after the parity fixes,
 +9 new tests added in this audit: failure-injection ×2, production-settings ×1,
-and mocked SSLCommerz / OxaPay / NOWPayments provider branches ×6.)
+and mocked SSLCommerz / OxaPay / NOWPayments provider branches ×6, plus
++9 UI regression tests in `tests/test_ui.py` from the gap-analysis pass below.)
+
+## 3b. Gap-analysis pass (post-UI): 3 new findings, 9 new tests
+
+A source-level re-audit after the full-UI pass (41 PHP admin files vs 44
+Django staff URLs; 7 twenty-six theme files vs 8 checkout templates; every
+POST form re-checked for CSRF; every new `|safe`/JS interpolation reviewed)
+found three genuine defects, all fixed with regression coverage:
+
+- **UI-1 (P1):** gateway verify forms had no CSRF token while
+  `verify_endpoint` is not exempt — real browsers 403 every payer Verify.
+  Fixed (`gateway.html` ×3 forms); proven by
+  `test_verify_endpoint_enforces_csrf` with an `enforce_csrf_checks` client.
+- **UI-2 (P3 parity):** no `/admin/brand-setting/` hub (upstream
+  `brand-setting/index.php`). Added view + route + template + sidebar link;
+  proven by hub render + per-card permission tests.
+- **UI-3 (P3):** unquoted `escapejs` URL broke the local 2FA QR fallback.
+  Fixed; covered by the my-account render sweep.
+
+`tests/test_ui.py` (9 tests): 29-page admin render sweep with shell markers,
+hub permission gating, dashboard chart-lib ordering, checkout theme markers,
+verify CSRF round-trip, and static-asset/WhiteNoise assertions.
 
 ## 4. Tests added / corrected in this audit
 

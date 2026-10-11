@@ -1,0 +1,24 @@
+{% extends "staff/base_admin.html" %}
+{% block title %}Brand Settings — PipraPay Admin{% endblock %}
+{% block pretitle %}Brand Settings{% endblock %}
+{% block pagetitle %}Brand Settings{% endblock %}
+{% block admin_content %}
+<div class="card"><div class="card-header"><h3 class="card-title">All Settings</h3></div>
+<div class="card-body"><div class="row g-3">
+{% for title, url, desc in cards %}<div class="col-md-4">
+<a href="{{ url }}" class="card h-100 card-link">
+<div class="card-body">
+<div class="d-flex align-items-center">
+<div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:50px;height:50px;">
+<svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="M4.9 4.9l2.1 2.1"/><path d="M17 17l2.1 2.1"/><path d="M19.1 4.9l-2.1 2.1"/><path d="M7 17l-2.1 2.1"/></svg>
+</div>
+<div class="ps-3">
+<h5 class="card-title m-0 mb-1 fw-medium text-primary">{{ title }}</h5>
+<div class="text-secondary small">{{ desc }}</div>
+</div>
+</div>
+</div>
+</a>
+</div>{% empty %}<div class="col-12"><p class="text-secondary mb-0">No brand-setting sections available for your role.</p></div>{% endfor %}
+</div></div></div>
+{% endblock %}

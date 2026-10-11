@@ -8,7 +8,7 @@
     "baseline_established": true,
     "baseline_note": "Port targets v3.0.0-beta; only upstream tag is v3.0.0. Same generation; single comparison valid.",
     "tests_before": {"count": 187, "failures": 10, "errors": 1},
-    "tests_after": {"count": 196, "failures": 0, "errors": 0}
+    "tests_after": {"count": 205, "failures": 0, "errors": 0}
   },
   "findings": [
     {
@@ -206,7 +206,7 @@
       "file": "core/models.py; README.md",
       "lines": "4-8; layout section",
       "upstream": "db.sql (varchar(20) dates)",
-      "observed": "models docstring claims an existing PipraPay MySQL DB is reusable without data migration, but created_date/updated_date are varchar upstream vs DateTimeField here. README listed 108 tests / 4 test files (now 196 / 7).",
+      "observed": "models docstring claims an existing PipraPay MySQL DB is reusable without data migration, but created_date/updated_date are varchar upstream vs DateTimeField here. README listed 108 tests / 4 test files (now 205 / 8).",
       "expected": "Accurate docs.",
       "impact": "Operator confusion; misleading reuse claim.",
       "reproduction": "grep counts",
@@ -294,6 +294,57 @@
       "fix": "Added validate_production_settings() invoked when DJANGO_SECURE=1.",
       "regression_test": "tests/test_workflows.py::ProductionSettingsTests",
       "verification": "fixed; test passes",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "UI-1",
+      "category": "CONFIRMED_BUG",
+      "severity": "P1",
+      "confidence": "HIGH",
+      "file": "templates/checkout/gateway.html",
+      "lines": "verify forms (automation/manual-slip/manual-trxid)",
+      "upstream": "pp-content/pp-modules/pp-gateways action-v2 transaction-verify (no CSRF concept in PHP)",
+      "observed": "The three gateway verify forms POST via fetch() with no CSRF token while verify_endpoint has no csrf_exempt, so real browsers (which enforce CSRF, unlike Django's default test client) get HTTP 403 on every payer Verify/Submit click. Invoice and payment-link fetch forms already carried tokens.",
+      "expected": "Payer verification succeeds in a real browser.",
+      "impact": "All automation/manual gateway payer verifications broken in production; payer sees 'Request Error'.",
+      "reproduction": "tests/test_ui.py::CheckoutRenderTests::test_verify_endpoint_enforces_csrf (enforce_csrf_checks client: 403 without token, 200 JSON with token)",
+      "fix": "Added {% csrf_token %} to all three verify forms (FormData submits it).",
+      "regression_test": "tests/test_ui.py::CheckoutRenderTests::{test_gateway_verify_form_carries_csrf_token,test_verify_endpoint_enforces_csrf}",
+      "verification": "fixed; tests pass",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "UI-2",
+      "category": "PARITY_GAP",
+      "severity": "P3",
+      "confidence": "HIGH",
+      "file": "staff/urls.py; staff/views.py; templates/staff/brand_setting.html",
+      "lines": "n/a (new)",
+      "upstream": "pp-content/pp-admin/pp-root/brand-setting/index.php (All Settings hub, 5 cards)",
+      "observed": "No /admin/brand-setting/ landing page existed; the five sub-pages were reachable only via the sidebar dropdown. Upstream has an 'All Settings' hub with per-resource permission gating.",
+      "expected": "Hub page with General/API/Themes/FAQ/Currency cards.",
+      "impact": "Minor navigation gap; direct /admin/brand-setting/ URL 404'd.",
+      "reproduction": "tests/test_ui.py::AdminRenderTests::{test_brand_setting_hub_lists_five_sections,test_brand_setting_hub_respects_resource_permissions}",
+      "fix": "Added brand_setting_index view (brand_settings page gate + per-card resource view checks), route, template, and sidebar 'All Settings' link.",
+      "regression_test": "tests/test_ui.py::AdminRenderTests (hub cases)",
+      "verification": "fixed; tests pass",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "UI-3",
+      "category": "CONFIRMED_BUG",
+      "severity": "P3",
+      "confidence": "HIGH",
+      "file": "templates/staff/my_account.html",
+      "lines": "qr-local script",
+      "upstream": "n/a (port-only progressive enhancement)",
+      "observed": "Local QRCode fallback rendered {text: <unquoted URL>} — a JS syntax error, so the in-browser 2FA QR never drew (the external qrserver image still showed).",
+      "expected": "Valid JS string literal.",
+      "impact": "Cosmetic; external QR image unaffected.",
+      "reproduction": "template review (no dedicated test; covered by my-account render sweep)",
+      "fix": "Quoted the escapejs output: {text: \"{{ qr_url|escapejs }}\"}.",
+      "regression_test": "tests/test_ui.py::AdminRenderTests::test_all_admin_pages_render_with_shell (/admin/my-account/)",
+      "verification": "fixed; suite passes",
       "status": "RESOLVED"
     }
   ]

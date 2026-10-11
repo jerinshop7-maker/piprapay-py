@@ -4,7 +4,7 @@ Prioritized, dependency-aware. Severity/labels follow `findings.json`.
 
 ## Release gates (must hold before any production claim)
 - G1 — `python manage.py check`, `makemigrations --check`, and `test tests` are
-  green. **Met** at audit time (196/196).
+  green. **Met** at audit time (205/205).
 - G2 — No P0/P1 findings open. **Met** (F-GW-1 fixed).
 - G3 — `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_SECURE=1` set and a
   production DB (MySQL/PostgreSQL) exercised. **Not met.**
@@ -57,7 +57,7 @@ Return HTTP 403 to match `staff-management/edit.php`.
 
 ## P3 — Documentation (DOC-1)
 - Fix the `core/models.py` docstring reuse claim (timestamps are not wire-compatible).
-- Refresh README test inventory (108 → 196; add `test_coverage|security|workflows`) — **done**: README now lists 196 tests / 7 modules.
+- Refresh README test inventory (108 → 196; add `test_coverage|security|workflows`) — **done**: README now lists 196 tests / 7 modules; UI pass added `test_ui.py` (9 tests, 205 total / 8 modules).
 - Add a "production deployment" section distinct from the quickstart.
 - Record this audit's four fixes.
 

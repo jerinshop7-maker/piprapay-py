@@ -45,7 +45,7 @@
 <script>
 try {
   var el = document.getElementById('qr-local');
-  if (el && typeof QRCode !== 'undefined') { new QRCode(el, {text: {{ qr_url|escapejs }}, width: 200, height: 200}); }
+  if (el && typeof QRCode !== 'undefined') { new QRCode(el, {text: "{{ qr_url|escapejs }}", width: 200, height: 200}); }
 } catch (e) {}
 </script>
 {% endif %}

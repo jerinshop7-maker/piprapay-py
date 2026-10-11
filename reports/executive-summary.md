@@ -2,8 +2,8 @@
 
 ## Verdict
 **CONDITIONAL.** The port's source lineage is established and its breadth is
-genuine (48 gateways, 23 tables, ~90 routes, 196 tests green). Four real defects
-were found and fixed with regression coverage during this audit, one of them
+genuine (48 gateways, 23 tables, ~90 routes, 205 tests green). Nine confirmed
+findings were fixed with regression coverage during this audit, one of them
 **financial-integrity relevant**. On the strength of code review + unit tests
 alone the port is **not** production-ready: no live-provider validation, no
 non-SQLite database run, and unresolved P2 security/config items remain.
@@ -29,14 +29,14 @@ non-SQLite database run, and unresolved P2 security/config items remain.
 | SEC-3/SEC-5 | P2 | Admin zip import executes SQL over app root; gateway creds stored in clear. | Open (upstream parity) |
 | DOC-1 | P3 | Docs contradict code (legacy-DB reuse claim; stale test counts). | Open |
 
-Full detail: `findings.json` (17 findings: 6 resolved, 11 open), `security-audit.md`, `gateway-audit.md`.
+Full detail: `findings.json` (20 findings: 9 resolved, 11 open), `security-audit.md`, `gateway-audit.md`.
 
 ## Real execution results (not assumed)
 ```
 python -m compileall -q .                          exit 0
 python manage.py check                             exit 0 (no issues)
 python manage.py makemigrations --check --dry-run  No changes detected (exit 0)
-python manage.py test tests                        Ran 196 tests — OK
+python manage.py test tests                        Ran 205 tests — OK
 ```
 Baseline before fixes: 187 tests, 10 failures + 1 error (working tree); 108 OK at HEAD.
 This pass added a production-config fail-fast guard (`DJANGO_SECURE=1` now

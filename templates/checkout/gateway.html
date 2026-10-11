@@ -42,7 +42,7 @@ function failed(t, m){ var el = document.getElementById('verify-msg'); if (el) e
 </script>
 {% if gateway_html %}<div class="px-3">{{ gateway_html|safe }}</div>{% endif %}
 {% if gateway_type == "automation" %}
-<form class="payment-form-submit px-3 pb-2" method="POST" enctype="multipart/form-data">
+<form class="payment-form-submit px-3 pb-2" method="POST" enctype="multipart/form-data">{% csrf_token %}
 <input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
 <input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
 <div class="form-group mt-3" id="mobile-wrap" style="display:none">
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 {% elif gateway_type == "manual" %}
 {% if verify_by == "slip" %}
-<form class="payment-form-submit px-3 pb-2" method="POST" enctype="multipart/form-data">
+<form class="payment-form-submit px-3 pb-2" method="POST" enctype="multipart/form-data">{% csrf_token %}
 <input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
 <input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
 <div class="form-group mt-3">
@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", function(){
 });
 </script>
 {% else %}
-<form class="payment-form-submit px-3 pb-2" method="POST" enctype="multipart/form-data">
+<form class="payment-form-submit px-3 pb-2" method="POST" enctype="multipart/form-data">{% csrf_token %}
 <input type="hidden" name="gateway-id" value="{{ gateway.gateway_id }}">
 <input type="hidden" name="transaction-id" value="{{ transaction.pp_id }}">
 <div class="form-group mt-3">

@@ -1554,6 +1554,23 @@ BRAND_GENERAL_FIELDS = ("identify_name", "name", "support_email_address", "suppo
 
 @login_required
 @page_required("brand_settings")
+def brand_setting_index(request):
+    """Brand Settings hub (mirrors brand-setting/index.php): cards linking to
+    the five sub-pages, each gated by its resource view permission."""
+    cards = [
+        ("General Settings", "/admin/brand-setting/general/", "brand_settings", "Manage brand identity, timezone, tolerance and contact info."),
+        ("API Settings", "/admin/brand-setting/api/", "api_settings", "Create and revoke API keys and scopes."),
+        ("Theme Settings", "/admin/brand-setting/themes/", "theme_settings", "Activate the checkout theme and theme options."),
+        ("FAQ Settings", "/admin/brand-setting/faq/", "faq_settings", "Manage checkout FAQ entries."),
+        ("Currency Settings", "/admin/brand-setting/currency/", "currency_settings", "Manage currencies and exchange rates."),
+    ]
+    visible = [(t, u, d) for t, u, res, d in cards
+               if has_permission(request.pp_permissions, res, "view", request.pp_admin.role)]
+    return render(request, "staff/brand_setting.html", {"cards": visible})
+
+
+@login_required
+@page_required("brand_settings")
 def brand_general(request):
     brand = Brand.objects.filter(brand_id=_request_brand(request)).first() or Brand.objects.first()
     if request.method == "POST":

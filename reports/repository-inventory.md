@@ -71,7 +71,7 @@ finding `DEP-1`.
   `gateways/api_gateways.py`.
 - **Tests:** 7 modules under `tests/` (`test_parity.py`, `test_parity2.py`,
   `test_parity3.py`, `test_gateways.py`, `test_coverage.py`,
-  `test_security.py`, `test_workflows.py`). 196 tests collected, all passing
+  `test_security.py`, `test_workflows.py`, `test_ui.py`). 205 tests collected, all passing
   after this audit's fixes (108 at baseline HEAD).
 - **CI:** `.github/workflows/ci.yml` (new) — Python 3.12/3.13/3.14
   matrix: compileall, `check`, `makemigrations --check`, `check_requirements`,
