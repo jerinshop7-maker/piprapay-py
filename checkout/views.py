@@ -302,6 +302,7 @@ def checkout_payment(request, pp_id: str):
                               {"transaction": txn_ctx, "brand": _brand_info(brand, language=language), "gateway": gateway_ctx,
                                "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
                                "language": language, "supported_langs": supported_langs,
+                               "options": _theme_options(brand),
                                "gateway_html": result.get("html", result.get("action", ""))})
             _brand = Brand.objects.filter(brand_id=txn.brand_id).first()
             result = plugin.process_payment({"transaction": txn_ctx, "options": options,
@@ -333,7 +334,8 @@ def checkout_payment(request, pp_id: str):
                        "gateway_type": gtype or "automation",
                        "verify_by": _verify_by,
                        "instructions": steps, "plugin_lang": plugin_lang, "lang": lang,
-                       "language": language, "supported_langs": supported_langs})
+                       "language": language, "supported_langs": supported_langs,
+                       "options": _theme_options(brand)})
 
     gw_mfs = _gateway_list(brand, txn, "mfs")
     gw_bank = _gateway_list(brand, txn, "bank")

@@ -7,7 +7,9 @@
 <input name="full_name" placeholder="Full name" required>
 <input name="username" placeholder="Username" required>
 <input name="email" placeholder="Email" required>
-<input name="password" type="password" placeholder="Password" required>
+<input name="password" id="pw" type="password" placeholder="Password" required oninput="meter(this.value)">
+<div id="meter" style="height:8px;background:#eee;width:200px"><div id="meterfill" style="height:8px;width:0%"></div></div><small id="meterlabel"></small>
+<script>function meter(v){var s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[a-z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;var L=["None","Very Weak","Weak","Medium","Strong","Very Strong"];var C=["#ccc","#e00","#e60","#ec0","#6c0","#0a0"];document.getElementById("meterfill").style.width=(s*20)+"%";document.getElementById("meterfill").style.background=C[s];document.getElementById("meterlabel").textContent=L[s];}</script>
 <input name="password_confirm" type="password" placeholder="Confirm password" required>
 <button>Complete install</button></form>
 {% elif step == "complete" %}

@@ -114,8 +114,12 @@ MySQL (legacy reuse): set `DB_ENGINE=django.db.backends.mysql DB_NAME=.. DB_USER
   severity. Keep IDs stable — never renumber existing ones.
 - Priority order for clearing: BLOCKERs in Area 8 (money/security verify
   paths) first, then Areas 2/7 (API/admin behavior), then Area 10 (payer
-  UI), MINORs last. Accepted deviations stay listed — do not delete them
-  unless the design decision changes.
+  UI), MINORs last.
+- Verified permanent decisions live in `gaps.md` → Permanent design
+  deviations (no checkboxes) instead of as open items. Graduate an item
+  there — with its `ex Gx-xxx` tag and justification — only after proving
+  zero observable difference or a deliberate, documented decision. Never
+  re-add a checkbox for a graduated item unless the decision changes.
 
 ## 6. Gotchas from the PHP original
 

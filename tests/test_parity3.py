@@ -328,3 +328,95 @@ class CookieMirrorTests(TestCase):
         self.client.post("/login/", {"username": "root", "password": "pw"})
         r = self.client.post("/admin/gateways/g1/", {"display": "", "currency": "BDT"})
         self.assertEqual(Gateway.objects.get(gateway_id="g1").display, "bK")
+
+class SweepTests(TestCase):
+    def test_trailing_segments_ignored(self):
+        Admin.objects.create(a_id="a", full_name="A", username="u", email="u@x.co",
+                             password=make_password("pw"), role="admin")
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B")
+        Gateway.objects.create(gateway_id="g1", brand_id="b1", slug="bkash-personal",
+                               currency="BDT", status="active")
+        r = self.client.post("/ipn/g1/extra/path/", data={"pp_id": "ZZZ"})
+        self.assertEqual(r.json(), {"status": "ignored"})
+        r = self.client.get("/cron/badtok/extra/")
+        self.assertEqual(r.status_code, 404)
+        from django.contrib.auth.hashers import make_password as _mp
+        ApiKey.objects.create(brand_id="b1", name="k", api_key="K", expired_date="--",
+                              api_scopes='["create_payment"]')
+        r = self.client.post("/api/checkout/redirect/extra/", data="{}",
+                             content_type="application/json", HTTP_MHS_PIPRAPAY_API_KEY="K")
+        self.assertEqual(r.json()["error"]["code"], "INVALID_JSON_PAYLOAD")
+
+    def test_cron_404_html(self):
+        Admin.objects.create(a_id="a", full_name="A", username="u", email="u@x.co",
+                             password=make_password("pw"), role="admin")
+        r = self.client.get("/cron/nope/")
+        self.assertEqual(r.status_code, 404)
+        self.assertIn("text/html", r["Content-Type"])
+
+    def test_host_case_preserved(self):
+        from core.money import add_query_params
+        self.assertEqual(add_query_params("https://Example.COM:8443/p?x=1#frag", {"a": "b"}),
+                         "https://Example.COM/p?x=1&a=b")
+
+    def test_refund_candidate_order(self):
+        from gateways.api_gateways import BkashApiTokenizedGateway as B
+        base = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized"
+        self.assertEqual(B._refund_base_candidates(base),
+                         [base, "https://tokenized.pay.bka.sh/v1.2.0-beta",
+                          "https://tokenized.pay.bka.sh"])
+        self.assertTrue(B._is_aws_auth_error(
+            {"message": "Authorization header requires Credential"}))
+        self.assertFalse(B._is_aws_auth_error({"error": "Authorization header requires"}))
+
+    def test_rand_int_shapes(self):
+        import random
+        random.seed(1)
+        from gateways import api_gateways as ag
+        self.assertTrue(0 <= random.randint(0, 2 ** 31 - 1) < 2 ** 31)
+        refid = f"ORDER_{(format(1700000000000000, 'x'))[-13:].lower()}-BP-R1"
+        import re
+        self.assertRegex(refid, r"^ORDER_[0-9a-f]{13}-BP-R1$")
+
+    def test_mfs_key_no_trim(self):
+        from core.sms_engine import mfs_message_verified
+        self.assertFalse(mfs_message_verified(" bkash", "hello"))
+
+    def test_status_icons_and_receipt_conditions(self):
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B")
+        Admin.objects.create(a_id="a", full_name="A", username="u", email="u@x.co",
+                             password=make_password("pw"), role="admin")
+        Permission.objects.create(brand_id="b1", a_id="a", permission="{}")
+        Transaction.objects.create(brand_id="b1", ref="P9", customer_info="{}",
+                                   amount=100, currency="BDT", metadata="[]", status="completed")
+        html = self.client.get("/payment/P9/").content.decode()
+        self.assertIn("<svg", html)
+        self.assertIn("/payment/P9/receipt/", html)
+        Transaction.objects.create(brand_id="b1", ref="P8", customer_info="{}",
+                                   amount=100, currency="BDT", metadata="[]", status="initiated")
+        html = self.client.get("/payment/P8/").content.decode()
+        self.assertNotIn("/receipt/", html)
+
+    def test_gateway_logo_and_seo_and_watermark(self):
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B", logo="/media/x.png")
+        Admin.objects.create(a_id="a", full_name="A", username="u", email="u@x.co",
+                             password=make_password("pw"), role="admin")
+        from core.env import set_env
+        set_env("twenty-six-watermark_text", "WMB", "b1")
+        set_env("twenty-six-seo_title", "ST", "b1")
+        Gateway.objects.create(gateway_id="g9", brand_id="b1", slug="bkash-personal",
+                               display="bK", currency="BDT", status="active",
+                               logo="/media/g.png")
+        Transaction.objects.create(brand_id="b1", ref="P9", customer_info="{}",
+                                   amount=100, currency="BDT", metadata="[]", status="initiated")
+        html = self.client.get("/payment/P9/?gateway=g9").content.decode()
+        self.assertIn("/media/g.png", html)
+        self.assertIn("WMB", html)
+        self.assertIn("ST", html)
+        checkout = self.client.get("/payment/P9/").content.decode()
+        self.assertIn("/media/x.png", checkout)
+
+    def test_install_meter_and_logout(self):
+        r = self.client.get("/install/admin/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("meter(", r.content.decode())

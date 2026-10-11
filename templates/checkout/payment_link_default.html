@@ -1,4 +1,12 @@
-{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}{% endblock %}
+{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
+{% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
+{% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
+{% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
+{% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
+{% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
+<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
 {% block content %}
 <h1>{{ lang.payment_link|default:"Payment Link" }}</h1>
 <form id="pld-form" method="post" action="submit/">{% csrf_token %}
@@ -18,4 +26,5 @@ document.getElementById('pld-form').addEventListener('submit', async (e) => {
   else alert(d.title + ': ' + d.message);
 });
 </script>
+<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}

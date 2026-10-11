@@ -1,4 +1,12 @@
-{% extends "base.html" %}{% block title %}{{ gateway.display }} — {{ lang.checkout|default:"Checkout" }}{% endblock %}
+{% extends "base.html" %}{% block title %}{{ gateway.display }} — {{ lang.checkout|default:"Checkout" }}<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
+{% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
+{% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
+{% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
+{% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
+{% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
+<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
 {% block content %}
 <style>.btn-primary,.payment-form-btn{background-color:{{ gateway.btn_color|default:"#5f38f9" }};color:{{ gateway.btn_text_color|default:"#FFFFFF" }};}
 .payment-instructions{border-color:{{ gateway.primary_color|default:"#5f38f9" }};}
@@ -7,6 +15,7 @@
 .pp-modal-content{background:#fff;padding:1rem;border-radius:.5rem;animation:bpZoomIn .2s ease;}
 @keyframes bpZoomIn{from{transform:scale(.9);}to{transform:scale(1);}}
 .pp-close{color:#e00;cursor:pointer;float:right;font-size:1.25rem;}</style>
+{% if gateway.logo %}<img src="{{ gateway.logo }}" alt="" style="max-width:100px;max-height:40px">{% endif %}
 <h1>{{ gateway.display }}</h1>
 <p><a href="./">Back to checkout</a></p>
 {% if supported_langs %}<p><select id="gw-lang" onchange="location.href='?gateway={{ gateway.gateway_id }}&lang='+this.value">
@@ -121,4 +130,5 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 {% endif %}
 {% endif %}
+<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}

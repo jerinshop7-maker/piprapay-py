@@ -362,7 +362,7 @@ class AamarpayGateway:
             customer = json.loads((txn.get("customer_info") or "{}") if isinstance(txn.get("customer_info"), str) else "{}")
         except ValueError:
             customer = {}
-        payload = {"store_id": opts.get("store_id"), "tran_id": _rand_digits(12),
+        payload = {"store_id": opts.get("store_id"), "tran_id": random.randint(0, 2 ** 31 - 1),
                    "success_url": data.get("callback_url", ""), "fail_url": data.get("cancel_url", ""),
                    "cancel_url": data.get("cancel_url", ""),
                    "amount": txn.get("local_net_amount"), "currency": txn.get("local_currency"),
@@ -434,7 +434,7 @@ class BkashApiTokenizedGateway:
                 "mode": "0011", "amount": txn.get("local_net_amount"),
                 "currency": txn.get("local_currency"), "intent": "sale",
                 "payerReference": "BillPax",
-                "merchantInvoiceNumber": f"{random.randint(10**8, 10**9 - 1)}-BP-{txn.get('ref', '')}",
+                "merchantInvoiceNumber": f"{random.randint(0, 2 ** 31 - 1)}-BP-{txn.get('ref', '')}",
                 "callbackURL": data.get("callback_url", "")},
                 headers={"Content-Type": "application/json", "accept": "application/json",
                          "Authorization": token, "X-APP-Key": opts.get("app_key", "")},
@@ -566,25 +566,30 @@ class BkashApiTokenizedGateway:
 
     @staticmethod
     def _refund_base_candidates(base: str) -> list:
+        # Exact PHP order: full base, trailing-/tokenized stripped, host root,
+        # host/v1.2.0-beta, host/v1.2.0-beta/tokenized.
         cands = [base]
-        no_tokenized = base.replace("/tokenized", "")
-        if no_tokenized not in cands:
-            cands.append(no_tokenized)
-        m = re.match(r"(https?://[^/]+)((?:/v[\d.]+(?:-beta)?)?)((?:/tokenized)?/?)$", base)
-        if m:
-            host, ver = m.group(1), m.group(2)
-            for v in (ver, "/v1.2.0-beta", ""):
-                for t in ("", "/tokenized"):
-                    u = host + v + t
-                    if u not in cands:
-                        cands.append(u)
+        stripped = base[:-len("/tokenized")] if base.endswith("/tokenized") else base
+        if stripped not in cands:
+            cands.append(stripped)
+        m = re.match(r"(https?://[^/]+)", base)
+        host = m.group(1) if m else base
+        for u in (host, host + "/v1.2.0-beta", host + "/v1.2.0-beta/tokenized"):
+            if u not in cands:
+                cands.append(u)
         return cands
 
     @staticmethod
     def _is_aws_auth_error(data) -> bool:
         if not isinstance(data, dict):
             return False
-        blob = json.dumps(data)
+        message = data.get("message", "") or ""
+        raw = data.get("raw", "") or ""
+        if not isinstance(message, str):
+            message = ""
+        if not isinstance(raw, str):
+            raw = ""
+        blob = message + chr(10) + raw
         return "Authorization header requires" in blob and "Credential" in blob
 
     @staticmethod
@@ -677,11 +682,11 @@ class EpsGateway:
                 "customerPostcode": "0000", "customerCountry": "BD",
                 "productName": "Digital Products", "ValueA": txn.get("ref", "")},
                 headers={"Authorization": f"Bearer {token}", "x-hash": xhash}, timeout=TIMEOUT).json()
-        except Exception as e:
-            return {"action": "render", "html": f"<center>Gateway error: {e}</center>"}
+        except Exception:
+            return {"action": "render", "html": "<center>Invalid EPS response</center>"}
         if r.get("RedirectURL"):
             return {"action": "redirect", "url": r["RedirectURL"]}
-        return {"action": "render", "html": f"<center>Gateway error: {r}</center>"}
+        return {"action": "render", "html": "<center>EPS Initialize Error</center>"}
 
     def callback(self, data):
         opts = data.get("options", {})
@@ -836,8 +841,8 @@ class PathaopayMerchantApiGateway:
 
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
-        import uuid as _uuid
-        refid = f"ORDER_{_uuid.uuid4().hex[:10].upper()}-BP-{txn.get('ref', '')}"
+        import time as _time
+        refid = f"ORDER_{(format(int(_time.time() * 1000000), 'x') + _rand_digits(6))[-13:].lower()}-BP-{txn.get('ref', '')}"
         try:
             r = requests.post(self._base(opts) + "/api/v1/settlements/request-payment", json={
                 "amount": int(round(_float_or_0(txn.get("local_net_amount")) * 100)),

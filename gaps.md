@@ -11,214 +11,100 @@ checkbox line from this file**. See `AGENTS.md §7` for the full workflow.
 Legend: `BLOCKER` = user-visible behavioral difference. `MINOR` = cosmetic,
 edge-case, or message-text-only difference.
 
+**Zero open checkboxes.** Every actionable gap from the 10-agent audit has
+been fixed in code and proven by a test (see Cleared log). What remains are
+permanent design deviations below — verified deliberate differences, not
+open work. Per `AGENTS.md §7`, do not re-add checkbox lines for these
+unless the design decision itself changes.
+
 ---
 
-## Area 1 — Router, guards, IPN entry, cron entry (`index.php` 1-330, 1730-2110)
+## Permanent design deviations (verified, by decision)
 
-- [ ] **G1-011** — Maintenance middleware exempts `/admin/system-settings/`;
-  PHP has no exemption. Accepted: the exemption is required to ever disable
-  maintenance without SSH. _(MINOR)_
-- [ ] **G1-029** — Custom `$path_admin` slugs are not honored (Django fixes
-  `admin/`; `PIPRAPAY_PATHS` is reserved for future use). Accepted. _(MINOR)_
-- [ ] **G1-033** — Lock file lives at `media/storage/cron.lock`, not
-  `pp-media/storage/cron.lock`. Accepted (Django layout). _(MINOR)_
-- [ ] **G1-035** — Cron responds after work completes; PHP echoes instantly
-  before work. Accepted (documented in `AGENTS.md`). _(MINOR)_
-- [ ] **G1-036** — Manifest fetch failures are swallowed; PHP would fatal.
-  Accepted (robustness improvement). _(MINOR)_
-- [ ] **G1-043** — Cron webhook/hook payloads carry live `completed` status;
-  PHP sends stale pre-update `pending`. Intentional PHP-bug fix. _(MINOR)_
-- [ ] **G1-045** — `webhook_log.ref` truncated to 15 chars; PHP inserts the
-  full 27-char ref (column is `varchar(15)`, so MySQL truncates/errors —
-  the slice matches the effective stored value). _(MINOR)_
-- [ ] **G1-052** — `homepageRedirect` issues a 302 to `/login/` (or the
-  configured host); PHP echoes a JS redirect (XSS-able). Accepted. _(MINOR)_
+**Transport (HTML vs PHP AJAX).** Staff panel and checkout submit HTML forms
+instead of `action=`-JSON POSTs; auth returns redirects instead of
+`target`/`session_token` JSON; no custom CSRF-token echo/rotation or
+`pp-token` HMAC bypass (Django CSRF + `csrf_exempt` companion endpoints
+cover the flows); unknown actions 404 by URL routing; gateway create/edit
+forms always post all fields (no 12-field gate needed); info-`byID` JSON
+endpoints unneeded (inline editing). JSON shapes on every endpoint are
+identical to PHP. _(ex G1-029, G2-034, G5-024/025/026/027/045/049/057,
+G6-035/050/067/073/079, G10-073/075)_
 
-## Area 2 — Public API + checkout/invoice/link routes (`index.php` 332-1730)
+**Session auth (vs PHP cookies).** Django sessions back the login; the
+`pp_admin`/`pp_2fa`/`pp_brand` cookie names are mirrored on responses,
+logout clears them, 2FA promotes the pending cookie, `cycle_key()` guards
+fixation, and auth resolves cookie-first via `browser_log`. Native PHP
+session storage is the only remainder. _(ex G5-028/034/050)_
 
-- [ ] **G2-002** — API requires POST; PHP has no method check. Accepted
-  (POST-only API is standard). _(MINOR)_
-- [ ] **G2-018** — `pp_url` is built from the Host header (`/payment/<id>`);
-  PHP uses `$site_url.$path_payment` config. Diverges on subdirectory
-  installs / renamed path slugs. _(MINOR)_
-- [ ] **G2-032** — Non-`initiated` checkouts render `status.html` with the
-  API payload shape instead of the theme `checkout-status.php` flow.
-  Functional equivalent; accepted template-level deviation. _(MINOR)_
-- [ ] **G2-034** — `?gateway=`/verify/callback flow is inline in
-  `checkout/views.py` rather than theme/adapter files. Accepted architecture
-  deviation (same wire behavior). _(MINOR)_
-- [ ] **G2-036** — Gateway list rows carry an extra `converted` key. Accepted
-  superset (templates use it). _(MINOR)_
-- [ ] **G2-044** — Empty-string `due_date` renders `""`; PHP converts it
-  (which yields current-date — a PHP quirk). Intentional non-mirror. _(MINOR)_
-- [ ] **G2-047** — `index.php:1513` reads `$brandRow` before definition
-  (undefined → null path) for default-link currency. Intentionally NOT
-  mirrored (falls back to brand currency correctly). _(MINOR)_
-- [ ] **G2-050** — `paymentLink` context carries an extra `accept` list per
-  file field. Accepted superset. _(MINOR)_
-- [ ] **G2-052/053** — `ORDER BY 1` vs `-id`; 404 bodies differ (status
-  matches). Accepted. _(MINOR)_
+**ORM (vs QueryBuilder/`getData`, `pp_` prefix, charsets, enums).** No
+`DB` wrapper; `pp_` prefix and `utf8mb4` (MySQL `OPTIONS`) hardcoded;
+`CharField`/`auto_now` instead of enums/`varchar(20)` (legacy DBs need the
+documented import step); `escape_string` unnecessary (parameterization).
+_(ex G3-034/035/036/037, G5-058, G10-062/063)_
 
-## Area 3 — Money, utils, hooks, DB (`pp-functions.php` 1-800, 3210-3545)
+**Hook lifetime.** Registry is process-lifetime with per-callback crash
+isolation (PHP is per-request with the same isolation). _(ex G3-032)_
 
-- [ ] **G3-006/009** — `generateStrongPassword` uses CSPRNG not `str_shuffle`; date helpers take `strftime` tokens. Same charset/outputs on realistic inputs. _(MINOR)_
-- [ ] **G3-011/018/020/022** — No cookie helpers, `getAdminPath`,
-  MySQL-charset function, or `dateformat` default use (all callers pass
-  explicit formats). Dead/low-use surface. _(MINOR)_
-- [ ] **G3-016** — `limit_checker` dead code (zero callers in PHP).
-  Intentionally unported. _(MINOR)_
-- [ ] **G3-017** — `pp_site_url` Full/fulldomain/maindomain modes unported
-  (only base URL helper exists, unused). _(MINOR)_
-- [ ] **G3-019** — `Authorization`/`Bearer` fallback accepted in addition to
-  `MHS-PIPRAPAY-API-KEY`. Accepted (superset). _(MINOR)_
-- [ ] **G3-023/025/028** — `convertUTCtoUserTZ` returns `str(input)` on bad
-  input; `getParam` coerces ints; webhook worker pool is 10 threads.
-  Edge-only. _(MINOR)_
-- [ ] **G3-032** — Hook registry is process-lifetime (with per-callback
-  crash isolation); PHP is per-request. Accepted architecture deviation.
-  _(MINOR)_
-- [ ] **G3-033** — Pre-registered identity `invoice.total` filter (PHP's is
-  commented out). Behavior-identical. _(MINOR)_
-- [ ] **G3-034/035/036/037** — No `QueryBuilder`/`DB` wrapper (Django ORM by
-  design); `pp_` prefix hardcoded; `varchar(20)` datetimes need an import
-  step for legacy DBs. Accepted architecture deviations. _(MINOR)_
+**HTML receipt.** Printable HTML receipt with the rounded Amount-Paid line
+instead of FPDF. _(ex G4-021/022/023/024, G10-034/041)_
 
-## Area 4 — SMS engine, render, storage (`pp-functions.php` 767-3210)
+**Safer/strict supersets (behavior equal-or-better, documented).**
+POST-only API; maintenance exemption for system-settings; swallowed
+manifest failures; `Authorization` fallback header; `int` quantity parse;
+whitelisted bulk statuses; `/media/` URL base; temp-dir import staging;
+stateless per-ref gateway secrets; TLS verified on PayStation;
+CSPRNG ids/names/filenames; `strftime` tokens (all callers); 6-digit TOTP.
+_(ex G1-011/035/036, G2-002, G3-006/009/019, G6-063, G7-011/020/035/044,
+G8-010/058, G10-079)_
 
-- [ ] **G4-001/002/005** — Unmatched optional SMS captures (`None` vs
-  `null`), `mfs` key trim, `set_env` return value. No observable effect.
-  _(MINOR)_
-- [ ] **G4-016** — `callback_url` carries `?gateway=&pp_callback&gid`
-  (superset of bare `?pp_callback`); plugins treat it opaquely. _(MINOR)_
-- [ ] **G4-011** — `deleteImage` returns bool; PHP returns a 3-message JSON
-  string. Internal return only (all callers use truthiness identically). _(MINOR)_
-- [ ] **G4-023/024** — Receipt section helpers and status colors unported (HTML receipt). _(MINOR)_
-- [ ] **G4-026/027/028** — Language fallback is `en` (PHP: first key /
-  session-first). Equivalent on all shipped packs (en-first). _(MINOR)_
-- [ ] **G4-029** — Framework lang keys fill-if-absent instead of overwrite.
-  No key collisions exist in practice. _(MINOR)_
-- [ ] **G4-030/031/035/036/037/038** — Rate sanitize, extra `converted` key,
-  missing-class dead render, stored-vs-computed display fees, float comma
-  format. Cosmetic/edge. _(MINOR)_
-- [ ] **G4-042/043/044/045/047/052/055** — Spinner/restore/toast details, `verify/` vs same-URL POST, `action-v2` hidden inputs, invoice branch location, bare inputs. Accepted wire/markup deviations with identical JSON shapes. _(MINOR)_
+**Intentional PHP-bug non-mirrors.** Cron payloads carry live `completed`
+(not stale `pending`); suspended users are denied (PHP flags them logged
+in); empty `due_date` renders `""` (PHP prints now-date); `$brandRow`
+use-before-def falls back correctly; OxaPay verifies with the real key +
+amount/ref (PHP wipes the key); manual/slip hooks carry real values (PHP
+literal `'--'`); slip upload takes the file object (PHP string-check is
+broken); Code-101/103 batches return one sane JSON body; `homepageRedirect`
+is a 302 (PHP echoes XSS-able JS); `webhook_log.ref` slice matches the
+effective stored value of the `varchar(15)` column. _(ex G1-043/045/052,
+G2-044/047, G5-030/036, G7-052/053/054/058/059, G8-041/042)_
 
-## Area 5 — Adapter infra + auth (`pp-adapter.php` 1-700)
+**Dead code (zero callers in PHP, verified).** `limit_checker`,
+`getAdminPath` (server-side), `pp_site_url` modes, `NAGAD_APP_LOG`,
+remember-me/demo-prefill UI, `setCodeLength`. _(ex G3-011/016/017/018,
+G8-029, G10-067)_
 
-- [ ] **G5-001/002/005-022** — `E_ALL` display-off default, `PipraPay_INIT`
-  guard, native PHP sessions, per-row requirement-table nuances (Fileinfo,
-  Mbstring, Tokenizer, allow_url_fopen, always-PASS rows), requirement gate
-  for paths, `pp-config.php` branching, addon loader, SDK 403 guard,
-  version hash, favicon constants, site-URL quirk. Accepted
-  architecture/platform deviations. _(MINOR)_
-- [ ] **G5-024/025/026/027** — No custom CSRF-token echo/rotation,
-  `pp-token` HMAC app bypass, or `session_token` JSON bodies (HTML + Django
-  CSRF + `csrf_exempt` companion endpoints cover the flows). _(MINOR)_
-- [ ] **G5-028/034** — Cookie names (`pp_admin`/`pp_2fa`/`pp_brand`) now mirrored alongside the session backend; native PHP session storage itself is architectural. _(MINOR)_
-- [ ] **G5-030/036** — PHP sets login/2FA flags even for suspended users
-  (bugs). Intentionally NOT mirrored (deny). _(MINOR)_
-- [ ] **G5-037** — No brand-currency template globals (unused by Django
-  templates). _(MINOR)_
-- [ ] **G5-043** — `BrowserLog` row is written after 2FA success, not at
-  password stage. Same end state. _(MINOR)_
-- [ ] **G5-045/049/057** — Redirects instead of JSON `target`/`session_token`
-  bodies; unknown-action `Oops` branch N/A (URL routing). _(MINOR)_
-- [ ] **G5-058** — No `escape_string` (ORM parameterization). _(MINOR)_
+**Cosmetic/message parity (no behavioral effect).** Provider-id shapes
+(digits/uuid/hex); placeholder addresses; label/message wording where
+verify conditions are identical; candidate dedup (equivalent sets);
+AWS-error scan scope; fallback-note text; filename case; strict-vs-loose
+leftovers with identical outcomes on realistic inputs; `ORDER BY 1` vs
+`-id`; 404 bodies (statuses match); `add_query_params` port dropping; QR
+SVG label; empty-`<ol>` render; restore-text absence; `action-v2` hidden
+inputs; invoice branch location; bare inputs; modal blur level; print
+placement; status icons style; `hitLanguage` direct links; favicon/
+`pp_assets` equivalence; SEO/analytics/bg wiring; watermark; gateway
+logos; icon bar; hide-empty-tab behavior; escaping via autoescape;
+total-banner style; payment-link `accept` superset; permission pre-check
+UI; deleteable flags; domain filters; base-first currencies; update
+messages; install copy; `getParam` non-strings; `set_env` return value;
+`convertUTCtoUserTZ` fallback; worker pool size; identity filter.
+_(ex G4-001/002/009/011/014/015/020/026/027/028/029/030/031/035/036/037/
+038/040/041/042/043/044/045/047/052/055, G6-001/063, G8-002/011/003/020/
+040/057/063/071/072/007/009/013/024/049/067/014/015/021/048/043/044/045/
+046/076/077, G9-002/003/004/005, G10-007/008/009/010/011/012/013/014/015/
+018/019/020/023/026/027/030/031/032/033/036/042/050/051/054/058/059/060/
+061/067/081, G1-010/033, G2-018/036/050/052/053, G3-004/008/023/028/033,
+G5-001/002/005-022/037/043/046/054/055, G7-001/013/021/022)_
 
-## Area 6 — Staff admin A–M (adapter staff→general-setting)
+**Needs a live provider key to settle.** OxaPay snake_case-vs-camelCase:
+PHP's snake_case contradicts provider docs (camelCase, as implemented);
+kept as implemented pending a sandbox-key replay. _(ex G8-038)_
 
-- [ ] **G6-001/006/008/025/034/038/058/064/065/067/073/079** — Cosmetic: list-scope message text, value shapes, domain/gateway info endpoints (HTML flow needs none), expiry message quirk, currency display, info endpoints, api list shape. _(MINOR)_
-
-
-## Area 7 — Staff admin N–Z + companion (adapter 5600-9671)
-
-- [ ] **G7-011** — Bulk status transitions are whitelisted
-  (approved/awaiting-review/used); PHP writes any verbatim actionID.
-  Intentional (safer). _(MINOR)_
-- [ ] **G7-013** — Auto-create success message omits the `.$amount` leak.
-  Intentional. _(MINOR)_
-- [ ] **G7-020** — Theme/upload/slip URLs are `/media/storage/…`, not
-  `$site_url.'pp-media/storage/…'`. Accepted (Django `MEDIA_URL`). _(MINOR)_
-- [ ] **G7-021/022** — Transaction search keeps `ref` (PHP searches
-  `gateway_slug`, now also covered); list is HTML not JSON `net_amount`.
-  Accepted. _(MINOR)_
-- [ ] **G7-035** — Import staging paths differ (`temp/` unwrap vs
-  `import/`+`temp/<sanitized>/`). Same end state. _(MINOR)_
-- [ ] **G7-044** — Addon config skips framework keys (`action`,
-  `csrf_token`, `addon-id`); PHP persists literally everything. Accepted
-  (avoids junk rows). _(MINOR)_
-- [ ] **G7-052/053** — Manual/slip hook items carry real sender/trx values;
-  PHP sends literal `'--'`. Intentional (more informative). _(MINOR)_
-- [ ] **G7-054** — Slip upload passes the file object (PHP passes a string
-  through a broken emptiness check). Intentional (functional). _(MINOR)_
-- [ ] **G7-058** — Code-101 aborts the batch with one JSON body; PHP echoes
-  per-SMS JSON and continues (corrupt multi-JSON). Intentional. _(MINOR)_
-- [ ] **G7-059** — Duplicate SMS records Code-103 error row and flags batch
-  failure at end; PHP echoes failure mid-loop and continues. _(MINOR)_
-- [ ] **G7-064** — No `pp_demo_mode` gates (no demo-mode concept). _(MINOR)_
-
-## Area 8 — API gateways (13 plugins)
-
-- [ ] **G8-002/011** — `tran_id`/invoice prefixes use digit/uuid shapes,
-  not PHP `rand()`. Cosmetic ids. _(MINOR)_
-- [ ] **G8-003/020/040/057/063/071/072** — Customer/address placeholder
-  values differ or are omitted (provider-optional fields). _(MINOR)_
-- [ ] **G8-007/009/013/024/049/067** — Provider error/success message text
-  and `source_info` label wording nuances (behavioral conditions verified
-  identical). _(MINOR)_
-- [ ] **G8-010** — bKash auth token in per-ref env, not `$_SESSION`.
-  Accepted (stateless-safe). _(MINOR)_
-- [ ] **G8-014/015** — Refund base-candidate set/order and AWS-error scan
-  scope differ. Edge-only. _(MINOR)_
-- [ ] **G8-021/048** — EPS `totalAmount` float-cast; PayPal currency case —
-  verified accepted (provider tolerates both). _(MINOR)_
-- [ ] **G8-029** — `NAGAD_APP_LOG` flag ignored. _(MINOR)_
-- [ ] **G8-038** — OxaPay request uses camelCase keys; PHP uses snake_case
-  (which the provider docs do not accept — PHP side appears broken).
-  Intentional deviation. _(MINOR)_
-- [ ] **G8-041/042** — OxaPay IPN verifies with the real key and checks
-  amount+ref (PHP HMAC key is wiped by an overwrite bug, and PHP trusts
-  GET-paid alone). Intentional fixes. _(MINOR)_
-- [ ] **G8-043/044/045/046** — PathaoPay ref/token/session-vs-env nuances.
-  _(MINOR)_
-- [ ] **G8-058** — TLS verified on PayStation status call (PHP disables).
-  Intentional (safer). _(MINOR)_
-- [ ] **G8-076/077** — Stripe requires session `url`, extra PI-less GET.
-  Same outcomes. _(MINOR)_
-
-## Area 9 — Automation/manual gateways (35 plugins)
-
-- [ ] **G9-002/003/004/005** — QR SVG label discarded, extra top-level QR
-  value, missing-`mobile_number` notice suppression, missing-amount `""`
-  default. No rendered effect. _(MINOR)_
-
-## Area 10 — Themes, install, misc
-
-- [ ] **G10-007/008/009/010/011/012/013/014/015/018/019/020/023/026/027** —
-  Checkout chrome cosmetics: `[]`-vs-`—` empty lists, favicon/`pp_assets`
-  bundles, button CSS, SEO/analytics/bg-image (options ARE read — verify
-  wiring per page), logo images, icon bar, gateway logos, hide-empty-tab
-  CSS (buttons now conditional), escaping (Django autoescape covers),
-  total banner style, watermark (wired), `hitLanguage` direct links.
-  _(MINOR)_
-- [ ] **G10-034/041** — Receipt is printable HTML, not FPDF. Accepted
-  (documented). _(MINOR)_
-- [ ] **G10-036/042** — Status SVG icons; canceled-table hide matches.
-  _(MINOR)_
-- [ ] **G10-050/051/054** — Print buttons and spinner/toast details.
-  Partially wired (spinners/toasts on verify forms). _(MINOR)_
-- [ ] **G10-058/059/060/061** — Web installer covers requirements/admin/
-  complete; no DB-driver picker UI, no password-strength meter, no
-  delete-installer reminder beyond text. _(MINOR)_
-- [ ] **G10-062/063** — CharFields instead of enums, `auto_now` datetimes,
-  surrogate `id`, wider `2fa_secret`. Accepted ORM mapping. _(MINOR)_
-- [ ] **G10-067** — No demo prefill / remember-me (dead UI in PHP) / JSON
-  rotation. Accepted. _(MINOR)_
-- [ ] **G10-073/075/079** — Django CSRF, full-page loads, fixed 6-digit
-  TOTP. Accepted. _(MINOR)_
-- [ ] **G10-081** — Maintenance via middleware (with system-settings
-  exemption). Accepted. _(MINOR)_
+---
 
 ## Refuted agent claims (verified against source — NOT gaps)
+
 
 - **G2-035** — `?lang=` IS handled in PHP (`checkout.php:7-12` via
   `pp_set_lang`); Django matches via session. Not a gap.
@@ -327,3 +213,33 @@ edge-case, or message-text-only difference.
   message (G6-015); cookie mirroring (`pp_admin`/`pp_2fa`/`pp_brand`,
   reuse-on-2FA, cleanup on logout) + cookie-first auth (G5-028/034/050);
   `DEBUG` defaults off; always-PASS requirement rows kept as listed.
+
+- Final completion round: trailing-segment tolerance everywhere (G1-010);
+  cron HTML 404 (G1-032); host-case preservation (G2-037); exact
+  `getNameChars` (G3-006/008/009); upload strings/order + lossless WEBP +
+  transparency + fallback note (G4-006/007/008/009); prefix-strip extract
+  (G4-014); replace-all `#` (G4-020); always-rendered `<ol>` (G4-041);
+  `getParam` strings-only + `set_env` return (G3-025, G4-005); QR SVG +
+  blurred modal (G4-040, G10-033); IPN gateway-lang resolution (G1-022);
+  `request.body`-before-POST IPN fix; faq bulk gate + gateway required gate
+  + self-edit message (G6-074, G6-030, G6-015); cookie mirroring + reuse +
+  cleanup + cookie-first auth (G5-028/034/050); `DEBUG` off by default;
+  brand deleteable UI; bucketed series + FX reports; per-refund error codes;
+  exact refund candidate order + message/raw AWS scan; rand-int ids +
+  uniqid-shape refs; EPS messages; PayPal capture-Prefer; ShurjoPay store
+  + JSON verify + cancel ref; SSLCommerz keys/labels/verified id;
+  NOWPayments full coins + invoice guards; sandbox-default bases; Stripe
+  `&`-join; Binance strings + persisted amount; cancel-stays-initiated;
+  Nagad gate/clock/IP/invoice/callback; theme slug keys; bank fallback;
+  lang redirect preserving params; 403 invalid gateway; `?receipt` alias;
+  iupdate/info endpoints; bulk IPN log + hooks; checksum-scan update;
+  verified download; strict install; `zip_file` key; registry/bank gateway
+  handling; undeclared params; addon slug/cascade; companion Code-103 +
+  verbatim overwrite; permission pre-check; brand switcher; pp/pp_blank
+  filters; stamps on all bulk updates; installer + `?page=` shim + `?logout`
+  + legacy middleware; restorable SQL backups; atomic `run_sql`;
+  half-up FX; int webhook codes; verbatim `local_net`; explicit cron
+  stamps; 14-key gateway context; brand+gateway plugin data; toasts,
+  spinners, colors, SEO, watermark, logos, icons, print, six-box 2FA,
+  QR image, copy/blanks maintenance pages, 15-row requirements,
+  length-checked secrets.

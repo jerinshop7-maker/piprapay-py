@@ -121,7 +121,7 @@ FORMATS = {
 
 def mfs_message_verified(mfs: str, message: str):
     """Parse an MFS SMS. Returns {mfs,type,raw,...mapped} or False. Exact PHP port."""
-    key = (mfs or "").lower().strip()
+    key = (mfs or "").lower()
     if key not in FORMATS:
         return False
     msg = re.sub(r"\s+", " ", (message or "").strip())

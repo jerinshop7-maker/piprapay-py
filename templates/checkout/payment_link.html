@@ -1,4 +1,12 @@
-{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}{% endblock %}
+{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
+{% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
+{% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
+{% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
+{% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
+{% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
+<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
 {% block content %}
 {% if paymentLink.status != "active" %}
 <h1>{{ lang.product_not_active|default:"Product Not Active" }}</h1>
@@ -28,15 +36,17 @@
 {% else %}<input type="text" name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.required and f.required != "false" %} required{% endif %}>
 {% endif %}</div>
 {% endfor %}
-<button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+<button id="plBtn" type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
 <script>
 document.getElementById('pl-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
+  document.getElementById("plBtn").disabled = true;
   const d = await r.json();
   if (d.status === 'true') location.href = d.redirect;
   else alert(d.title + ': ' + d.message);
 });
 </script>
 {% endif %}
+<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}

@@ -1,6 +1,15 @@
 {% extends "base.html" %}
-{% load pp_display %}{% block title %}Payment {{ transaction.status|title }}{% endblock %}
+{% load pp_display %}{% block title %}Payment {{ transaction.status|title }}<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
+{% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
+{% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
+{% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
+{% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
+{% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
+<p>{{ options.watermark_text|default:"" }}</p>
+{% endblock %}
 {% block content %}
+<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/>{% if transaction.status == "completed" %}<path d="M8 12l3 3 5-6"/>{% elif transaction.status == "pending" %}<path d="M12 7v5l3 3"/>{% elif transaction.status == "refunded" %}<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>{% else %}<path d="M18 6L6 18M6 6l12 12"/>{% endif %}</svg>
 {% if transaction.status == "completed" %}<h1>{{ lang.payment_successful|default:"Payment Successful!" }}</h1>
 {% elif transaction.status == "pending" %}<h1>{{ lang.payment_pending|default:"Payment Pending" }}</h1>
 {% elif transaction.status == "refunded" %}<h1>{{ lang.payment_refunded|default:"Payment Refunded" }}</h1>
@@ -28,4 +37,5 @@
 {% endif %}
 {% endif %}
 {% if transaction.return_url and transaction.return_url != "--" and transaction.return_url != "" %}<p><a class="btn btn-primary" href="{{ transaction.return_url }}">{{ lang.go_to_site|default:"Go to Site" }}</a></p>{% endif %}
+<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}
