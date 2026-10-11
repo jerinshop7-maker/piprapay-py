@@ -15,6 +15,7 @@ urlpatterns = [
     path("payment-link/create/", views.payment_link_edit, name="staff-link-create"),
     path("payment-link/<str:ref>/", views.payment_link_edit, name="staff-link-edit"),
     path("gateways/", views.gateway_list, name="staff-gateways"),
+    path("gateways/create/", views.gateway_edit, name="staff-gateway-new"),
     path("gateways/create-bank/", views.gateway_edit, name="staff-gateway-create"),
     path("gateways/<str:gateway_id>/", views.gateway_edit, name="staff-gateway-edit"),
     path("brands/", views.brand_list, name="staff-brands"),

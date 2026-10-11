@@ -103,17 +103,22 @@ def ipn_entry(request, gateway_id: str):
         "callback_url": request.build_absolute_uri(),
     }
     result = plugin.ipn(data) or {}
-    if result.get("json") is not None:
-        return JsonResponse(result["json"])
     if result.get("verified"):
         from core.models import Transaction
         pp_ref = result.get("pp_ref") or (data["query"].get("pp_id") or data["post"].get("pp_id") or "")
         txn = Transaction.objects.filter(ref=pp_ref).first() if pp_ref else None
+        if txn and txn.brand_id != gw.brand_id:
+            return JsonResponse({"status": "ignored"})
         ok = False
         if txn:
             data["transaction"] = {"ref": txn.ref}
             ok = set_transaction_status(pp_ref, "completed", gateway_id,
                                         result.get("trx_id", ""), result.get("source_info", []))
+        # A verified gateway that also supplies an explicit JSON body (Binance
+        # IPN) must still complete the transaction before echoing it — PHP
+        # gateway ipn() calls pp_set_transaction_status() itself.
+        if result.get("json") is not None:
+            return JsonResponse(result["json"])
         if result.get("redirect"):
             from django.shortcuts import redirect
             target = result["redirect"]
@@ -122,6 +127,8 @@ def ipn_entry(request, gateway_id: str):
                 return redirect(f"/payment/{pp_ref}/")
             return redirect(target)
         return JsonResponse({"status": "ok" if ok else "not-matched"})
+    if result.get("json") is not None:
+        return JsonResponse(result["json"])
     if result.get("canceled") and result.get("pp_ref"):
         # Failed-verification cancel with a derived ref (shurjoPay):
         # PHP writes canceled. (User-abort callbacks stay initiated.)

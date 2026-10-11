@@ -30,7 +30,7 @@ def _q(value: Decimal, scale: int = SCALE) -> Decimal:
     return value.quantize(Decimal(1).scaleb(-scale), rounding=ROUND_DOWN)
 
 
-_NUMERIC_PREFIX = re.compile(r"\s*[+-]?(\d+(\.\d*)?|\.\d+)")
+_NUMERIC_PREFIX = re.compile(r"\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
 
 
 def money_sanitize(value) -> str:

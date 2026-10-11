@@ -45,14 +45,42 @@ def _post_brand(request, default: str = "") -> str:
     return request.POST.get("brand_id", "") or getattr(request, "pp_brand_id", "") or default
 
 
+def _allowed_brand(request, brand_id: str) -> bool:
+    """Staff may only touch brands they hold an active permission row for
+    (mirrors PHP's current-brand scoping); admins may touch any brand."""
+    if not brand_id:
+        return False
+    if getattr(request.pp_admin, "role", "") == "admin":
+        return Brand.objects.filter(brand_id=brand_id).exists()
+    return Permission.objects.filter(a_id=request.pp_admin.a_id, brand_id=brand_id,
+                                     status="active").exists()
+
+
+def _own_row(request, row, brand_attr: str = "brand_id"):
+    """Return row if it belongs to the caller's session brand (or caller is
+    brand-unscoped, e.g. superadmin without a session brand); else None."""
+    brand_id = getattr(request, "pp_brand_id", "")
+    if brand_id and getattr(row, brand_attr, "") != brand_id:
+        return None
+    return row
+
+
 @login_required
 def index(request):
     return redirect("/admin/dashboard/")
 
 
+def _request_brand(request) -> str:
+    """Session brand by default; explicit ?brand=/POST brand_id only when allowed."""
+    explicit = request.GET.get("brand", "") or request.POST.get("brand_id", "")
+    if explicit:
+        return explicit if _allowed_brand(request, explicit) else (getattr(request, "pp_brand_id", "") or "")
+    return getattr(request, "pp_brand_id", "") or ""
+
+
 @login_required
 def dashboard(request):
-    brand_id = request.GET.get("brand") or ""
+    brand_id = _request_brand(request)
     txns = Transaction.objects.all()
     if brand_id:
         txns = txns.filter(brand_id=brand_id)
@@ -83,7 +111,7 @@ def dashboard_transaction_stats(request):
     from django.http import JsonResponse
     preset, start, end = _resolve_range(request)
     qs = Transaction.objects.exclude(status="initiated")
-    brand_id = request.GET.get("brand") or getattr(request, "pp_brand_id", "")
+    brand_id = _request_brand(request)
     if brand_id:
         qs = qs.filter(brand_id=brand_id)
     if start:
@@ -138,7 +166,7 @@ def dashboard_gateway_stats(request):
     names, completed-only, brand-scoped, No-Data fallback."""
     from django.http import JsonResponse
     qs = Transaction.objects.exclude(status="initiated")
-    brand_id = request.GET.get("brand") or getattr(request, "pp_brand_id", "")
+    brand_id = _request_brand(request)
     if brand_id:
         qs = qs.filter(brand_id=brand_id)
     rows = []
@@ -174,7 +202,11 @@ def transaction_list(request):
         if "delete" in request.POST:
             if not has_permission(request.pp_permissions, "transaction", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
-            Transaction.objects.filter(id=request.POST.get("delete")).delete()
+            row = Transaction.objects.filter(id=request.POST.get("delete")).first()
+            if row and not _own_row(request, row):
+                return render(request, "core/404.html", status=404)
+            if row:
+                row.delete()
             messages.success(request, "Transaction deleted.")
             return redirect("/admin/transaction/")
         if "bulk" in request.POST:
@@ -186,7 +218,11 @@ def transaction_list(request):
                                               request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             hook_rows = []
-            for txn in Transaction.objects.filter(id__in=ids):
+            _bq = Transaction.objects.filter(id__in=ids)
+            _sb = getattr(request, "pp_brand_id", "")
+            if _sb:
+                _bq = _bq.filter(brand_id=_sb)
+            for txn in _bq:
                 if action == "deleted":
                     txn.delete()
                 elif action == "approved":
@@ -280,7 +316,7 @@ def _send_transaction_ipn(txn: Transaction) -> int:
 @page_required("transaction")
 def transaction_edit(request, pk: int):
     txn = Transaction.objects.filter(id=pk).exclude(status="initiated").first()
-    if not txn:
+    if not txn or not _own_row(request, txn):
         return render(request, "core/404.html", status=404)
     if request.method == "POST":
         if "delete" in request.POST:
@@ -351,7 +387,11 @@ def customers(request):
         if "delete" in request.POST:
             if not has_permission(request.pp_permissions, "customers", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
-            Customer.objects.filter(id=request.POST["delete"]).delete()
+            row = Customer.objects.filter(id=request.POST["delete"]).first()
+            if row and not _own_row(request, row):
+                return render(request, "core/404.html", status=404)
+            if row:
+                row.delete()
             return redirect("/admin/customers/")
         if "bulk" in request.POST:
             action = request.POST.get("bulk")
@@ -359,17 +399,27 @@ def customers(request):
             if action == "deleted":
                 if not has_permission(request.pp_permissions, "customers", "delete", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
-                Customer.objects.filter(id__in=ids).delete()
+                _cb = Customer.objects.filter(id__in=ids)
+                _sb = getattr(request, "pp_brand_id", "")
+                if _sb:
+                    _cb = _cb.filter(brand_id=_sb)
+                _cb.delete()
             elif action in ("activated", "suspended"):
                 if not has_permission(request.pp_permissions, "customers", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
-                Customer.objects.filter(id__in=ids).update(
-                    status="active" if action == "activated" else "suspend", updated_date=timezone.now())
+                _cb = Customer.objects.filter(id__in=ids)
+                _sb = getattr(request, "pp_brand_id", "")
+                if _sb:
+                    _cb = _cb.filter(brand_id=_sb)
+                _cb.update(status="active" if action == "activated" else "suspend",
+                           updated_date=timezone.now())
             return redirect("/admin/customers/")
         if "suspend" in request.POST:
             if not has_permission(request.pp_permissions, "customers", "edit", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             c = Customer.objects.filter(id=request.POST["suspend"]).first()
+            if c and not _own_row(request, c):
+                return render(request, "core/404.html", status=404)
             if c:
                 c.status = "suspend" if c.status == "active" else "active"
                 c.suspend_reason = request.POST.get("reason", c.suspend_reason or "")
@@ -379,6 +429,8 @@ def customers(request):
             if not has_permission(request.pp_permissions, "customers", "edit", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             c = Customer.objects.filter(id=request.POST["edit_id"]).first()
+            if c and not _own_row(request, c):
+                return render(request, "core/404.html", status=404)
             if c:
                 _email = request.POST.get("email", c.email)
                 _status = request.POST.get("status", c.status)
@@ -405,6 +457,10 @@ def customers(request):
         # create
         if not has_permission(request.pp_permissions, "customers", "create", request.pp_admin.role):
             return render(request, "staff/denied.html", status=403)
+        _brand = _post_brand(request)
+        if not _allowed_brand(request, _brand):
+            messages.error(request, "You don't have permission to manage this brand.")
+            return redirect("/admin/customers/")
         _name, _email, _mobile = request.POST.get("name", ""), request.POST.get("email", ""), request.POST.get("mobile", "")
         _status = request.POST.get("status", "active")
         if not _name or not _email or not _mobile or not _status:
@@ -420,10 +476,10 @@ def customers(request):
         except _VE:
             messages.error(request, "Please enter a valid email address.")
             return redirect("/admin/customers/")
-        if Customer.objects.filter(brand_id=_post_brand(request), email=_email).exists():
+        if Customer.objects.filter(brand_id=_brand, email=_email).exists():
             messages.error(request, "Customer email already exists for this brand.")
             return redirect("/admin/customers/")
-        Customer.objects.create(ref=M.generate_item_id(), brand_id=_post_brand(request),
+        Customer.objects.create(ref=M.generate_item_id(), brand_id=_brand,
                                 name=request.POST.get("name", ""), email=request.POST.get("email", ""),
                                 mobile=request.POST.get("mobile", ""),
                                 status=request.POST.get("status", "active"),
@@ -449,13 +505,19 @@ def invoice_list(request):
             if not has_permission(request.pp_permissions, "invoice", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             ref = request.POST["delete"]
-            InvoiceItem.objects.filter(invoice_id=ref).delete()
-            Invoice.objects.filter(ref=ref).delete()
+            inv = Invoice.objects.filter(ref=ref).first()
+            if inv and not _own_row(request, inv):
+                return render(request, "core/404.html", status=404)
+            if inv:
+                InvoiceItem.objects.filter(invoice_id=ref).delete()
+                inv.delete()
             return redirect("/admin/invoice/")
         if "manage_status" in request.POST:
             if not has_permission(request.pp_permissions, "invoice", "edit", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             inv = Invoice.objects.filter(ref=request.POST["manage_status"]).first()
+            if inv and not _own_row(request, inv):
+                return render(request, "core/404.html", status=404)
             if inv and request.POST.get("status") in ("paid", "unpaid", "refunded", "canceled"):
                 inv.status = request.POST["status"]
                 inv.save()
@@ -466,10 +528,16 @@ def invoice_list(request):
             if not has_permission(request.pp_permissions, "invoice", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             refs = request.POST.getlist("selected_ids")
+            _sb = getattr(request, "pp_brand_id", "")
+            _iq = Invoice.objects.filter(ref__in=refs)
+            if _sb:
+                _iq = _iq.filter(brand_id=_sb)
+            refs = list(_iq.values_list("ref", flat=True))
             InvoiceItem.objects.filter(invoice_id__in=refs).delete()
-            Invoice.objects.filter(ref__in=refs).delete()
+            _iq.delete()
             return redirect("/admin/invoice/")
-    tabs = {s: Invoice.objects.filter(status=s).count()
+    _tq = _scoped(Invoice.objects.all(), request)
+    tabs = {s: _tq.filter(status=s).count()
             for s in ("paid", "unpaid", "refunded", "canceled")}
     return render(request, "staff/invoice_list.html",
                   {"page": _paginate(request, qs), "q": q, "status": status, "tabs": tabs})
@@ -480,16 +548,22 @@ def invoice_list(request):
 def invoice_edit(request, ref: str = ""):
     from core import hooks as _hooks
     inv = Invoice.objects.filter(ref=ref).first() if ref else None
+    if inv and not _own_row(request, inv):
+        return render(request, "core/404.html", status=404)
     items = list(InvoiceItem.objects.filter(invoice_id=ref)) if ref else []
     if request.method == "POST":
         need = "edit" if ref else "create"
         if not has_permission(request.pp_permissions, "invoice", need, request.pp_admin.role):
             return render(request, "staff/denied.html", status=403)
+        brand_id = request.POST.get("brand_id", "") or getattr(request, "pp_brand_id", "")
+        if not _allowed_brand(request, brand_id):
+            messages.error(request, "You don't have permission to manage this brand.")
+            return redirect("/admin/invoice/")
+        _ib = brand_id
         due_date = request.POST.get("due_date", "") or "--"
         if due_date not in ("--", "") and not M.dateformat(due_date, "%Y-%m-%d"):
             messages.error(request, "Due date must be YYYY-MM-DD.")
             return redirect("/admin/invoice/")
-        brand_id = request.POST.get("brand_id", "") or getattr(request, "pp_brand_id", "")
 
         def _item_rows():
             rows = []
@@ -607,6 +681,9 @@ def payment_link_list(request):
         if "delete" in request.POST:
             if not has_permission(request.pp_permissions, "payment_link", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
+            row = PaymentLink.objects.filter(ref=request.POST["delete"]).first()
+            if row and not _own_row(request, row):
+                return render(request, "core/404.html", status=404)
             PaymentLinkField.objects.filter(paymentLinkID=request.POST["delete"]).delete()
             PaymentLink.objects.filter(ref=request.POST["delete"]).delete()
             return redirect("/admin/payment-link/")
@@ -614,6 +691,8 @@ def payment_link_list(request):
             if not has_permission(request.pp_permissions, "payment_link", "edit", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             link = PaymentLink.objects.filter(ref=request.POST["manage_status"]).first()
+            if link and not _own_row(request, link):
+                return render(request, "core/404.html", status=404)
             if link and request.POST.get("status") in ("active", "inactive"):
                 link.status = request.POST["status"]
                 link.save()
@@ -621,6 +700,11 @@ def payment_link_list(request):
         if "bulk" in request.POST:
             action = request.POST.get("bulk")
             ids = request.POST.getlist("selected_ids")
+            _sb = getattr(request, "pp_brand_id", "")
+            _lq = PaymentLink.objects.filter(ref__in=ids)
+            if _sb:
+                _lq = _lq.filter(brand_id=_sb)
+            ids = list(_lq.values_list("ref", flat=True))
             if action == "deleted":
                 if not has_permission(request.pp_permissions, "payment_link", "delete", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
@@ -654,8 +738,6 @@ def _link_display_status(link: PaymentLink) -> str:
     return "expired" if M.is_expired(link.expired_date) else link.status
 
 
-@login_required
-@page_required("payment_link")
 def _save_link_fields(link: PaymentLink, request) -> None:
     """Mirror paymentLink-create/edit items[] handling -> pp_payment_link_field."""
     from core.models import PaymentLinkField
@@ -692,13 +774,21 @@ def _save_link_fields(link: PaymentLink, request) -> None:
                                             value=value or "--")
 
 
+@login_required
+@page_required("payment_link")
 def payment_link_edit(request, ref: str = ""):
     from core.models import PaymentLinkField
     link = PaymentLink.objects.filter(ref=ref).first() if ref else None
+    if link and not _own_row(request, link):
+        return render(request, "core/404.html", status=404)
     if request.method == "POST":
         need = "edit" if ref else "create"
         if not has_permission(request.pp_permissions, "payment_link", need, request.pp_admin.role):
             return render(request, "staff/denied.html", status=403)
+        _lb = request.POST.get("brand_id", "") or getattr(request, "pp_brand_id", "")
+        if not _allowed_brand(request, _lb):
+            messages.error(request, "You don't have permission to manage this brand.")
+            return redirect("/admin/payment-link/")
         expiry = request.POST.get("expired_date", "")
         if expiry and expiry != "--" and not M.dateformat(expiry, "%Y-%m-%d"):
             messages.error(request, "Please enter the expiry date in the correct format (DD/MM/YYYY).")
@@ -722,7 +812,7 @@ def payment_link_edit(request, ref: str = ""):
                 return 0
 
         data = {
-            "brand_id": request.POST.get("brand_id", "") or getattr(request, "pp_brand_id", ""),
+            "brand_id": _lb,
             "product_info": product_info or "{}",
             "amount": M.money_sanitize(amount),
             "quantity": _qty(quantity),
@@ -763,12 +853,20 @@ def gateway_list(request):
             if not has_permission(request.pp_permissions, "gateways", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             gid = request.POST["delete"]
+            row = Gateway.objects.filter(gateway_id=gid).first()
+            if row and not _own_row(request, row):
+                return render(request, "core/404.html", status=404)
             GatewayParameter.objects.filter(gateway_id=gid).delete()
             Gateway.objects.filter(gateway_id=gid).delete()
             return redirect("/admin/gateways/")
         if "bulk" in request.POST:
             action = request.POST.get("bulk")
             ids = request.POST.getlist("selected_ids")
+            _sb = getattr(request, "pp_brand_id", "")
+            _gq = Gateway.objects.filter(gateway_id__in=ids)
+            if _sb:
+                _gq = _gq.filter(brand_id=_sb)
+            ids = list(_gq.values_list("gateway_id", flat=True))
             if action == "deleted":
                 if not has_permission(request.pp_permissions, "gateways", "delete", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
@@ -780,7 +878,8 @@ def gateway_list(request):
                 Gateway.objects.filter(gateway_id__in=ids).update(
                     status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect("/admin/gateways/")
-    tabs = {t: Gateway.objects.filter(tab=t).count() for t in ("mfs", "bank", "global")}
+    _tq = _scoped(Gateway.objects.all(), request)
+    tabs = {t: _tq.filter(tab=t).count() for t in ("mfs", "bank", "global")}
     return render(request, "staff/gateway_list.html",
                   {"page": _paginate(request, qs), "tab": tab, "tabs": tabs,
                    "plugins": all_gateways()})
@@ -791,6 +890,8 @@ def gateway_list(request):
 def gateway_edit(request, gateway_id: str = ""):
     from gateways.plugins import automation_extra_fields, bank_fields
     gw = Gateway.objects.filter(gateway_id=gateway_id).first() if gateway_id else None
+    if gw and not _own_row(request, gw):
+        return render(request, "core/404.html", status=404)
     params = {p.option_name: p.value for p in GatewayParameter.objects.filter(gateway_id=gateway_id)} if gateway_id else {}
     plugins = all_gateways()
     is_bank_form = request.path.endswith("create-bank/") or (gw and gw.tab == "bank" and gw.slug == "bank")
@@ -798,6 +899,10 @@ def gateway_edit(request, gateway_id: str = ""):
         need = "edit" if gateway_id else "create"
         if not has_permission(request.pp_permissions, "gateways", need, request.pp_admin.role):
             return render(request, "staff/denied.html", status=403)
+        _gb = request.POST.get("brand_id", "") or getattr(request, "pp_brand_id", "")
+        if not _allowed_brand(request, _gb):
+            messages.error(request, "You don't have permission to manage this brand.")
+            return redirect("/admin/gateways/")
         slug = request.POST.get("slug", gw.slug if gw else ("bank" if is_bank_form else ""))
         plugin = plugins.get(slug)
         if gw:
@@ -1450,7 +1555,7 @@ BRAND_GENERAL_FIELDS = ("identify_name", "name", "support_email_address", "suppo
 @login_required
 @page_required("brand_settings")
 def brand_general(request):
-    brand = Brand.objects.filter(brand_id=getattr(request, "pp_brand_id", "")).first() or Brand.objects.first()
+    brand = Brand.objects.filter(brand_id=_request_brand(request)).first() or Brand.objects.first()
     if request.method == "POST":
         if not has_permission(request.pp_permissions, "brand_settings", "edit", request.pp_admin.role):
             return render(request, "staff/denied.html", status=403)
@@ -1490,13 +1595,20 @@ def brand_api(request):
         if "delete" in request.POST:
             if not has_permission(request.pp_permissions, "api_settings", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
-            ApiKey.objects.filter(id=request.POST["delete"]).delete()
+            row = ApiKey.objects.filter(id=request.POST["delete"]).first()
+            if row and not _own_row(request, row):
+                return render(request, "core/404.html", status=404)
+            if row:
+                row.delete()
             return redirect("/admin/brand-setting/api/")
         if "bulk" in request.POST:
             if not has_permission(request.pp_permissions, "api_settings", "view", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             action = request.POST.get("bulk")
             ids = request.POST.getlist("selected_ids")
+            _sb = getattr(request, "pp_brand_id", "")
+            if _sb:
+                ids = list(ApiKey.objects.filter(id__in=ids, brand_id=_sb).values_list("id", flat=True))
             if action == "deleted":
                 if not has_permission(request.pp_permissions, "api_settings", "delete", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
@@ -1513,6 +1625,8 @@ def brand_api(request):
             if not has_permission(request.pp_permissions, "api_settings", "edit", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             key = ApiKey.objects.filter(id=request.POST["edit_id"]).first()
+            if key and not _own_row(request, key):
+                return render(request, "core/404.html", status=404)
             if key:
                 name = request.POST.get("name", key.name)
                 if ApiKey.objects.filter(brand_id=key.brand_id, name=name).exclude(id=key.id).exists():
@@ -1534,6 +1648,9 @@ def brand_api(request):
             return render(request, "staff/denied.html", status=403)
         import secrets as _s
         brand_id = _post_brand(request)
+        if not _allowed_brand(request, brand_id):
+            messages.error(request, "You don't have permission to manage this brand.")
+            return redirect("/admin/brand-setting/api/")
         name = request.POST.get("name", "")
         if not name:
             messages.error(request, "Please fill in all required fields before proceeding.")
@@ -1617,13 +1734,15 @@ def brand_currency(request):
     return render(request, "staff/brand_currency.html", {"currencies": qs, "brands": Brand.objects.all()})
 
 
-def _sync_currency_rate(currency_pk) -> str | None:
+def _sync_currency_rate(currency_pk, request=None) -> str | None:
     """Mirror currency-rateSync: rate = 1/source-rate for the brand base currency.
     Returns an error message or None on success/no-op."""
     import requests
     row = Currency.objects.filter(id=currency_pk).first()
     if not row:
         return None
+    if request is not None and not _own_row(request, row):
+        return "You don't have permission to manage this brand."
     brand = Brand.objects.filter(brand_id=row.brand_id).first()
     base = (brand.currency_code if brand else "BDT").lower()
     try:
@@ -1669,13 +1788,20 @@ def brand_faq(request):
         if "delete" in request.POST:
             if not has_permission(request.pp_permissions, "faq_settings", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
-            Faq.objects.filter(id=request.POST["delete"]).delete()
+            row = Faq.objects.filter(id=request.POST["delete"]).first()
+            if row and not _own_row(request, row):
+                return render(request, "core/404.html", status=404)
+            if row:
+                row.delete()
             return redirect("/admin/brand-setting/faq/")
         if "bulk" in request.POST:
             if not has_permission(request.pp_permissions, "faq_settings", "delete", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             action = request.POST.get("bulk")
             ids = request.POST.getlist("selected_ids")
+            _sb = getattr(request, "pp_brand_id", "")
+            if _sb:
+                ids = list(Faq.objects.filter(id__in=ids, brand_id=_sb).values_list("id", flat=True))
             if action == "deleted":
                 Faq.objects.filter(id__in=ids).delete()
             elif action in ("activated", "inactivated"):
@@ -1688,6 +1814,8 @@ def brand_faq(request):
             if not has_permission(request.pp_permissions, "faq_settings", "edit", request.pp_admin.role):
                 return render(request, "staff/denied.html", status=403)
             row = Faq.objects.filter(id=request.POST["edit_id"]).first()
+            if row and not _own_row(request, row):
+                return render(request, "core/404.html", status=404)
             if row:
                 row.title = request.POST.get("title", row.title)
                 row.description = request.POST.get("description", row.description)
@@ -2049,8 +2177,9 @@ def reports(request):
         return amount
 
     qs = Transaction.objects.exclude(status="initiated")
-    if getattr(request, "pp_brand_id", ""):
-        qs = qs.filter(brand_id=request.pp_brand_id)
+    _rb = _request_brand(request)
+    if _rb:
+        qs = qs.filter(brand_id=_rb)
     if start:
         qs = qs.filter(created_date__gte=start)
     if end:
@@ -2073,8 +2202,8 @@ def reports(request):
             span = e - s
             ps = (s - span).strftime("%Y-%m-%d %H:%M:%S")
             pq = Transaction.objects.exclude(status="initiated")
-            if getattr(request, "pp_brand_id", ""):
-                pq = pq.filter(brand_id=request.pp_brand_id)
+            if _rb:
+                pq = pq.filter(brand_id=_rb)
             pq = pq.filter(created_date__gte=ps, created_date__lt=s.strftime("%Y-%m-%d %H:%M:%S"))
             pt, pd = pq.count(), pq.filter(status="completed").count()
             prev_rate = round(pd * 100 / pt, 2) if pt else 0

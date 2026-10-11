@@ -233,7 +233,10 @@ def checkout_payment(request, pp_id: str):
         plugin = get_gateway(gw.slug)
         options = gateway_options(gw.gateway_id, brand.brand_id)
         totals = compute_gateway_totals(str(txn.amount), txn.currency, gw, brand.brand_id)
+        # PHP passes the RAW transaction row to gateways ($data['transaction']):
+        # it has `ref` and `customer_info`, which gateway classes read directly.
         txn_ctx = dict(transaction_payload(txn),
+                       ref=txn.ref, customer_info=txn.customer_info,
                        local_net_amount=M.money_round(totals["converted"]),
                        local_currency=totals["currency"])
         gtype = plugin.info().get("gateway_type") if plugin else None

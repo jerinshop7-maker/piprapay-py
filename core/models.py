@@ -2,8 +2,10 @@
 All 23 tables from pp-content/pp-install/db.sql ported 1:1 to Django ORM.
 
 PHP `pp_*` prefix is dropped; `Meta.db_table` keeps the exact legacy table
-name so an existing PipraPay MySQL database can be reused without migration
-of data (set DB_* env vars to point at MySQL).
+name. NOTE: this is NOT a drop-in for an existing PipraPay MySQL database —
+upstream stores `created_date`/`updated_date` as `varchar(20)` while these
+models use `DateTimeField`, so a legacy DB needs an import/type-migration step
+(see reports/schema-parity.md).
 
 Conventions mirrored from PHP:
 - datetimes stored as UTC strings 'Y-m-d H:i:s' in PHP; here we use
@@ -27,6 +29,9 @@ class Addon(models.Model):
 
     class Meta:
         db_table = "pp_addon"
+        indexes = [
+            models.Index(fields=['slug']),
+        ]
 
 
 class AddonParameter(models.Model):
@@ -38,6 +43,9 @@ class AddonParameter(models.Model):
 
     class Meta:
         db_table = "pp_addon_parameter"
+        indexes = [
+            models.Index(fields=['option_name']),
+        ]
 
 
 class Admin(models.Model):
@@ -72,6 +80,9 @@ class ApiKey(models.Model):
 
     class Meta:
         db_table = "pp_api"
+        indexes = [
+            models.Index(fields=['status']),
+        ]
 
 
 class BalanceVerification(models.Model):
@@ -86,6 +97,10 @@ class BalanceVerification(models.Model):
 
     class Meta:
         db_table = "pp_balance_verification"
+        indexes = [
+            models.Index(fields=['device_id', 'sender_key', 'type']),
+            models.Index(fields=['status']),
+        ]
 
 
 class Brand(models.Model):
@@ -133,6 +148,11 @@ class BrowserLog(models.Model):
 
     class Meta:
         db_table = "pp_browser_log"
+        indexes = [
+            models.Index(fields=['a_id']),
+            models.Index(fields=['cookie']),
+            models.Index(fields=['status']),
+        ]
 
 
 class Currency(models.Model):
@@ -162,6 +182,10 @@ class Customer(models.Model):
 
     class Meta:
         db_table = "pp_customer"
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['status']),
+        ]
 
 
 class Device(models.Model):
@@ -179,6 +203,11 @@ class Device(models.Model):
 
     class Meta:
         db_table = "pp_device"
+        indexes = [
+            models.Index(fields=['d_id']),
+            models.Index(fields=['otp']),
+            models.Index(fields=['status']),
+        ]
 
 
 class Domain(models.Model):
@@ -189,6 +218,9 @@ class Domain(models.Model):
 
     class Meta:
         db_table = "pp_domain"
+        indexes = [
+            models.Index(fields=['status']),
+        ]
 
 
 class EnvOption(models.Model):
@@ -214,6 +246,9 @@ class Faq(models.Model):
 
     class Meta:
         db_table = "pp_faq"
+        indexes = [
+            models.Index(fields=['status']),
+        ]
 
 
 class Gateway(models.Model):
@@ -241,6 +276,11 @@ class Gateway(models.Model):
 
     class Meta:
         db_table = "pp_gateways"
+        indexes = [
+            models.Index(fields=['brand_id', 'slug']),
+            models.Index(fields=['tab']),
+            models.Index(fields=['status']),
+        ]
 
 
 class GatewayParameter(models.Model):
@@ -253,6 +293,9 @@ class GatewayParameter(models.Model):
 
     class Meta:
         db_table = "pp_gateways_parameter"
+        indexes = [
+            models.Index(fields=['gateway_id', 'option_name']),
+        ]
 
 
 class Invoice(models.Model):
@@ -271,6 +314,9 @@ class Invoice(models.Model):
 
     class Meta:
         db_table = "pp_invoice"
+        indexes = [
+            models.Index(fields=['status']),
+        ]
 
 
 class InvoiceItem(models.Model):
@@ -327,6 +373,9 @@ class Permission(models.Model):
 
     class Meta:
         db_table = "pp_permission"
+        indexes = [
+            models.Index(fields=['brand_id']),
+        ]
 
 
 class SmsData(models.Model):
@@ -351,6 +400,12 @@ class SmsData(models.Model):
 
     class Meta:
         db_table = "pp_sms_data"
+        indexes = [
+            models.Index(fields=['sender_key', 'trx_id']),
+            models.Index(fields=['status']),
+            models.Index(fields=['device_id']),
+            models.Index(fields=['type']),
+        ]
 
 
 class Transaction(models.Model):
@@ -380,6 +435,14 @@ class Transaction(models.Model):
 
     class Meta:
         db_table = "pp_transaction"
+        indexes = [
+            models.Index(fields=['trx_id']),
+            models.Index(fields=['sender_key']),
+            models.Index(fields=['status']),
+            models.Index(fields=['gateway_id']),
+            models.Index(fields=['source', 'status']),
+            models.Index(fields=['sender']),
+        ]
 
 
 class WebhookLog(models.Model):
@@ -396,3 +459,8 @@ class WebhookLog(models.Model):
 
     class Meta:
         db_table = "pp_webhook_log"
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['ref']),
+            models.Index(fields=['brand_id']),
+        ]

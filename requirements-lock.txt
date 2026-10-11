@@ -1,0 +1,12 @@
+# Pinned dependency lock (pip freeze, Python 3.14.7, Django 5.2.18).
+# Install exact versions with: pip install -r requirements-lock.txt
+asgiref==3.12.1
+bcrypt==5.0.0
+cffi==2.1.1
+cryptography==50.0.2
+Django==5.2.18
+numpy==2.5.3
+pillow==12.3.0
+pycparser==3.0
+requests==2.34.2
+sqlparse==0.6.0

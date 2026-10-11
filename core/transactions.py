@@ -126,11 +126,27 @@ def queue_or_send_webhook(row: Transaction, payload: dict) -> None:
 
 def set_transaction_status(transaction_ref: str, status: str = "", gateway_id: str = "",
                             trx_id: str = "", source_info: list | None = None) -> bool:
-    """Mirror pp_set_transaction_status(). Only 'initiated' rows transition."""
+    """Mirror pp_set_transaction_status(). Only 'initiated' rows transition.
+    Runs inside an atomic block with a row lock so concurrent callbacks
+    cannot double-complete the same transaction."""
+    from django.db import transaction as _tx
     try:
         row = Transaction.objects.get(ref=transaction_ref, status="initiated")
     except Transaction.DoesNotExist:
         return False
+    from django.db import transaction as _tx
+    with _tx.atomic():
+        try:
+            row = Transaction.objects.select_for_update().get(ref=transaction_ref,
+                                                              status="initiated")
+        except Transaction.DoesNotExist:
+            return False
+        return _apply_transaction_status(row, status, gateway_id, trx_id, source_info)
+
+
+def _apply_transaction_status(row: Transaction, status: str, gateway_id: str,
+                              trx_id: str, source_info: list | None) -> bool:
+    """Remainder of set_transaction_status; runs holding the row lock."""
 
     if status == "canceled":
         row.status = "canceled"

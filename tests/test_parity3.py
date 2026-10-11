@@ -2,6 +2,7 @@
 theme slug keys, bank fallback, cancel semantics, validation exactness,
 env semantics, bcrypt, cascades, redirects."""
 import json
+from unittest.mock import patch
 
 from django.contrib.auth.hashers import make_password
 from django.test import TestCase
@@ -184,8 +185,12 @@ class EnvSemanticsTests(TestCase):
         self.assertEqual(M.time_ago("2999-01-01 00:00:00"), "Just now")
 
     def test_bcrypt_default(self):
+        from django.contrib.auth.hashers import check_password
         from django.contrib.auth.hashers import make_password as mp
-        self.assertTrue(mp("x").startswith("bcrypt"))
+        hashed = mp("x")
+        self.assertTrue(hashed.startswith("bcrypt"))
+        self.assertTrue(check_password("x", hashed))
+        self.assertFalse(check_password("y", hashed))
 
 
 class StaffBehaviorTests(TestCase):
@@ -255,8 +260,12 @@ class DisplayFilterTests(TestCase):
         self.assertEqual(out, "--||")
 
     def test_set_env_returns_value(self):
-        from core.env import set_env
+        from core.env import get_env, set_env
         self.assertEqual(set_env("k", "v"), "v")
+        self.assertEqual(get_env("k"), "v")
+        self.assertEqual(get_env("missing-k"), "")
+        from core.models import EnvOption
+        self.assertTrue(EnvOption.objects.filter(option_name="missing-k", value="--").exists())
 
     def test_get_param_str_only(self):
         from core.money import get_param
@@ -309,14 +318,18 @@ class CookieMirrorTests(TestCase):
     def test_faq_bulk_needs_delete_perm(self):
         Brand.objects.create(brand_id="b1", identify_name="B", name="B")
         Admin.objects.create(a_id="a1", full_name="R", username="root", email="r@x.com",
-                             password=make_password("pw"), role="admin")
-        Permission.objects.create(brand_id="b1", a_id="a1", permission="{}")
+                             password=make_password("pw"), role="staff")
+        Permission.objects.create(brand_id="b1", a_id="a1",
+                                  permission=json.dumps({"resources": {}, "pages":
+                                                         {"brand_settings": True}}))
         self.client.post("/login/", {"username": "root", "password": "pw"})
         from core.models import Faq
         f = Faq.objects.create(brand_id="b1", title="T", description="D", status="active")
+        # Staff without faq_settings.delete gets 403 at the bulk entry gate.
         r = self.client.post("/admin/brand-setting/faq/", {"bulk": "activated", "selected_ids": [f.id]})
-        # admins bypass permission checks
-        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r.status_code, 403)
+        f.refresh_from_db()
+        self.assertEqual(f.status, "active")
 
     def test_gateway_required_gate(self):
         Brand.objects.create(brand_id="b1", identify_name="B", name="B")
@@ -369,14 +382,44 @@ class SweepTests(TestCase):
             {"message": "Authorization header requires Credential"}))
         self.assertFalse(B._is_aws_auth_error({"error": "Authorization header requires"}))
 
-    def test_rand_int_shapes(self):
-        import random
-        random.seed(1)
+    def test_provider_id_shapes(self):
+        # Exercise the real request builders with mocked HTTP and inspect shapes.
         from gateways import api_gateways as ag
-        self.assertTrue(0 <= random.randint(0, 2 ** 31 - 1) < 2 ** 31)
-        refid = f"ORDER_{(format(1700000000000000, 'x'))[-13:].lower()}-BP-R1"
-        import re
-        self.assertRegex(refid, r"^ORDER_[0-9a-f]{13}-BP-R1$")
+
+        class _Resp:
+            status_code = 200
+            headers = {}
+
+            def json(self):
+                return {"payment_url": "https://pay/x"}
+
+        with patch("gateways.api_gateways.requests.post") as post:
+            post.return_value = _Resp()
+            ag.AamarpayGateway().process_payment(
+                {"transaction": {"local_net_amount": "10", "local_currency": "BDT", "ref": "R1",
+                                 "customer_info": "{}"},
+                 "options": {"store_id": "s", "signature_key": "k"}, "callback_url": "http://x/cb",
+                 "cancel_url": "http://x/c"})
+            tran_id = post.call_args[1]["json"]["tran_id"]
+            self.assertTrue(isinstance(tran_id, int) and 0 <= tran_id < 2 ** 31)
+
+        class _Resp2:
+            status_code = 200
+            headers = {"payment-reference-token": "TOK"}
+
+            def json(self):
+                return {"data": {"redirect_url": "https://pay/y", "invoice_id": "I1"}}
+
+        with patch("gateways.api_gateways.requests.post") as post:
+            post.return_value = _Resp2()
+            r = ag.PathaopayMerchantApiGateway().process_payment(
+                {"transaction": {"local_net_amount": "10", "ref": "R1"},
+                 "options": {"api_key": "k", "secret_key": "s"}, "callback_url": "http://x/cb"})
+            sent = post.call_args[1]["json"]
+            import re
+            self.assertRegex(sent["merchant_reference_id"], r"^ORDER_[0-9a-f]{13}-BP-R1$")
+            self.assertIsInstance(sent["amount"], int)
+            self.assertEqual(r, {"action": "redirect", "url": "https://pay/y"})
 
     def test_mfs_key_no_trim(self):
         from core.sms_engine import mfs_message_verified

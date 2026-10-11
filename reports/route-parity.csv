@@ -1,0 +1,34 @@
+method,path,auth,permission,csrf,upstream_equivalent,parity,evidence_notes
+GET/POST,/,no,-,csrf,index.php ?page=homepageRedirect,equivalent,core/views.py:homepage_redirect
+GET/POST,/login/,no,-,csrf,index.php case login,equivalent,core/views.py:admin_login; email-or-username + throttle
+GET/POST,/forgot/,no,-,csrf,index.php case forgot,equivalent,core/views.py:admin_forgot
+GET/POST,/2fa/,no(session pending),-,csrf,index.php case 2fa,equivalent,core/views.py:admin_2fa; TOTP window 2
+GET,/404/,no,-,csrf,index.php case 404,equivalent,core/views.py:page_404
+POST,/set-brand/,session,-,csrf,index.php set-default-brand,equivalent,core/views.py:set_brand
+GET/POST,/install/,no,-,csrf,pp-install/index.php step 1-2,equivalent,core/install_views.py
+GET/POST,/install/requirements/,no,-,csrf,pp-install/index.php step 1,equivalent,core/install_views.py
+GET/POST,/install/admin/,no,-,csrf,pp-install/index.php step 3,equivalent,core/install_views.py
+GET/POST,/payment/<pp_id>/,no,-,csrf,index.php case payment,equivalent,checkout/views.py:checkout_payment
+POST,/payment/<pp_id>/verify/,no,-,csrf,transaction-verify (adapter),equivalent,checkout/views.py:verify_endpoint + core/transactions
+GET,/payment/<pp_id>/callback/,no,-,csrf,payment ?pp_callback,equivalent,checkout/views.py:checkout_callback
+GET,/payment/<pp_id>/receipt/,no,-,csrf,index.php receipt,partial(HTML vs FPDF),documented deviation
+GET,^/payment/<pp_id>/<extra>$,no,-,csrf,index.php trailing-segment tolerance,equivalent,checkout/urls.py tolerant re_path
+GET/POST,/invoice/<ref>/,no,-,csrf,index.php case invoice,equivalent,checkout/views.py:invoice_page
+POST,/invoice/<ref>/pay/,no,-,csrf,action-v2 invoice,equivalent,checkout/views.py:invoice_pay
+POST,/invoice/webhook/,no,-,csrf_exempt,index.php invoice/webhook,equivalent (route bug fixed),checkout/urls.py passes ref=webhook
+GET/POST,/payment-link/<ref>/,no,-,csrf,index.php case payment-link,equivalent,checkout/views.py:payment_link_page
+GET/POST,/payment-link/<ref>/<brand_id>/,no,-,csrf,payment-link brand scope,equivalent,checkout/views.py
+POST,/payment-link/<ref>/submit/,no,-,csrf,payment-link submit,equivalent,checkout/views.py:payment_link_submit
+GET/POST,/payment-link/default/<brand_id>/,no,-,csrf,payment-link default,equivalent,checkout/views.py
+POST,/payment-link/default/<brand_id>/submit/,no,-,csrf,payment-link default submit,equivalent,checkout/views.py
+POST,/api/checkout/redirect/,api-key,create_payment,csrf_exempt,index.php api/checkout/redirect,equivalent,api/views.py:checkout_redirect
+POST,/api/checkout/popup/,api-key,create_payment,csrf_exempt,index.php api/checkout/popup,equivalent,api/views.py:checkout_popup
+POST,/api/verify-payment/,api-key,verify_payment,csrf_exempt,index.php api/verify-payment,equivalent,api/views.py:verify_payment
+POST,/api/refund-payment/,api-key,refund_payment,csrf_exempt,index.php api/refund-payment,equivalent,api/views.py:refund_payment
+* ,/api/<anything>/,api-key?,none,csrf_exempt,index.php unknown api_type,equivalent,api/views.py:unknown_api -> INVALID_JSON_PAYLOAD
+POST,/api/companion/<action>/,device token,-,csrf_exempt,action-companion (adapter),equivalent,api/companion.py
+GET/POST,/ipn/<gateway_id>/,no (per-gateway verify),-,csrf_exempt,index.php case ipn,equivalent,gateways/ipn_views.py:ipn_entry
+GET,/,ipn/,no,-,csrf_exempt,index.php ipn empty,equivalent,config/urls.py:ipn_empty -> 400
+GET/POST,/cron/<token>/,token,-,csrf_exempt,index.php case cron,equivalent,cron_app/views.py
+GET,/health/,no,-,csrf,port-only,extra (not upstream),config/urls.py
+GET/POST,/admin/ ... (~48 staff routes),session,varies per page,csrf,pp-admin/pp-root/*,equivalent,staff/urls.py + staff/views.py

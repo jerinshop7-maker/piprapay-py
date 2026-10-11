@@ -243,3 +243,57 @@ kept as implemented pending a sandbox-key replay. _(ex G8-038)_
   spinners, colors, SEO, watermark, logos, icons, print, six-box 2FA,
   QR image, copy/blanks maintenance pages, 15-row requirements,
   length-checked secrets.
+
+---
+
+## Audit record — parity/security pass (2026-10-11)
+
+Re-verified every inherited claim above against source before touching status.
+No inherited checkbox line was reopened; the block below records only new work
+from this pass. Full evidence: `reports/` (`findings.json`, `executive-summary.md`).
+
+**Cleared this pass (fixed in code + regression test):**
+- `F-MONEY-1` — `money_sanitize()` dropped the sign of negative amounts
+  (`core/money.py`). Test: `MiscWorkflowTests.test_money_edges`.
+- `F-GW-1` — checkout passed `transaction_payload()` (no `ref`/`customer_info`)
+  to gateway plugins, so **every** API callback compared against a null ref and
+  merchant references were empty (`checkout/views.py`). Tests:
+  `CheckoutBranchTests.{test_stripe_callback_completes,test_aamarpay_callback_trxcheck,test_eps_callback_valuea,test_pathaopay_capture,test_paypal_callback_mocked}`.
+- `F-MONEY-2` — `/invoice/webhook/` bound a view needing `ref` → TypeError/500
+  (`checkout/urls.py`). Test: `CheckoutBranchTests.test_invoice_webhook_bad_json`.
+- `F-GW-2` — Binance IPN echoed the wrong JSON and never completed the txn
+  (`gateways/ipn_views.py`, `gateways/api_gateways.py`). Test:
+  `CheckoutBranchTests.test_binance_ipn_mocked`.
+
+**Recorded, not yet cleared (open):** `SEC-1` TLS verify off (SSLCommerz/FX),
+`SEC-2`/`DEP-1` bcrypt hasher vs PHP hashes, `SEC-3` admin zip-import executes
+SQL over app root, `SEC-4` default SECRET_KEY / wildcard hosts, `SEC-5` gateway
+credentials stored in clear, `DEV-1` self-edit 403 vs redirect, `DOC-1` docs vs
+code, `PERF-1` composite indexes, `TEST-1` concurrency/provider/failure-injection
+coverage. These are tracked in `reports/improvement-roadmap.md`; do not add
+checkbox lines unless a decision changes.
+
+**Correction to an earlier claim:** the `core/models.py` docstring statement
+that an existing PipraPay MySQL database is reusable "without migration of data"
+is inaccurate (upstream timestamps are `varchar(20)`, the port uses
+`DateTimeField`). `gaps.md`'s own "legacy DBs need the documented import step"
+note is the correct one.
+
+**Also cleared this pass:**
+- `SEC-4` (partial) — production mode (`DJANGO_SECURE=1`) now fails fast on a
+  default `SECRET_KEY` or wildcard `ALLOWED_HOSTS`
+  (`config/settings.py::validate_production_settings`). Test:
+  `test_workflows.py::ProductionSettingsTests`.
+- `TEST-1` (partial) — provider-timeout / malformed-response failure injection
+  added (`test_workflows.py::FailureInjectionTests`); transaction stays
+  `initiated` and no webhook is emitted.
+
+Still open (see roadmap): `SEC-1` (TLS verify — blocked on live validation),
+`SEC-2`/`DEP-1` (hashing decision), `SEC-3`/`SEC-5` (gated admin code-exec /
+plaintext creds, upstream parity), `SEC-7` (10-digit device OTP, upstream
+defect), `DEV-1`, `DOC-1`, `PERF-1`.
+
+**Also cleared this pass (continued):**
+- `TEST-1` — mocked provider-branch coverage for SSLCommerz (success/invalid),
+  OxaPay (success/amount-mismatch) and NOWPayments (success/cancel):
+  `test_workflows.py::ProviderCallbackTests` (6 tests).

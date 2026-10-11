@@ -48,6 +48,37 @@ def _remember_admin(request, admin: Admin, cookie: str | None = None):
     return cookie
 
 
+def _throttle_key(request, username: str) -> str:
+    ip = (request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+          or request.META.get("REMOTE_ADDR", ""))
+    return f"pp-login-fail:{ip}:{username.lower()}"
+
+
+def _throttle_check(request, username: str) -> bool:
+    from django.core.cache import cache
+    try:
+        return (cache.get(_throttle_key(request, username)) or 0) >= 5
+    except Exception:
+        return False
+
+
+def _throttle_hit(request, username: str) -> None:
+    from django.core.cache import cache
+    try:
+        cache.set(_throttle_key(request, username),
+                  (cache.get(_throttle_key(request, username)) or 0) + 1, 300)
+    except Exception:
+        pass
+
+
+def _throttle_clear(request, username: str) -> None:
+    from django.core.cache import cache
+    try:
+        cache.delete(_throttle_key(request, username))
+    except Exception:
+        pass
+
+
 def admin_login(request):
     if request.session.get("pp_admin_id"):
         return redirect("/admin/")
@@ -57,14 +88,19 @@ def admin_login(request):
         if not username or not password:
             messages.error(request, "Please fill in all required fields before proceeding.")
             return render(request, "core/login.html")
+        if _throttle_check(request, username):
+            messages.error(request, "Too many failed attempts. Please try again later.")
+            return render(request, "core/login.html", status=429)
         lookup = {"email": username} if _is_email(username) else {"username": username}
         admin = Admin.objects.filter(**lookup).first()
         ok = admin is not None and (
             check_password(password, admin.password)
             or (admin.temp_password and check_password(password, admin.temp_password)))
         if not ok:
+            _throttle_hit(request, username)
             messages.error(request, "The email or password you entered is incorrect.")
             return render(request, "core/login.html")
+        _throttle_clear(request, username)
         if admin.status != "active":
             messages.error(request, "Your account has been suspended. Please contact with your admin.")
             return render(request, "core/login.html")

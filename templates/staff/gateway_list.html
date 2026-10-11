@@ -3,4 +3,4 @@
 <p>Install plugin: {% for slug,gw in plugins.items %}{{ slug }} {% endfor %}</p>
 <form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
 <ul>{% for g in page %}<li><input type="checkbox" name="selected_ids" value="{{ g.gateway_id }}"> <a href="/admin/gateways/{{ g.gateway_id }}/">{{ g.display }}</a> {{ g.slug }} {{ g.tab }} {{ g.status }}</li>{% endfor %}</ul></form>
-<a href="/admin/gateways/create-bank/">New Bank</a>{% endblock %}
+<a href="/admin/gateways/create/">New Gateway</a> <a href="/admin/gateways/create-bank/">New Bank</a>{% endblock %}

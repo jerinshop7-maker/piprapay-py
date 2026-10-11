@@ -51,5 +51,4 @@ class Command(BaseCommand):
         Currency.objects.create(brand_id=brand_id, code="BDT", symbol="৳", rate=1)
         set_env("cron-job", generate_item_id())
         self.stdout.write(self.style.SUCCESS(
-            f"Installed. Login at /login/ as '{username}'."
-            + (f" Password: {password}" if options["noinput"] else "")))
+            f"Installed. Login at /login/ as '{username}'."))

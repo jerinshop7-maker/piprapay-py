@@ -4,9 +4,27 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-piprapay-port-dev-key-change-me")
+DEFAULT_DEV_SECRET_KEY = "django-insecure-piprapay-port-dev-key-change-me"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", DEFAULT_DEV_SECRET_KEY)
 DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
+
+
+def validate_production_settings(secure, secret_key, allowed_hosts, default_key=DEFAULT_DEV_SECRET_KEY):
+    """Fail fast when the app is started in production mode (DJANGO_SECURE=1)
+    with development-grade secrets. Pure function so it can be unit-tested
+    without re-importing the settings module."""
+    from django.core.exceptions import ImproperlyConfigured
+
+    if not secure:
+        return
+    errors = []
+    if not secret_key or secret_key == default_key:
+        errors.append("DJANGO_SECURE=1 requires a non-default DJANGO_SECRET_KEY.")
+    if not allowed_hosts or "*" in allowed_hosts:
+        errors.append("DJANGO_SECURE=1 requires DJANGO_ALLOWED_HOSTS (no '*').")
+    if errors:
+        raise ImproperlyConfigured(" ".join(errors))
 
 # PipraPay path slugs — must stay identical to pp-adapter.php
 PIPRAPAY_PATHS = {
@@ -101,6 +119,16 @@ PASSWORD_HASHERS = [
 
 SESSION_COOKIE_AGE = 365 * 24 * 3600
 SESSION_COOKIE_HTTPONLY = True
+
+# Production hardening, all env-driven (dev defaults preserve local behavior).
+# Set DJANGO_ALLOWED_HOSTS, DJANGO_SECRET_KEY, and DJANGO_SECURE=1 in production.
+_SECURE = os.environ.get("DJANGO_SECURE", "0") == "1"
+validate_production_settings(_SECURE, SECRET_KEY, ALLOWED_HOSTS)
+SECURE_SSL_REDIRECT = _SECURE
+SESSION_COOKIE_SECURE = _SECURE
+CSRF_COOKIE_SECURE = _SECURE
+if _SECURE:
+    CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("DJANGO_CSRF_ORIGINS", "").split(",") if o]
 
 # File-upload limits mirror pp-functions.php uploadImage()
 PIPRAPAY_MAX_IMAGE_MB = 5

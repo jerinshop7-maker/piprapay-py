@@ -241,8 +241,9 @@ def checkout_popup(request):
         return _err("INVALID_JSON_PAYLOAD", "The JSON payload is invalid or malformed.")
     if "create_payment" not in _scopes(api):
         return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Create Payment")
-    webhook_url = data.get("webhook_url")
-    webhook_url = "--" if webhook_url is None or webhook_url == "" else webhook_url
+    webhook_url, err = _check_domain(data.get("webhook_url"), "Webhook")
+    if err:
+        return err
     metadata, err = _parse_metadata(data.get("metadata", "{}") if "metadata" in data else "{}")
     if err:
         return err
@@ -281,7 +282,7 @@ def verify_payment(request):
     pp_id = data.get("pp_id") or ""
     if not pp_id:
         return _err("INVALID_PP_ID", "A valid bp id is required.")
-    txn = Transaction.objects.filter(ref=pp_id).first()
+    txn = Transaction.objects.filter(ref=pp_id, brand_id=api.brand_id).first()
     if not txn:
         return _err("INVALID_PP_ID", "A valid bp id is required.")
     return JsonResponse(transaction_payload(txn, round_total=True))
@@ -302,7 +303,7 @@ def refund_payment(request):
     pp_id = data.get("pp_id") or ""
     if not pp_id:
         return _err("INVALID_PP_ID", "A valid bp id is required.")
-    txn = Transaction.objects.filter(ref=pp_id).first()
+    txn = Transaction.objects.filter(ref=pp_id, brand_id=api.brand_id).first()
     if not txn:
         return _err("INVALID_PP_ID", "A valid bp id is required.")
     if txn.status != "completed":

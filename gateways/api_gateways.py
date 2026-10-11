@@ -1185,14 +1185,17 @@ class BinancePersonalGateway:
         bpid = str(post.get("bpid", "")).strip()
         if not order_id:
             return {"verified": False, "json": {"status": "false",
+                                                "title": "Incomplete Information",
                                                 "message": "Please fill in all required fields before proceeding."}}
         from core.transactions import check_transaction, check_transaction_id
         if check_transaction_id(order_id):
             return {"verified": False, "json": {"status": "false",
+                                                "title": "Duplicate Transaction ID",
                                                 "message": "This Transaction ID is already exits. Please provide a different one."}}
         if not bpid or not check_transaction(bpid):
             return {"verified": False, "json": {"status": "false",
-                                                "message": "Please fill in all required fields before proceeding."}}
+                                                "title": "Incomplete Information",
+                                                "message": "The Transaction ID you entered is incorrect. Try again!"}}
         # Expected amount persisted at process_payment (class.php:203).
         stored = get_env(f"binance-personal-pp_amount{bpid}")
         try:
@@ -1209,20 +1212,24 @@ class BinancePersonalGateway:
                              headers={"X-MBX-APIKEY": opts.get("api_key", "")},
                              timeout=TIMEOUT).json()
         except Exception as e:
-            return {"verified": False, "json": {"status": "false", "message": str(e)}}
+            return {"verified": False, "json": {"status": "false",
+                                                "title": "Incomplete Information", "message": str(e)}}
         txns = r.get("data", []) if isinstance(r, dict) else []
         for t in txns:
             if str(t.get("orderId", "")) == order_id and t.get("currency") == "USDT":
                 paid = _float_or_0(t.get("amount", 0))
                 if expected <= paid:
-                    number = str(t.get("payerInfo", {}).get("name", "") or t.get("counterparty", ""))
+                    # class.php:329-331: completes then echoes status/title/message
+                    # (no visible_number, no source_info).
                     return {"verified": True, "trx_id": order_id, "pp_ref": bpid,
-                            "json": {"status": "true", "visible_number": number},
-                            "source_info": [{"label": "Binance Order", "value": order_id}]}
+                            "json": {"status": "true", "title": "Transaction Verified",
+                                     "message": "Your transaction has been verified successfully."}}
                 return {"verified": False, "json": {"status": "false",
-                                                    "message": (r.get("msg") or "Amount mismatch.")}}
+                                                    "title": "Incomplete Information",
+                                                    "message": "The order does not meet the required amount!"}}
         return {"verified": False, "json": {"status": "false",
-                                            "message": (r.get("msg") or "Order not found.")}}
+                                            "title": "Incomplete Information",
+                                            "message": "The Order ID you entered is incorrect. Try again!"}}
 
 
 def register(classes: dict) -> None:

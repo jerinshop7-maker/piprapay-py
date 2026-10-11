@@ -150,6 +150,17 @@ class BkashRefundGuardTests(TestCase):
         self.assertEqual(B.extract_payment_id(src), "PAY123")
         self.assertEqual(B.extract_payment_id("[]"), "")
 
+    def test_find_completed_refund(self):
+        from gateways.api_gateways import BkashApiTokenizedGateway as B
+        data = {"refundTransactions": [
+            {"refundTransactionStatus": "Completed", "refundAmount": "100.00",
+             "refundTrxId": "RT1"},
+            {"refundTransactionStatus": "Pending", "refundAmount": "100.00"}]}
+        found = B._find_completed_refund(data, "100")
+        self.assertEqual(found["refundTrxId"], "RT1")
+        self.assertIsNone(B._find_completed_refund(data, "50"))
+        self.assertIsNone(B._find_completed_refund({}, "100"))
+
 
 class CheckoutMathTests(TestCase):
     def test_vat_is_percent(self):
@@ -189,12 +200,12 @@ class CheckoutMathTests(TestCase):
                                     percentage_charge=2, fixed_discount=0,
                                     percentage_discount=10)
         totals = compute_gateway_totals("100", "BDT", gw, "b1")
-        # 100/117 convert; tested for shape not exact provider rounding here.
+        # Literal expectations (PHP semantics: convert to gateway ccy, fee/disc
+        # on converted, then fee/disc re-multiplied into txn ccy for storage).
         self.assertEqual(totals["currency"], "USD")
-        self.assertTrue(M.num_eq(totals["converted"], M.money_add(
-            M.money_sub(M.money_div("100", "117"),
-                        M.money_div(M.money_mul(M.money_div("100", "117"), "10"), "100")),
-            M.money_add("1", M.money_div(M.money_mul(M.money_div("100", "117"), "2"), "100")))))
+        self.assertEqual(totals["converted"], "1.78632478")
+        self.assertEqual(totals["discount"], "9.99999936")
+        self.assertEqual(totals["fee"], "118.99999917")
 
 
 class BankFallbackTests(TestCase):

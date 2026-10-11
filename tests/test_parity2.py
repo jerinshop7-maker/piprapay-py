@@ -163,7 +163,16 @@ class MiscEndpointTests(TestCase):
         self.assertEqual(r.status_code, 200)
 
     def test_cron_shape(self):
-        from cron_app.tasks import run_cron
+        from cron_app.tasks import acquire_lock, release_lock, run_cron
+        from pathlib import Path
+        from django.conf import settings
+        self.assertTrue(acquire_lock())
+        # Second acquisition fails while the lock is fresh (10-min window).
+        self.assertFalse(acquire_lock())
+        release_lock()
+        self.assertTrue(acquire_lock())
+        release_lock()
+        self.assertFalse((Path(settings.BASE_DIR) / "media" / "storage" / "cron.lock").exists())
         result = run_cron()
         self.assertEqual(result, {"status": "true", "message": "Cron run executed."})
 
