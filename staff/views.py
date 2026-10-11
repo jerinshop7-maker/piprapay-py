@@ -364,7 +364,7 @@ def customers(request):
                 if not has_permission(request.pp_permissions, "customers", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 Customer.objects.filter(id__in=ids).update(
-                    status="active" if action == "activated" else "suspend")
+                    status="active" if action == "activated" else "suspend", updated_date=timezone.now())
             return redirect("/admin/customers/")
         if "suspend" in request.POST:
             if not has_permission(request.pp_permissions, "customers", "edit", request.pp_admin.role):
@@ -533,7 +533,7 @@ def invoice_edit(request, ref: str = ""):
                 if row["id"] and str(row["id"]).isdigit():
                     InvoiceItem.objects.filter(id=row["id"], invoice_id=inv.ref).update(
                         description=row["description"], amount=row["amount"],
-                        quantity=row["quantity"], discount=row["discount"], vat=row["vat"])
+                        quantity=row["quantity"], discount=row["discount"], vat=row["vat"], updated_date=timezone.now())
                 elif row["description"] or row["amount"] not in ("0", ""):
                     InvoiceItem.objects.create(brand_id=inv.brand_id, invoice_id=inv.ref,
                                                description=row["description"], amount=row["amount"],
@@ -630,7 +630,7 @@ def payment_link_list(request):
                 if not has_permission(request.pp_permissions, "payment_link", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 PaymentLink.objects.filter(ref__in=ids).update(
-                    status="active" if action == "activated" else "inactive")
+                    status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect("/admin/payment-link/")
         if "default_currency" in request.POST:
             from core.env import set_env
@@ -685,7 +685,7 @@ def _save_link_fields(link: PaymentLink, request) -> None:
         field_id = one("fieldID")
         if field_id and str(field_id).isdigit():
             PaymentLinkField.objects.filter(id=field_id).update(
-                formType=form_type, fieldName=field_name, required=required, value=value)
+                formType=form_type, fieldName=field_name, required=required, value=value, updated_date=timezone.now())
         else:
             PaymentLinkField.objects.create(paymentLinkID=link.ref, formType=form_type,
                                             fieldName=field_name, required=required or "true",
@@ -778,7 +778,7 @@ def gateway_list(request):
                 if not has_permission(request.pp_permissions, "gateways", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 Gateway.objects.filter(gateway_id__in=ids).update(
-                    status="active" if action == "activated" else "inactive")
+                    status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect("/admin/gateways/")
     tabs = {t: Gateway.objects.filter(tab=t).count() for t in ("mfs", "bank", "global")}
     return render(request, "staff/gateway_list.html",
@@ -935,7 +935,7 @@ def sms_data(request):
             elif action in ("approved", "awaiting-review", "used"):
                 if not has_permission(request.pp_permissions, "sms_data", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
-                SmsData.objects.filter(id__in=ids).update(status=action)
+                SmsData.objects.filter(id__in=ids).update(status=action, updated_date=timezone.now())
             return redirect("/admin/sms-data/")
         if "edit_id" in request.POST:
             if not has_permission(request.pp_permissions, "sms_data", "edit", request.pp_admin.role):
@@ -1164,7 +1164,7 @@ def balance_verification(request):
                 BalanceVerification.objects.filter(id__in=ids).delete()
             elif action in ("activated", "inactivated"):
                 BalanceVerification.objects.filter(id__in=ids).update(
-                    status="active" if action == "activated" else "inactive")
+                    status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect(f"/admin/devices/balance-verification/?d_id={d_id}")
         if "edit_id" in request.POST:
             row = BalanceVerification.objects.filter(id=request.POST["edit_id"]).first()
@@ -1277,7 +1277,7 @@ def domains(request):
                 if not has_permission(request.pp_permissions, "domains", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 Domain.objects.filter(id__in=ids).update(
-                    status="active" if action == "activated" else "inactive")
+                    status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect("/admin/domains/")
         if "edit_id" in request.POST:
             if not has_permission(request.pp_permissions, "domains", "edit", request.pp_admin.role):
@@ -1499,7 +1499,7 @@ def brand_api(request):
                 if not has_permission(request.pp_permissions, "api_settings", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 ApiKey.objects.filter(id__in=ids).update(
-                    status="active" if action == "activated" else "inactive")
+                    status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect("/admin/brand-setting/api/")
         if "edit_id" in request.POST:
             if not has_permission(request.pp_permissions, "api_settings", "view", request.pp_admin.role):
@@ -1676,7 +1676,7 @@ def brand_faq(request):
                 if not has_permission(request.pp_permissions, "faq_settings", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 Faq.objects.filter(id__in=ids).update(
-                    status="active" if action == "activated" else "inactive")
+                    status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect("/admin/brand-setting/faq/")
         if "edit_id" in request.POST:
             if not has_permission(request.pp_permissions, "faq_settings", "edit", request.pp_admin.role):
@@ -1791,7 +1791,7 @@ def staff_list(request):
                 if not has_permission(request.pp_permissions, "staff", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 Admin.objects.filter(a_id__in=ids, role="staff").update(
-                    status="active" if action == "activated" else "suspend")
+                    status="active" if action == "activated" else "suspend", updated_date=timezone.now())
             return redirect("/admin/staff/")
     return render(request, "staff/staff_list.html",
                   {"page": _paginate(request, qs), "status": status, "q": q,
@@ -1962,7 +1962,7 @@ def staff_permission_list(request, a_id: str):
                                       request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 rows.filter(id__in=ids).update(
-                    status="active" if action == "activated" else "suspend")
+                    status="active" if action == "activated" else "suspend", updated_date=timezone.now())
             return redirect(f"/admin/staff/{a_id}/brands/")
     return render(request, "staff/staff_permission_list.html",
                   {"member": member, "rows": rows, "brands": Brand.objects.all()})
@@ -2325,7 +2325,7 @@ def addon_list(request):
                 if not has_permission(request.pp_permissions, "addons", "edit", request.pp_admin.role):
                     return render(request, "staff/denied.html", status=403)
                 Addon.objects.filter(addon_id__in=ids).update(
-                    status="active" if action == "activated" else "inactive")
+                    status="active" if action == "activated" else "inactive", updated_date=timezone.now())
             return redirect("/admin/addons/")
         if "upload" in request.POST:
             if not has_permission(request.pp_permissions, "addons", "create", request.pp_admin.role):

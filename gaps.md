@@ -342,3 +342,9 @@ edge-case, or message-text-only difference.
   deleteable flags with disabled checkboxes (G6-030); IPN language resolves
   against gateway `supported_languages` (G1-022); IPN reads `request.body`
   before POST (fixes form-POST IPNs like Binance).
+
+- Continuation pass 2: every queryset `.update()` now stamps `updated_date`
+  (PHP stamps explicitly; `save()` paths already did via `auto_now`); README
+  route matrix refreshed (`/install/`, companion, info endpoints, `?page=`
+  shim, `set-brand`); `brand_api` expired derivation, transaction
+  gateway-slug search, addon search, base-first currencies.

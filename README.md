@@ -37,19 +37,24 @@ Login at `/login/`, panel at `/admin/dashboard/`.
 
 | PHP `?page=` route | Django URL | Status |
 |---|---|---|
-| `login` / `forgot` / `2fa` | `/login/` `/forgot/` `/2fa/` | ✅ |
-| `ipn/<gateway_id>` | `/ipn/<gateway_id>/` | ✅ |
+| `login` / `forgot` / `2fa` (+`?logout`) | `/login/` `/forgot/` `/2fa/` (+ global `?logout`) | ✅ |
+| `ipn/<gateway_id>` (empty → 400) | `/ipn/<gateway_id>/`, `/ipn/` → 400 | ✅ |
 | `api/checkout/redirect` | `/api/checkout/redirect/` | ✅ |
 | `api/checkout/popup` | `/api/checkout/popup/` | ✅ |
 | `api/verify-payment` | `/api/verify-payment/` | ✅ |
 | `api/refund-payment` | `/api/refund-payment/` | ✅ |
-| `payment/<pp_id>` + `?gateway=` + callback | `/payment/<pp_id>/`, `/payment/<pp_id>/callback/` | ✅ |
-| `invoice/<ref>` | `/invoice/<ref>/` | ✅ |
-| `payment-link/<ref>[/<brand>]` | `/payment-link/<ref>/[/<brand>/]` | ✅ |
-| `admin/*` (≈30 pages) | `/admin/*` (`staff/urls.py`) | ✅ |
+| unknown `api_type` | `/api/<anything>/` → JSON error | ✅ |
+| companion (`action-companion`) | `/api/companion/<action>/` | ✅ |
+| `payment/<pp_id>` + `?gateway=` + `?pp_callback` | `/payment/<pp_id>/`, `/payment/<pp_id>/verify/`, `/payment/<pp_id>/callback/` | ✅ |
+| `invoice/<ref>` + `invoice/webhook` | `/invoice/<ref>/`, `/invoice/<ref>/pay/`, `/invoice/webhook/` | ✅ |
+| `payment-link/<ref>[/<brand>]` + `default` | `/payment-link/<ref>/[/<brand>/]`, `/payment-link/default/<brand>/`, `…/submit/` | ✅ |
+| `admin/*` (≈40 pages incl. addons, info JSON) | `/admin/*` (`staff/urls.py`) | ✅ |
+| `set-default-brand` | `/set-brand/` (POST) | ✅ |
 | `cron/<token>` | `/cron/<token>/` + `run_cron` cmd | ✅ |
-| `homepageRedirect` | `/` → checkout/admin | ✅ |
-| `404` / maintenance / requirement | `core/views.page_404`, health check | ✅ |
+| install wizard | `/install/` + `pp_install` cmd | ✅ |
+| `homepageRedirect` | `/` → login/host | ✅ |
+| legacy `?page=X` links | auto-redirect shim | ✅ |
+| `404` / maintenance / requirement | `page_404`, maintenance middleware, `check_requirements` | ✅ |
 
 ### Database (23/23 tables, same `pp_*` names)
 

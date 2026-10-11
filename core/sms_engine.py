@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import re
 
+from django.utils import timezone
+
 PROVIDERS = {
     "bkash": {"name": "bKash", "currency": "BDT", "balance_verify": "true", "senders": ["bkash"]},
     "nagad": {"name": "Nagad", "currency": "BDT", "balance_verify": "true", "senders": ["nagad"]},
@@ -192,10 +194,10 @@ def reconcile_by_longest_chain(device_id: str, sender_key: str, gateway_type: st
 
     ids = [s["id"] for s in best_chain]
     if ids:
-        SmsData.objects.filter(id__in=ids).update(status="approved", reason="--")
+        SmsData.objects.filter(id__in=ids).update(status="approved", reason="--", updated_date=timezone.now())
 
     final_balance = M.int_to_money(best_chain[-1]["bal"], 2)
     BalanceVerification.objects.filter(
         device_id=device_id, sender_key=sender_key, type=gateway_type).update(
-        current_balance=final_balance)
+        current_balance=final_balance, updated_date=timezone.now())
     return final_balance
