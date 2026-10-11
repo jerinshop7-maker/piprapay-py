@@ -145,6 +145,7 @@ templates/     base, core/, checkout/, staff/
 tests/         test_parity.py + test_parity2.py + test_parity3.py + test_gateways.py (108 tests)
 tools/         extract_gateway_lang.py (regenerates lang_data.json from PHP)
 AGENTS.md      agent operating manual
+gaps.md        audit record: zero open gaps; permanent deviations + cleared log
 ```
 
 ## License
