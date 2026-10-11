@@ -1,25 +1,33 @@
 {% extends "base.html" %}{% block title %}{{ gateway.display }} — {{ lang.checkout|default:"Checkout" }}{% endblock %}
 {% block content %}
+<style>.btn-primary,.payment-form-btn{background-color:{{ gateway.btn_color|default:"#5f38f9" }};color:{{ gateway.btn_text_color|default:"#FFFFFF" }};}
+.payment-instructions{border-color:{{ gateway.primary_color|default:"#5f38f9" }};}
+#toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:.25rem;z-index:99;}
+.pp-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;}</style>
 <h1>{{ gateway.display }}</h1>
 <p><a href="./">Back to checkout</a></p>
+{% if supported_langs %}<p><select id="gw-lang" onchange="location.href='?gateway={{ gateway.gateway_id }}&lang='+this.value">
+{% for code,label in supported_langs.items %}<option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select></p>{% endif %}
 <p>Pay <strong>{{ transaction.local_net_amount }} {{ transaction.local_currency }}</strong></p>
 {% if instructions %}<ol class="payment-instructions">
 {% for s in instructions %}<li class="li-{{ s.row|default:forloop.counter }}">
 {% if s.icon %}{{ s.icon|safe }}{% else %}<div class="dot"></div>{% endif %}
 <p>{{ s.text|safe }}
-{% if s.copy and s.value %} <span class="button-icon" onclick="copy_value('{{ s.value }}')">[copy]</span>{% endif %}
-{% if s.action %}{% if s.action.type == "image" and s.action.value %} <span class="button-icon" onclick="pp_show_image('{{ s.action.value }}')">[qr]</span>
+{% if s.copy and s.value %} <span class="button-icon" onclick="copy_value('{{ s.value|escapejs }}')">[copy]</span>{% endif %}
+{% if s.action %}{% if s.action.type == "image" and s.action.value %} <span class="button-icon" onclick="pp_show_image('{{ s.action.value|escapejs }}')">[qr]</span>
 {% else %}<style>.li-{{ s.row|default:forloop.counter }}{display: none !important;}</style>{% endif %}{% endif %}
 </p></li>{% endfor %}</ol>
 <div id="pp-image-modal" class="pp-modal" style="display:none;">
 <div class="pp-modal-content"><span class="pp-close" onclick="pp_close_image()">&times;</span>
 <div class="pp-model-image-b"><img id="pp-modal-image" src="" alt="Preview"></div></div></div>
 <script data-cfasync="false">
-function copy_value(src){ if(navigator.clipboard) navigator.clipboard.writeText(src); }
+function toast(m){var t=document.getElementById('verify-toast');if(!t){t=document.createElement('div');t.id='verify-toast';t.style.cssText='position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:.5rem 1rem;border-radius:.25rem;z-index:99;';document.body.appendChild(t);}t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3000);}
+function copy_value(src){ if(navigator.clipboard){navigator.clipboard.writeText(src).then(function(){toast('{{ lang.copied_successfully|default:"Copied" }}');},function(){toast('{{ lang.copy_failed|default:"Copy failed" }}');});} }
 function pp_show_image(src){ document.getElementById('pp-modal-image').src = src; document.getElementById('pp-image-modal').style.display = 'flex'; }
 function pp_close_image(){ document.getElementById('pp-image-modal').style.display = 'none'; }
 function success(d){ location.reload(); }
-function failed(t, m){ document.getElementById('verify-msg').textContent = t + ': ' + m; }
+function failed(t, m){ var el=document.getElementById('verify-msg'); if(el) el.textContent = t + ': ' + m; toast(t + ': ' + m); }
 </script>
 {% endif %}
 {% if gateway_html %}{{ gateway_html|safe }}{% endif %}
@@ -42,7 +50,11 @@ document.addEventListener("DOMContentLoaded", function(){
   const form = document.querySelector(".payment-form-submit");
   form.addEventListener("submit", function(e){
     e.preventDefault();
+    var btn = form.querySelector("button[type=submit]");
+    var label = btn.innerHTML;
+    btn.innerHTML = "<span>…</span>"; btn.disabled = true;
     fetch("verify/", {method: "POST", body: new FormData(form)}).then(r=>r.json()).then(data=>{
+      btn.innerHTML = label; btn.disabled = false;
       if(data.status === "true"){ success(data); }
       else if(data.status === "false"){
         if(data.visible_number === "true"){ document.getElementById("mobile-wrap").style.display = "block"; }
@@ -68,7 +80,11 @@ document.addEventListener("DOMContentLoaded", function(){
   const form = document.querySelector(".payment-form-submit");
   form.addEventListener("submit", function(e){
     e.preventDefault();
+    var btn = form.querySelector("button[type=submit]");
+    var label = btn.innerHTML;
+    btn.innerHTML = "<span>…</span>"; btn.disabled = true;
     fetch("verify/", {method: "POST", body: new FormData(form)}).then(r=>r.json()).then(data=>{
+      btn.innerHTML = label; btn.disabled = false;
       if(data.status === "true"){ success(data); } else if(data.status === "false"){ failed(data.title, data.message); }
       else { failed("Unexpected Response", "Please try again later."); }
     }).catch(()=>failed("Request Error", "Something went wrong. Please try again."));
@@ -90,7 +106,11 @@ document.addEventListener("DOMContentLoaded", function(){
   const form = document.querySelector(".payment-form-submit");
   form.addEventListener("submit", function(e){
     e.preventDefault();
+    var btn = form.querySelector("button[type=submit]");
+    var label = btn.innerHTML;
+    btn.innerHTML = "<span>…</span>"; btn.disabled = true;
     fetch("verify/", {method: "POST", body: new FormData(form)}).then(r=>r.json()).then(data=>{
+      btn.innerHTML = label; btn.disabled = false;
       if(data.status === "true"){ success(data); } else if(data.status === "false"){ failed(data.title, data.message); }
       else { failed("Unexpected Response", "Please try again later."); }
     }).catch(()=>failed("Request Error", "Something went wrong. Please try again."));

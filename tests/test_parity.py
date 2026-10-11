@@ -28,7 +28,8 @@ class MoneyParityTests(TestCase):
         self.assertEqual(M.money_sub("1.00", "0.33"), "0.67000000")
         self.assertEqual(M.money_mul("10", "0.025"), "0.25000000")
         self.assertEqual(M.money_div("10", "4"), "2.50000000")
-        self.assertEqual(M.money_div("1", "0"), "0.00000000")
+        self.assertEqual(M.money_div("1", "0"), "0")
+        self.assertEqual(M.money_div("1", "0.0000000001"), "0")
 
     def test_round_truncates_like_bc(self):
         # PHP bc-truncation, NOT half-up: 10.005 -> 10.00, 10.009 -> 10.00
@@ -38,7 +39,11 @@ class MoneyParityTests(TestCase):
 
     def test_sanitize_is_numeric_only(self):
         self.assertEqual(M.money_sanitize("100"), "100")
-        self.assertEqual(M.money_sanitize("1,234.50"), "0")
+        # bcmath/MySQL coerce to the leading numeric prefix.
+        self.assertEqual(M.money_sanitize("1,234.50"), "1")
+        self.assertEqual(M.money_sanitize(" 12 "), "12")
+        self.assertEqual(M.money_sanitize("1e3"), "1")
+        self.assertEqual(M.money_sanitize("abc"), "0")
         self.assertEqual(M.money_sanitize("--"), "0")
         self.assertEqual(M.money_sanitize(None), "0")
         self.assertEqual(M.money_sanitize(""), "0")
@@ -245,6 +250,8 @@ class ModelTableParityTests(TestCase):
 
 class ApiFlowTests(TestCase):
     def setUp(self):
+        Admin.objects.create(a_id="adm", full_name="A", username="installer",
+                             email="i@x.co", password=make_password("pw"), role="admin")
         self.brand = Brand.objects.create(brand_id="b1", identify_name="Test", name="Test")
         Currency.objects.create(brand_id="b1", code="BDT", symbol="৳", rate=1)
         self.key = ApiKey.objects.create(brand_id="b1", name="t", api_key="secret123",
@@ -337,6 +344,8 @@ class ApiFlowTests(TestCase):
 
 class CheckoutFlowTests(TestCase):
     def setUp(self):
+        Admin.objects.create(a_id="adm", full_name="A", username="installer",
+                             email="i@x.co", password=make_password("pw"), role="admin")
         Brand.objects.create(brand_id="b1", identify_name="T", name="T", payment_tolerance="0")
         Gateway.objects.create(gateway_id="g1", brand_id="b1", slug="bkash-personal",
                                name="bKash", display="bKash Personal", currency="BDT", status="active")
@@ -396,6 +405,7 @@ class CheckoutFlowTests(TestCase):
 
 class StaffAuthTests(TestCase):
     def setUp(self):
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B")
         Admin.objects.create(a_id="a1", full_name="Root", username="root",
                              email="r@x.com", password=make_password("pw123456"),
                              role="admin", status="active", twofa_secret="JBSWY3DPEHPK3PXP")

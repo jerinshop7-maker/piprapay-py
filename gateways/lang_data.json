@@ -85,11 +85,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -112,7 +114,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -122,16 +125,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -173,11 +179,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -200,7 +208,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -210,16 +219,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -264,11 +276,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -291,7 +305,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -301,16 +316,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -352,11 +370,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -379,7 +399,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -389,16 +410,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -444,15 +468,18 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "4",
@@ -475,7 +502,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "6",
@@ -485,16 +513,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "8",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -536,15 +567,18 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "4",
@@ -565,16 +599,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -615,11 +652,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -640,16 +679,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -687,11 +729,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -712,16 +756,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -763,11 +810,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -790,7 +839,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -800,16 +850,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -851,11 +904,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -878,7 +933,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -888,16 +944,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -939,11 +998,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -966,7 +1027,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -976,16 +1038,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1023,11 +1088,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1048,16 +1115,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1099,11 +1169,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1126,7 +1198,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -1136,16 +1209,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1186,11 +1262,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1211,16 +1289,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1265,11 +1346,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1292,7 +1375,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -1302,16 +1386,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1353,11 +1440,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1380,7 +1469,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -1390,16 +1480,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1441,11 +1534,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1468,7 +1563,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -1478,16 +1574,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1532,11 +1631,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1559,7 +1660,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -1569,16 +1671,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1623,11 +1728,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1650,7 +1757,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -1660,16 +1768,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1735,11 +1846,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1760,20 +1873,24 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1839,15 +1956,18 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "4",
@@ -1868,16 +1988,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -1939,11 +2062,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -1964,16 +2089,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2018,11 +2146,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2045,7 +2175,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2055,16 +2186,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2106,11 +2240,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2133,7 +2269,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2143,16 +2280,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2194,11 +2334,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2221,7 +2363,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2231,16 +2374,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2287,11 +2433,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2312,16 +2460,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2363,11 +2514,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2390,7 +2543,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2400,16 +2554,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2447,11 +2604,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2472,16 +2631,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "5",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2547,7 +2709,8 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
@@ -2564,7 +2727,8 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
@@ -2591,11 +2755,13 @@
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2637,11 +2803,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2664,7 +2832,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2674,16 +2843,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2725,11 +2897,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2752,7 +2926,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2762,16 +2937,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2813,11 +2991,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2840,7 +3020,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2850,16 +3031,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2901,11 +3085,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -2928,7 +3114,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -2938,16 +3125,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -2989,11 +3179,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -3016,7 +3208,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -3026,16 +3219,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -3077,11 +3273,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -3104,7 +3302,8 @@
     "action_value": [
      "options",
      "qr_code"
-    ]
+    ],
+    "vars": []
    },
    {
     "text": "5",
@@ -3114,16 +3313,19 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  },
@@ -3189,11 +3391,13 @@
   "instructions": [
    {
     "text": "1",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "2",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "3",
@@ -3210,7 +3414,8 @@
      "local_net_amount"
     ],
     "vars": [
-     "amount"
+     "amount",
+     "currency"
     ]
    },
    {
@@ -3226,11 +3431,13 @@
    },
    {
     "text": "6",
-    "copy": false
+    "copy": false,
+    "vars": []
    },
    {
     "text": "7",
-    "copy": false
+    "copy": false,
+    "vars": []
    }
   ]
  }

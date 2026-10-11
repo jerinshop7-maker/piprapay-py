@@ -11,6 +11,32 @@ from core.models import (Admin, Brand, Currency, Device, Gateway, Invoice, Permi
 from core.permissions import permission_schema
 
 
+class InstallGateTests(TestCase):
+    def test_empty_db_redirects_to_installer(self):
+        r = self.client.get("/login/")
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r["Location"], "/install/")
+        r = self.client.get("/install/")
+        self.assertEqual(r.status_code, 200)
+        r = self.client.post("/install/admin/", {"full_name": "A", "username": "admin",
+                                                 "email": "a@b.co", "password": "pw123456",
+                                                 "password_confirm": "pw123456"})
+        self.assertContains(r, "Installation Complete", status_code=200)
+        self.assertTrue(Admin.objects.filter(username="admin").exists())
+        self.assertTrue(Brand.objects.exists())
+        r = self.client.get("/login/")
+        self.assertEqual(r.status_code, 200)
+
+    def test_legacy_page_param(self):
+        Admin.objects.create(a_id="a", full_name="A", username="u", email="u@x.co",
+                             password=make_password("pw"), role="admin")
+        r = self.client.get("/?page=login")
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r["Location"], "/login/")
+        r = self.client.get("/?page=..%2Fsecret")
+        self.assertEqual(r.status_code, 302)
+
+
 class NumericJugglingTests(TestCase):
     def test_num_eq(self):
         self.assertTrue(M.num_eq("100.50000000", "100.50"))
@@ -102,6 +128,8 @@ class DashboardExclusionTests(TestCase):
 
 class MiscEndpointTests(TestCase):
     def test_api_root_json(self):
+        Admin.objects.create(a_id="adm", full_name="A", username="installer",
+                             email="i@x.co", password=make_password("pw"), role="admin")
         r = self.client.post("/api/", data=json.dumps({}), content_type="application/json")
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()["error"]["code"], "INVALID_JSON_PAYLOAD")

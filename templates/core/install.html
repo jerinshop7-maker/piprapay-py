@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}Install — PipraPay{% endblock %}
+{% block content %}<h1>PipraPay Installation</h1>
+{% if step == "admin" %}
+<h2>Step: Admin account</h2>
+{% if error %}<p>{{ error }}</p>{% endif %}
+<form method="post" action="/install/admin/">{% csrf_token %}
+<input name="full_name" placeholder="Full name" required>
+<input name="username" placeholder="Username" required>
+<input name="email" placeholder="Email" required>
+<input name="password" type="password" placeholder="Password" required>
+<input name="password_confirm" type="password" placeholder="Confirm password" required>
+<button>Complete install</button></form>
+{% elif step == "complete" %}
+<h2>Installation Complete</h2>
+<p>Delete the installer if you deployed a copy of the source. <a href="/login/">Go to Dashboard</a></p>
+{% else %}
+<h2>Step: Requirements</h2>
+<ul>{% for r in rows %}<li>{{ r.name }}: {{ r.current }} (required {{ r.required }}) — {% if r.ok %}Pass{% else %}Failed{% endif %}</li>{% endfor %}</ul>
+{% if ok %}<p><a href="/install/admin/">Continue to admin setup</a></p>{% endif %}
+<p>Database schema is managed by Django migrations (<code>python manage.py migrate</code>).</p>
+{% endif %}{% endblock %}

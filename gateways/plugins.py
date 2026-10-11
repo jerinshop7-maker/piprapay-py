@@ -138,6 +138,7 @@ SPECS = {
                  "color": ("#ed1c24", "#FFFFFF", "#ed1c24", "#FFFFFF"),
                  "fields": []},
     "nowpayments": {"title": "NOWPayments Crypto", "currency": "USD", "tab": "global", "type": "api",
+                 "logo": "assets/icon.png",
                  "color": ("#6c35c3", "#FFFFFF", "#6c35c3", "#FFFFFF"),
                  "fields": [_t("api_key", "NOWPayments API Key"), _t("ipn_secret_key", "IPN Secret Key"), _mode_field()]},
     "okwallet-agent": {"title": "OkWallet Agent", "currency": "BDT", "tab": "mfs", "type": "automation",
@@ -273,7 +274,7 @@ class _SpecGateway(GatewayBase):
 
     def info(self):
         s = self._spec
-        d = {"title": s["title"], "logo": "assets/logo.jpg", "currency": s["currency"],
+        d = {"title": s["title"], "logo": s.get("logo", "assets/logo.jpg"), "currency": s["currency"],
              "tab": s["tab"], "gateway_type": s["type"]}
         if s.get("sender_key"):
             d["sender_key"] = s["sender_key"]

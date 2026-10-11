@@ -1,7 +1,7 @@
 """
 WordPress-style hook system: add_action/do_action/add_filter/apply_filters.
-Port of pp-functions.php hooks used for invoice.*, transactions.updated,
-system.update.available.
+Port of pp-functions.php hooks. Like PHP, each callback runs crash-isolated so
+one failing callback cannot abort the remaining chain.
 """
 from __future__ import annotations
 
@@ -16,7 +16,10 @@ def add_action(hook: str, callback, priority: int = 10) -> None:
 
 def do_action(hook: str, *args, **kwargs) -> None:
     for _, cb in sorted(_actions.get(hook, []), key=lambda x: x[0]):
-        cb(*args, **kwargs)
+        try:
+            cb(*args, **kwargs)
+        except Exception:
+            continue
 
 
 def add_filter(hook: str, callback, priority: int = 10) -> None:
@@ -26,7 +29,10 @@ def add_filter(hook: str, callback, priority: int = 10) -> None:
 
 def apply_filters(hook: str, value, *args, **kwargs):
     for _, cb in sorted(_filters.get(hook, []), key=lambda x: x[0]):
-        value = cb(value, *args, **kwargs)
+        try:
+            value = cb(value, *args, **kwargs)
+        except Exception:
+            continue
     return value
 
 

@@ -1,5 +1,14 @@
 {% extends "base.html" %}{% block title %}2FA — PipraPay{% endblock %}
 {% block content %}<h1>Two-factor authentication</h1>
+<p><a href="/login/?logout=1">Logout</a></p>
 <form method="post">{% csrf_token %}
-<input name="code" placeholder="6-digit code" required>
-<button type="submit">Verify</button></form>{% endblock %}
+<div id="boxes">
+<input name="code_one" maxlength="1" size="1" required> <input name="code_two" maxlength="1" size="1" required> <input name="code_three" maxlength="1" size="1" required> <input name="code_four" maxlength="1" size="1" required> <input name="code_five" maxlength="1" size="1" required> <input name="code_six" maxlength="1" size="1" required>
+</div>
+<p>Or enter the full code: <input name="code" placeholder="6-digit code"></p>
+<button type="submit">Verify</button></form>
+<script>
+const boxes=[...document.querySelectorAll('#boxes input')];
+boxes.forEach((b,i)=>b.addEventListener('input',()=>{ if(b.value&&i<5) boxes[i+1].focus(); }));
+boxes.forEach((b,i)=>b.addEventListener('keydown',(e)=>{ if(e.key==='Backspace'&&!b.value&&i>0) boxes[i-1].focus(); }));
+</script>{% endblock %}

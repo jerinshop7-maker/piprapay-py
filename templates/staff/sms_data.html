@@ -1,4 +1,5 @@
 {% extends "base.html" %}{% block content %}<h1>SMS data</h1>
+<p><a href="?">All</a> <a href="?tab=approved">Approved</a> <a href="?tab=awaiting-review">Awaiting review</a> <a href="?tab=used">Used</a></p>
 <form method="get"><input name="q" value="{{ q }}"><input name="status" value="{{ status }}"><button>Filter</button></form>
 <form method="post">{% csrf_token %}<select name="bulk"><option value="approved">Approve</option><option value="awaiting-review">Review</option><option value="used">Used</option><option value="deleted">Delete</option></select><button>Apply</button>
 <ul>{% for s in page %}<li><input type="checkbox" name="selected_ids" value="{{ s.id }}"> {{ s.sender_key }} {{ s.trx_id }} {{ s.amount }} {{ s.status }} {{ s.entry_type }} {{ s.reason }}</li>{% endfor %}</ul></form>

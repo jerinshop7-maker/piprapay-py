@@ -1,19 +1,26 @@
 {% extends "base.html" %}{% block title %}{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}{% endblock %}
 {% block content %}
 <h1>{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}</h1>
-<p>{{ invoice.status }} · {{ lang.invoice_date|default:"Date" }}: {{ invoice.created_date }} · {{ lang.due_date|default:"Due" }}: {{ invoice.due_date|default:"—" }}</p>
-{% if invoice.gateway %}<p>{{ lang.payment_method|default:"Payment Method" }}: {{ invoice.gateway }}</p>{% endif %}
+<p><span class="badge {% if invoice.status == "paid" %}bg-green{% else %}bg-red{% endif %}">{{ invoice.status }}</span></p>
+<p>{{ lang.invoice_date|default:"Date" }}: {{ invoice.created_date }} · {{ lang.due_date|default:"Due" }}: {{ invoice.due_date|default:"—" }}</p>
+{% if invoice.status == "paid" %}<p>{{ lang.payment_method|default:"Payment Method" }}: {{ invoice.gateway }}</p>{% endif %}
+<h2>{{ lang.bill_from|default:"Bill From" }}</h2>
+<p>{{ brand.name }}</p>
 <h2>{{ lang.bill_to|default:"Bill To" }}</h2>
 <p>{{ invoice.customer.name }} · {{ invoice.customer.email }} · {{ invoice.customer.mobile }}</p>
-<table><tr><th>{{ lang.description|default:"Description" }}</th><th>{{ lang.qty|default:"Qty" }}</th><th>{{ lang.unit_price|default:"Unit Price" }}</th><th>{{ lang.discount|default:"Discount" }}</th><th>VAT</th><th>{{ lang.total|default:"Total" }}</th></tr>
-{% for it in items %}<tr><td>{{ it.description }}</td><td>{{ it.quantity }}</td><td>{{ it.unitPrice }}</td><td>{{ it.discount }}</td><td>{{ it.vat }}</td><td>{{ it.total }}</td></tr>{% endfor %}</table>
+<table><tr><th>{{ lang.description|default:"Description" }}</th><th>{{ lang.qty|default:"Qty" }}</th><th>{{ lang.unit_price|default:"Unit Price" }}</th><th>{{ lang.discount|default:"Discount" }}</th><th>{{ lang.tax|default:"Tax" }}</th><th>{{ lang.total|default:"Total" }}</th></tr>
+{% for it in items %}<tr><td>{{ it.description }}</td><td>{{ it.quantity }}</td><td>{{ it.unitPrice }} {{ invoice.currency }}</td><td>{{ it.discount }} {{ invoice.currency }}</td><td>{{ it.vat }} {{ invoice.currency }}</td><td>{{ it.total }} {{ invoice.currency }}</td></tr>{% endfor %}</table>
+{% if invoice.status == "paid" %}<p>{{ lang.total|default:"Total" }}: {{ grandTotal }} {{ invoice.currency }}</p>
+{% else %}<p><strong>{{ lang.total_due|default:"Total Due" }}: {{ grandTotal }} {{ invoice.currency }}</strong></p>{% endif %}
 <p>{{ lang.subtotal|default:"Subtotal" }}: {{ subtotal }} · {{ lang.shipping|default:"Shipping" }}: {{ invoice.shippingFee }} · {{ lang.tax|default:"Tax" }}: {{ totalVat }} · {{ lang.discount|default:"Discount" }}: {{ totalDiscount }}</p>
-<p><strong>{{ lang.total_due|default:"Total Due" }}: {{ grandTotal }} {{ invoice.currency }}</strong></p>
-{% if invoice.note %}<p>{{ lang.note|default:"Notes" }}: {{ invoice.note }}</p>{% endif %}
+{% if invoice.note %}<h3>{{ lang.note|default:"Notes" }}</h3><p>{{ invoice.note }}</p>{% endif %}
+<p>{{ lang.no_signature|default:"" }}</p>
+<p>{{ brand.address.street|default:"" }} {{ brand.address.city|default:"" }} {{ brand.address.postal|default:"" }} {{ brand.address.country|default:"" }}</p>
+<p><button class="btn" onclick="window.print()">{{ lang.print_invoice|default:"Print" }}</button></p>
 {% if invoice.status == "unpaid" %}
 <form id="pay-form" method="post" action="pay/">{% csrf_token %}
 <input type="hidden" name="itemid" value="{{ invoice.iid }}">
-<button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+<button id="payButton" type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
 <script>
 document.getElementById('pay-form').addEventListener('submit', async (e) => {
   e.preventDefault();

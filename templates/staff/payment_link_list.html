@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% block content %}<h1>Payment links</h1>
 <form method="get"><select name="status"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select><button>Filter</button></form>
 <form method="post">{% csrf_token %}<select name="bulk"><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for l in page %}<li><input type="checkbox" name="selected_ids" value="{{ l.ref }}"> <a href="/admin/payment-link/{{ l.ref }}/">{{ l.ref }}</a> {{ l.status }} {{ l.amount }}</li>{% endfor %}</ul></form>
+<ul>{% for r in rows %}<li><input type="checkbox" name="selected_ids" value="{{ r.link.ref }}"> <a href="/admin/payment-link/{{ r.link.ref }}/">{{ r.link.ref }}</a> {{ r.display_status }} {{ r.link.amount }}</li>{% endfor %}</ul></form>
 <a href="/admin/payment-link/create/">Create</a>
 <h2>Default link currency</h2><form method="post">{% csrf_token %}
 <select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>

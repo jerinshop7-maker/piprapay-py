@@ -43,7 +43,10 @@ def upload_image(uploaded_file, max_file_size: int) -> dict:
         return {"status": False, "message": "File too large."}
 
     storage = Path(settings.MEDIA_ROOT) / "storage"
-    storage.mkdir(parents=True, exist_ok=True)
+    try:
+        storage.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return {"status": False, "message": "Failed to create folder!"}
 
     data = uploaded_file.read()
     filename = _random_filename(ext)
@@ -128,51 +131,73 @@ def extract_update(zip_file: str | Path, destination: str | Path) -> bool:
         delete_folder(tmp)
 
 
-def run_sql(statements: str, using: str = "default") -> dict:
-    """Mirror runSql(): split on ';\\n', execute in a transaction."""
-    from django.db import connections
+def run_sql(statements: str | Path, using: str = "default") -> dict:
+    """Mirror runSql(): file path or SQL string, split on ';\\n', run inside
+    begin/commit with rollback (raises 'SQL file not found' for missing paths)."""
+    from django.db import connections, transaction
 
+    if isinstance(statements, Path):
+        if not statements.exists():
+            return {"status": False, "message": "SQL file not found"}
+        statements = statements.read_text(encoding="utf-8", errors="replace")
     chunks = [c.strip() for c in statements.split(";\n") if c.strip()]
     conn = connections[using]
     try:
-        with conn.cursor() as cur:
-            for chunk in chunks:
-                cur.execute(chunk)
+        with transaction.atomic(using=using):
+            with conn.cursor() as cur:
+                for chunk in chunks:
+                    cur.execute(chunk)
         return {"status": True, "executed": len(chunks)}
     except Exception as e:
-        return {"status": False, "message": str(e)}
+        return {"status": False, "message": f"Database update failed: {e}"}
+
+
+def _quote(value) -> str:
+    if value is None:
+        return "NULL"
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    return "'" + str(value).replace("\\", "\\\\").replace("'", "''") + "'"
 
 
 def backup_database(backup_path: str | Path) -> dict:
-    """Mirror backupDatabasePDO(): schema + data dump of all tables."""
-    from django.core import serializers
-    from django.apps import apps
+    """Mirror backupDatabasePDO(): restorable dump — table schemas (SHOW CREATE
+    TABLE on MySQL, sqlite_master SQL on SQLite) plus quoted INSERT INTO rows,
+    wrapped in foreign-key guards, runnable through run_sql()."""
     from django.db import connection
 
     backup_path = Path(backup_path)
     backup_path.parent.mkdir(parents=True, exist_ok=True)
     try:
+        engine = connection.vendor
         with open(backup_path, "w", encoding="utf-8") as fh:
             fh.write("-- PipraPay Django backup\n")
-            try:
-                with connection.cursor() as cur:
-                    tables = connection.introspection.table_names(cur)
-                for table in sorted(tables):
-                    fh.write(f"-- TABLE {table}\n")
-                    with connection.cursor() as cur:
-                        cur.execute(f"SELECT * FROM {connection.ops.quote_name(table)}")
-                        cols = [c[0] for c in cur.description]
-                        fh.write(f"-- COLUMNS {', '.join(cols)}\n")
-                        for row in cur.fetchall():
-                            fh.write(f"-- ROW {row!r}\n")
-            except Exception as e:
-                fh.write(f"-- introspection skipped: {e}\n")
-            for model in apps.get_models():
-                try:
-                    fh.write(serializers.serialize("json", model.objects.all()))
-                    fh.write("\n")
-                except Exception:
+            fh.write("SET FOREIGN_KEY_CHECKS=0;\n" if engine == "mysql" else "PRAGMA foreign_keys=OFF;\n")
+            with connection.cursor() as cur:
+                tables = connection.introspection.table_names(cur)
+            for table in sorted(tables):
+                if table.startswith(("django_", "sqlite_")):
                     continue
+                qn = connection.ops.quote_name(table)
+                with connection.cursor() as cur:
+                    if engine == "mysql":
+                        cur.execute(f"SHOW CREATE TABLE {qn}")
+                        row = cur.fetchone()
+                        fh.write((row[1] if row and len(row) > 1 else "") + ";\n")
+                    else:
+                        cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name=%s",
+                                    [table])
+                        row = cur.fetchone()
+                        if row and row[0]:
+                            fh.write(row[0] + ";\n")
+                    cur.execute(f"SELECT * FROM {qn}")
+                    cols = [connection.ops.quote_name(c[0]) for c in cur.description]
+                    for db_row in cur.fetchall():
+                        fh.write(f"INSERT INTO {qn} ({', '.join(cols)}) VALUES "
+                                 f"({', '.join(_quote(v) for v in db_row)});\n")
+            fh.write("SET FOREIGN_KEY_CHECKS=1;\n" if engine == "mysql" else "PRAGMA foreign_keys=ON;\n")
         return {"status": True, "file": str(backup_path)}
-    except OSError as e:
+    except Exception as e:
         return {"status": False, "message": str(e)}

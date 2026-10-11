@@ -41,6 +41,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "core.middleware.PipraPaySecurityHeadersMiddleware",
     "core.middleware.PipraPayMaintenanceMiddleware",
+    "core.middleware.PipraPayLogoutMiddleware",
+    "core.middleware.PipraPayLegacyPageMiddleware",
+    "core.middleware.PipraPayInstallMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -63,14 +66,16 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
+_DB_ENGINE = os.environ.get("DB_ENGINE", "django.db.backends.sqlite3")
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.sqlite3"),
+        "ENGINE": _DB_ENGINE,
         "NAME": os.environ.get("DB_NAME", str(BASE_DIR / "db.sqlite3")),
         "USER": os.environ.get("DB_USER", ""),
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", ""),
         "PORT": os.environ.get("DB_PORT", ""),
+        **({"OPTIONS": {"charset": "utf8mb4"}} if "mysql" in _DB_ENGINE else {}),
     }
 }
 
@@ -86,6 +91,13 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# PHP uses password_hash/password_verify with PASSWORD_BCRYPT; bcrypt first so
+# legacy rows verify and new hashes are bcrypt (PBKDF2 kept as fallback).
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+]
 
 SESSION_COOKIE_AGE = 365 * 24 * 3600
 SESSION_COOKIE_HTTPONLY = True

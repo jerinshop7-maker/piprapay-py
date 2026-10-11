@@ -1,5 +1,7 @@
-{% extends "base.html" %}{% block content %}<h1>Balance verification {% if d_id %}({{ d_id }}){% endif %}</h1>
-<ul>{% for b in page %}<li>{{ b.device_id }} {{ b.sender_key }} {{ b.type }} {{ b.current_balance }} {{ b.simslot }} {{ b.status }}</li>{% endfor %}</ul>
+{% extends "base.html" %}{% block content %}<p><a href="?">All</a> <a href="?status=active">Active</a> <a href="?status=inactive">Inactive</a></p>
+<form method="get"><input name="q" value="{{ bq }}" placeholder="sender/type/balance"><button>Search</button></form>
+<h1>Balance verification {% if d_id %}({{ d_id }}){% endif %}</h1>
+<ul>{% for b in page %}<li>{{ b.device_id }} {{ b.provider_name }} ({{ b.provider_currency }}) {{ b.type }} {{ b.current_balance }} {{ b.simslot }} {{ b.status }}</li>{% endfor %}</ul>
 <h2>Add rule</h2><form method="post">{% csrf_token %}
 <input name="device_id" value="{{ d_id }}" placeholder="device id">
 <select name="sender_key">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select>

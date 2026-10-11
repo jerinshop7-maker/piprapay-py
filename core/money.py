@@ -30,24 +30,25 @@ def _q(value: Decimal, scale: int = SCALE) -> Decimal:
     return value.quantize(Decimal(1).scaleb(-scale), rounding=ROUND_DOWN)
 
 
+_NUMERIC_PREFIX = re.compile(r"\s*[+-]?(\d+(\.\d*)?|\.\d+)")
+
+
 def money_sanitize(value) -> str:
-    """is_numeric($value) ? (string)$value : "0"."""
+    """is_numeric($value) ? (string)$value : "0", normalized to the leading
+    numeric prefix (bcmath/MySQL coerce "1e3" -> 1, " 12 " -> 12)."""
     if value is None:
         return "0"
     if isinstance(value, bool):
         return "0"
     if isinstance(value, (int, float, Decimal)):
         return str(value)
-    s = str(value).strip()
-    if s in ("", "--"):
+    s = str(value)
+    if s.strip() in ("", "--"):
         return "0"
-    try:
-        Decimal(s)
-    except InvalidOperation:
+    m = _NUMERIC_PREFIX.match(s)
+    if not m:
         return "0"
-    # is_numeric("  12  ")? PHP is_numeric allows leading/trailing whitespace -> numeric.
-    # Mirror: accept iff Decimal parses.
-    return s
+    return m.group(1)
 
 
 def money_add(a, b, scale: int = SCALE) -> str:
@@ -63,9 +64,10 @@ def money_mul(a, b, scale: int = SCALE) -> str:
 
 
 def money_div(a, b, scale: int = SCALE) -> str:
+    # bccomp($b, '0', $scale) <= 0 -> "0": tiny divisors count as zero.
     divisor = Decimal(money_sanitize(b))
-    if divisor == 0:
-        return format(_q(Decimal(0), scale), "f")
+    if abs(divisor) < Decimal(1).scaleb(-scale):
+        return "0"
     return format(_q(Decimal(money_sanitize(a)) / divisor, scale), "f")
 
 
@@ -162,23 +164,26 @@ def convert_utc_to_user_tz(utc_time, user_tz: str = "UTC", fmt: str = "%Y-%m-%d 
 
 
 def is_expired(expired_date) -> bool:
-    if not expired_date or expired_date == "--":
+    # empty() guard: "", "--", None AND "0" are not expired. Unparseable -> True.
+    # Dashes = d-m-Y (European), slashes = m/d/Y (US), like strtotime().
+    if expired_date is None:
         return False
     s = str(expired_date).strip()
+    if not s or s == "--" or s == "0":
+        return False
     if re.match(r"^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}$", s):
+        s = s + " 23:59:59"
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%d-%m-%Y %H:%M:%S", "%d-%m-%Y",
+                "%m/%d/%Y %H:%M:%S", "%m/%d/%Y", "%d/%m/%Y %H:%M:%S", "%d/%m/%Y"):
         try:
-            dt = datetime.strptime(s.replace("/", "-"), "%Y-%m-%d")
-            s = dt.strftime("%Y-%m-%d 23:59:59")
+            ts = datetime.strptime(s, fmt).replace(tzinfo=timezone.utc).timestamp()
+            return datetime.now(timezone.utc).timestamp() > ts
         except ValueError:
-            return True
+            continue
     try:
-        ts = datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
+        return datetime.now(timezone.utc).timestamp() > datetime.fromisoformat(s).timestamp()
     except ValueError:
-        try:
-            ts = datetime.fromisoformat(s).timestamp()
-        except ValueError:
-            return True
-    return datetime.now(timezone.utc).timestamp() > ts
+        return True
 
 
 _HOST_RE = re.compile(r"^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,}$", re.IGNORECASE)
@@ -234,7 +239,8 @@ def hex_to_rgba(hex_color: str, opacity: float = 1.0) -> str:
 
 
 def time_ago(dt, brand_timezone: str = "Asia/Dhaka") -> str:
-    """Mirror timeAgo(): brand-TZ diff with y/m/d/h/i, else 'Just now'."""
+    """Mirror timeAgo(): brand-TZ calendar diff (y/m/d/h/i), else 'Just now'.
+    Future timestamps (invert diff) also render 'Just now'."""
     try:
         tz = ZoneInfo(brand_timezone or "Asia/Dhaka")
     except Exception:
@@ -245,19 +251,23 @@ def time_ago(dt, brand_timezone: str = "Asia/Dhaka") -> str:
         else:
             past = dt.astimezone(tz) if dt.tzinfo else dt.replace(tzinfo=timezone.utc).astimezone(tz)
         now = datetime.now(tz)
-        delta = now - past
-        days = delta.days
-        seconds = delta.seconds
-        years, days = divmod(days, 365)
-        months, days = divmod(days, 30)
-        hours, rem = divmod(seconds, 3600)
-        minutes, _ = divmod(rem, 60)
-        if years > 0:
+        if past > now:
+            return "Just now"
+        years = now.year - past.year
+        months = years * 12 + (now.month - past.month)
+        if now.day < past.day:
+            months -= 1
+        if months >= 12:
+            years = months // 12
             return f"{years} year{'s' if years > 1 else ''} ago"
         if months > 0:
             return f"{months} month{'s' if months > 1 else ''} ago"
+        days = (now.date() - past.date()).days
         if days > 0:
             return f"{days} day{'s' if days > 1 else ''} ago"
+        seconds = int((now - past).total_seconds())
+        hours, rem = divmod(seconds, 3600)
+        minutes, _ = divmod(rem, 60)
         if hours > 0:
             return f"{hours} hour{'s' if hours > 1 else ''} ago"
         if minutes > 0:
@@ -272,40 +282,42 @@ _TABLET_RE = re.compile(r"tablet", re.IGNORECASE)
 
 
 def get_user_device_info(request=None, user_agent: str = "", ip: str = "Unknown") -> dict:
-    """Mirror getUserDeviceInfo(): {ip_address, device, os, browser}."""
+    """Mirror getUserDeviceInfo(): {ip_address, device, os, browser}.
+    All UA regexes are case-insensitive (/i); order preserved
+    (Linux-before-Android, Chrome-before-Safari)."""
     if request is not None:
         user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
         ip = request.META.get("REMOTE_ADDR", "Unknown")
     ua = user_agent or "Unknown"
-    if _MOBILE_RE.search(ua):
+    if re.search(r"mobile", ua, re.IGNORECASE):
         device = "Mobile"
-    elif _TABLET_RE.search(ua):
+    elif re.search(r"tablet", ua, re.IGNORECASE):
         device = "Tablet"
     else:
         device = "Desktop"
-    if re.search(r"Windows", ua):
+    if re.search(r"Windows", ua, re.IGNORECASE):
         os = "Windows"
-    elif re.search(r"Mac", ua):
+    elif re.search(r"Mac", ua, re.IGNORECASE):
         os = "Mac OS"
-    elif re.search(r"Linux", ua):
+    elif re.search(r"Linux", ua, re.IGNORECASE):
         os = "Linux"
-    elif re.search(r"Android", ua):
+    elif re.search(r"Android", ua, re.IGNORECASE):
         os = "Android"
-    elif re.search(r"iPhone|iPad", ua):
+    elif re.search(r"iPhone|iPad", ua, re.IGNORECASE):
         os = "iOS"
     else:
         os = "Unknown OS"
-    if re.search(r"MSIE|Trident", ua):
+    if re.search(r"MSIE|Trident", ua, re.IGNORECASE):
         browser = "Internet Explorer"
-    elif re.search(r"Firefox", ua):
+    elif re.search(r"Firefox", ua, re.IGNORECASE):
         browser = "Firefox"
-    elif re.search(r"Chrome", ua):
+    elif re.search(r"Chrome", ua, re.IGNORECASE):
         browser = "Chrome"
-    elif re.search(r"Safari", ua):
+    elif re.search(r"Safari", ua, re.IGNORECASE):
         browser = "Safari"
-    elif re.search(r"Opera|OPR", ua):
+    elif re.search(r"Opera|OPR", ua, re.IGNORECASE):
         browser = "Opera"
-    elif re.search(r"Edge", ua):
+    elif re.search(r"Edge", ua, re.IGNORECASE):
         browser = "Edge"
     else:
         browser = "Unknown Browser"

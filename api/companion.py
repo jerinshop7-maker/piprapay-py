@@ -47,11 +47,12 @@ def _login(request):
     row = Device.objects.filter(otp=otp).first()
     if not row:
         return _fail("Invalid Credentials", "Please enter the correct credentials or scan the QR code again.")
+    # PHP overwrites device details verbatim, even with empty POST values.
     row.otp = M.generate_item_id()
-    row.name = request.POST.get("name", row.name or "")
-    row.model = request.POST.get("model", row.model or "")
-    row.android_level = request.POST.get("android_level", row.android_level or "")
-    row.app_version = request.POST.get("app_version", row.app_version or "")
+    row.name = request.POST.get("name", "")
+    row.model = request.POST.get("model", "")
+    row.android_level = request.POST.get("android_level", "")
+    row.app_version = request.POST.get("app_version", "")
     row.status = "used"
     row.save()
     return JsonResponse({"status": "true", "token": row.otp})
@@ -99,6 +100,7 @@ def _sms_transmit_bulk(request):
     except ValueError:
         sms_list = []
     device_id = device.device_id
+    failed = False
     for sms in sms_list:
         sender = str(sms.get("sender", "")).lower().strip()
         message = str(sms.get("message", "")).strip()
@@ -131,6 +133,13 @@ def _sms_transmit_bulk(request):
             return _fail("Invalid or unknown MFS message",
                          "Please fill in all required fields before proceeding.")
         if SmsData.objects.filter(sender_key=sender_key, trx_id=trx_id).exists():
+            # Duplicate: PHP inserts an error row (Code 103) and keeps going.
+            SmsData.objects.create(source="app", device_id=device_id, sender=sender, simslot=simslot,
+                                   status="error", message=message,
+                                   reason="Duplicate Transaction. Code 103")
+            device.last_sync = M.get_current_datetime()
+            device.save(update_fields=["last_sync", "updated_date"])
+            failed = True
             continue
         if balance_verify == "false":
             SmsData.objects.create(
@@ -176,6 +185,9 @@ def _sms_transmit_bulk(request):
                     message=message, reason="--")
         device.last_sync = M.get_current_datetime()
         device.save(update_fields=["last_sync", "updated_date"])
+    if failed:
+        return _fail("Invalid or unknown MFS message",
+                     "Please fill in all required fields before proceeding.")
     return JsonResponse({"status": "true", "title": "SMS Data Created",
                          "message": "The sms data has been created successfully."})
 

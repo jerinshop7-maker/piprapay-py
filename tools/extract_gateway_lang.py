@@ -166,8 +166,25 @@ def main():
                     av = re.search(r"'value'\s*=>\s*\$data\['(\w+)'\]\['(\w+)'\]\s*\?\?\s*''", chunk)
                     if av:
                         step["action_value"] = [av.group(1), av.group(2)]
-                vr = re.search(r"'vars'\s*=>\s*\[(.*?)\]", chunk, re.DOTALL)
-                if vr:
+                vr = re.search(r"'vars'\s*=>\s*\[(.*?)\](?=\s*\],?\s*(?:\[|'text'|'icon'|$))", chunk, re.DOTALL)
+                if not vr:
+                    # Fallback: bracket-depth scan (values contain $data['..'] brackets).
+                    start = chunk.find("'vars'")
+                    if start != -1:
+                        depth, j = 0, chunk.index("[", start)
+                        while j < len(chunk):
+                            if chunk[j] == "[":
+                                depth += 1
+                            elif chunk[j] == "]":
+                                depth -= 1
+                                if depth == 0:
+                                    break
+                            j += 1
+                        inner = chunk[chunk.index("[", start) + 1:j]
+                        step["vars"] = re.findall(r"'\{(\w+)\}'", inner)
+                    else:
+                        step["vars"] = []
+                else:
                     step["vars"] = re.findall(r"'\{(\w+)\}'", vr.group(1))
                 steps.append(step)
                 if len(steps) > 12:

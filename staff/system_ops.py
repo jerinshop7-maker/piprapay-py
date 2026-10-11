@@ -14,7 +14,7 @@ from django.conf import settings
 
 from core import money as M
 from core.env import get_env, set_env
-from core.storage import backup_database, copy_folder, delete_folder, extract_update, run_sql, zip_folder
+from core.storage import backup_database, copy_folder, delete_folder, run_sql, zip_folder
 
 MANIFEST_URL = "https://updates.piprapay.com/manifest.json"
 UPDATE_DIR = Path(settings.MEDIA_ROOT) / "storage" / "updates"
@@ -54,29 +54,38 @@ def update_check() -> dict:
     ch = (manifest.get("channels") or {}).get(channel) or {}
     current = settings.PIPRAPAY_VERSION["version_code"]
     latest = ch.get("latest_version_code")
+    latest_hash = ""
+    for version in ch.get("versions") or []:
+        if isinstance(version, dict) and version.get("version_code") == latest:
+            latest_hash = version.get("checksum", "")
+            break
     if latest and _php_version_compare(str(latest), str(current)) > 0:
         set_env("last-update-version-name", ch.get("latest_version_name", ""))
         set_env("last-update-version", str(latest))
-        if ch.get("hash"):
-            set_env("last-update-version-hash", str(ch["hash"]))
+        set_env("last-update-version-hash", str(latest_hash))
         return {"status": "true", "title": "Update Available",
-                "message": f"Version {ch.get('latest_version_name')} is available.",
+                "message": ("A new system update is available. Please update to get the latest "
+                            "features and improvements."),
                 "version": str(latest)}
     set_env("last-update-version-name", settings.PIPRAPAY_VERSION["version_name"])
+    set_env("last-update-version-hash", settings.PIPRAPAY_VERSION.get("version_hash", ""))
     set_env("last-update-version", str(current))
-    return {"status": "true", "title": "Up To Date", "message": "You are running the latest version."}
+    return {"status": "true", "title": "System Up to Date",
+            "message": "Everything is up to date. No updates were found."}
 
 
 def update_download() -> dict:
-    """Mirror system-settings-update-download: fetch zip to storage/updates/."""
+    """Mirror system-settings-update-download: gated on version_compare,
+    curl with SSL verify + follow + fail-on-error, 120s timeout."""
     version = get_env("last-update-version")
     if version in ("--", "", None):
         return {"status": "false", "title": "Request Failed", "message": "Run Check for Updates first."}
+    if _php_version_compare(str(version), str(settings.PIPRAPAY_VERSION["version_code"])) <= 0:
+        return {"status": "false", "title": "Request Failed", "message": "No newer version available."}
     UPDATE_DIR.mkdir(parents=True, exist_ok=True)
     dest = UPDATE_DIR / f"{version}.zip"
     try:
-        r = requests.get(f"https://updates.piprapay.com/download.php?version={version}",
-                         timeout=120, verify=False)
+        r = requests.get(f"https://updates.piprapay.com/download.php?version={version}", timeout=120)
         r.raise_for_status()
         dest.write_bytes(r.content)
     except Exception as e:
@@ -86,38 +95,44 @@ def update_download() -> dict:
 
 
 def update_install() -> dict:
-    """Mirror system-settings-update-install: sha1 verify, backup, maintenance flag,
-    extract, run update.sql, cleanup."""
+    """Mirror system-settings-update-install: strict sha1 abort, backup to
+    storage/backup/ with version names, temp-dir extract + copy, run the
+    temp dir update.sql, cleanup."""
     version = get_env("last-update-version")
     expected = get_env("last-update-version-hash")
     zf = UPDATE_DIR / f"{version}.zip" if version not in ("--", "", None) else None
     if not zf or not zf.exists():
         return {"status": "false", "title": "Request Failed", "message": "Download the update first."}
     digest = hashlib.sha1(zf.read_bytes()).hexdigest()
-    if expected not in ("--", "", None) and digest != expected:
+    if not expected or expected in ("--", "") or digest != expected:
+        # PHP strictly aborts on mismatch (empty hash never matches a digest).
         return {"status": "false", "title": "Request Failed",
                 "message": "Update package hash mismatch. Aborting."}
-    # Backup: full tree zip + database dump.
-    backup_dir = Path(settings.MEDIA_ROOT) / "storage" / "backups"
+    # Backup: full tree zip + database dump, versioned names.
+    backup_dir = Path(settings.MEDIA_ROOT) / "storage" / "backup"
     backup_dir.mkdir(parents=True, exist_ok=True)
-    stamp = M.get_current_datetime("%Y%m%d%H%M%S")
     try:
-        zip_folder(APP_ROOT, backup_dir / f"backup-{stamp}.zip")
+        zip_folder(APP_ROOT, backup_dir / f"backup-{version}.zip")
     except Exception as e:
         return {"status": "false", "title": "Request Failed", "message": f"Backup failed: {e}"}
-    bk = backup_database(backup_dir / f"db_{stamp}.json")
+    bk = backup_database(backup_dir / f"db-{version}.sql")
     if not bk.get("status"):
         return {"status": "false", "title": "Request Failed",
                 "message": f"Database backup failed: {bk.get('message')}"}
+    tmp = Path(settings.MEDIA_ROOT) / "storage" / "temp" / f"update_{version}"
     flag = APP_ROOT / ".maintenance"
     try:
         flag.write_text("updating")
-        if not extract_update(zf, APP_ROOT):
-            return {"status": "false", "title": "Request Failed", "message": "Extraction failed."}
-        sql_file = APP_ROOT / "update.sql"
+        delete_folder(tmp)
+        tmp.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(zf) as zf_handle:
+            zf_handle.extractall(tmp)
+        children = [c for c in tmp.iterdir()]
+        root = children[0] if len(children) == 1 and children[0].is_dir() else tmp
+        copy_folder(root, APP_ROOT)
+        sql_file = root / "update.sql"
         if sql_file.exists():
             result = run_sql(sql_file.read_text(encoding="utf-8", errors="replace"))
-            sql_file.unlink(missing_ok=True)
             if not result.get("status"):
                 return {"status": "false", "title": "Request Failed",
                         "message": f"Migration SQL failed: {result.get('message')}"}
@@ -128,6 +143,7 @@ def update_install() -> dict:
         return {"status": "true", "title": "Update Installed",
                 "message": f"Version {version} installed successfully."}
     finally:
+        delete_folder(tmp)
         try:
             flag.unlink()
         except OSError:

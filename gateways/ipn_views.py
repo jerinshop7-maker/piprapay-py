@@ -13,6 +13,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from core import money as M
 from core.models import Brand, Gateway
 from core.transactions import gateway_options, set_transaction_status
 from gateways.registry import get_gateway
@@ -20,14 +21,18 @@ from themes.twenty_six import get_theme
 
 
 def _brand_info(brand: Brand | None) -> dict:
+    # PHP passes the RAW name (no '--' fallback) in the actually-dispatched
+    # $response['brand']; logo/favicon fall back only on '--'.
     if not brand:
         return {"id": ""}
     return {
         "id": brand.brand_id,
-        "name": brand.name if brand.name not in ("--", "", None) else brand.identify_name,
+        "name": brand.name,
         "identifyName": brand.identify_name,
-        "logo": None if brand.logo in ("--", "", None) else brand.logo,
-        "favicon": None if brand.favicon in ("--", "", None) else brand.favicon,
+        "logo": ("https://help.piprapay.com/storage/branding_media/8a5c6ee4-8eba-401d-bffb-c43006d5f65d.png"
+                 if brand.logo == "--" else brand.logo),
+        "favicon": ("https://help.piprapay.com/favicon/icon-144x144.png"
+                    if brand.favicon == "--" else brand.favicon),
         "support": {"email": brand.support_email_address, "phone": brand.support_phone_number,
                     "website": brand.support_website, "whatsapp": brand.whatsapp_number,
                     "telegram": f"https://t.me/{brand.telegram}",
@@ -35,7 +40,7 @@ def _brand_info(brand: Brand | None) -> dict:
                     "fb_page": f"https://facebook.com/{brand.facebook_page}"},
         "address": {"street": brand.street_address, "city": brand.city_town,
                     "postal": brand.postal_code, "country": brand.country},
-        "locale": {"timezone": brand.timezone, "language": brand.language,
+        "locale": {"timezone": brand.timezone, "language": language,
                    "currency": brand.currency_code},
     }
 
@@ -60,14 +65,16 @@ def ipn_entry(request, gateway_id: str):
     theme = get_theme(brand.theme)
     language = theme.resolve_language(brand.language or "en")
     options = gateway_options(gw.gateway_id, gw.brand_id)
+    info = theme.build_lang(language)
     data = {
         "gateway": {"gateway_id": gw.gateway_id, "slug": gw.slug, "name": gw.name,
                     "display": gw.display, "logo": gw.logo, "currency": gw.currency,
-                    "min_allow": str(gw.min_allow), "max_allow": str(gw.max_allow),
-                    "fixed_discount": str(gw.fixed_discount),
-                    "percentage_discount": str(gw.percentage_discount),
-                    "fixed_charge": str(gw.fixed_charge),
-                    "percentage_charge": str(gw.percentage_charge),
+                    "min_allow": M.money_round(str(gw.min_allow)),
+                    "max_allow": M.money_round(str(gw.max_allow)),
+                    "fixed_discount": M.money_round(str(gw.fixed_discount)),
+                    "percentage_discount": M.money_round(str(gw.percentage_discount)),
+                    "fixed_charge": M.money_round(str(gw.fixed_charge)),
+                    "percentage_charge": M.money_round(str(gw.percentage_charge)),
                     "primary_color": gw.primary_color, "text_color": gw.text_color,
                     "btn_color": gw.btn_color, "btn_text_color": gw.btn_text_color,
                     "options": options},
@@ -101,6 +108,11 @@ def ipn_entry(request, gateway_id: str):
                 return redirect(f"/payment/{pp_ref}/")
             return redirect(target)
         return JsonResponse({"status": "ok" if ok else "not-matched"})
+    if result.get("canceled") and result.get("pp_ref"):
+        # Failed-verification cancel with a derived ref (shurjoPay):
+        # PHP writes canceled. (User-abort callbacks stay initiated.)
+        set_transaction_status(result["pp_ref"], "canceled")
+        return JsonResponse({"status": "ignored"})
     code = result.get("http_code", 200)
     if code != 200:
         return JsonResponse({"status": "ignored"}, status=code)

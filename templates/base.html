@@ -1,8 +1,20 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{% block title %}PipraPay{% endblock %}</title>
-<link rel="stylesheet" href="/static/app.css"></head>
+{% block seo %}{% endblock %}
+<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/vendor/css/tabler.min.css">
+<link rel="stylesheet" href="/static/vendor/css/choices.min.css">
+<link rel="stylesheet" href="/static/vendor/css/inter.css">
+{% block head %}{% endblock %}
+</head>
 <body>
 {% if messages %}<ul>{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
 {% block content %}{% endblock %}
+<script src="/static/vendor/js/jquery-3.6.4.min.js"></script>
+<script src="/static/vendor/js/tabler.min.js"></script>
+<script src="/static/vendor/js/choices.min.js"></script>
+<script src="/static/vendor/js/qrcode.min.js"></script>
+<script src="/static/vendor/js/custom-toast.js"></script>
+{% block foot %}{% endblock %}
 </body></html>

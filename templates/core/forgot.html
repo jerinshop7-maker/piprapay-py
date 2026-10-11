@@ -1,5 +1,6 @@
 {% extends "base.html" %}{% block title %}Forgot — PipraPay{% endblock %}
 {% block content %}<h1>Forgot password</h1>
 <form method="post">{% csrf_token %}
-<input name="username" placeholder="Username or email" required>
-<button type="submit">Reset</button></form>{% endblock %}
+<input name="email-address" placeholder="Email address" required>
+<button type="submit">Send me new password</button></form>
+<p><a href="/login/">Back to login</a></p>{% endblock %}

@@ -5,6 +5,14 @@ from django.urls import include, path
 from django.http import HttpResponse
 
 from core import views as core_views
+from core import install_views as core_install
+from django.http import JsonResponse as _JsonResponse
+
+
+def ipn_empty(request):
+    return _JsonResponse({"error": {"code": "INVALID_GATEWAY",
+                                    "message": "The Gateway provided is incorrect or invalid."}},
+                         status=400)
 
 urlpatterns = [
     # Public: login / forgot / 2fa  (index.php case 'login','forgot','2fa')
@@ -13,9 +21,14 @@ urlpatterns = [
     path("2fa/", core_views.admin_2fa, name="2fa"),
     path("404/", core_views.page_404, name="page-404"),
     path("set-brand/", core_views.set_brand, name="set-brand"),
+    path("install/", core_install.install_index, name="install"),
+    path("install/requirements/", core_install.install_requirements, name="install-reqs"),
+    path("install/admin/", core_install.install_admin, name="install-admin"),
 
     # IPN per gateway  (index.php case 'ipn' -> ipn/<gateway_id>)
     path("ipn/<str:gateway_id>/", include("gateways.ipn_urls")),
+    path("ipn/", ipn_empty, name="gateway-ipn-empty"),
+    path("ipn", ipn_empty),
 
     # REST API  (index.php case 'api' -> api/checkout/redirect|popup, verify, refund)
     path("api/", include("api.urls")),

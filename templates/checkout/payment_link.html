@@ -1,28 +1,33 @@
 {% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}{% endblock %}
 {% block content %}
-{% if link.status != "active" %}
+{% if paymentLink.status != "active" %}
 <h1>{{ lang.product_not_active|default:"Product Not Active" }}</h1>
 <p>{{ lang.product_not_active_text|default:"This product is currently inactive." }}</p>
 {% else %}
-<h1>{{ link.product.title }}</h1>
-<p>{{ link.product.description }}</p>
-<p>{{ lang.amount|default:"Amount" }}: {{ link.total }} {{ link.currency }}</p>
+<h1>{{ paymentLink.product.title }}</h1>
+<p>{{ paymentLink.product.description }}</p>
 <form id="pl-form" method="post" action="submit/" enctype="multipart/form-data">{% csrf_token %}
-<input type="hidden" name="itemid" value="{{ link.pid }}">
-<input name="full-name" placeholder="{{ lang.full_name|default:"Full Name" }}" required>
-<input name="email-address" placeholder="{{ lang.email_address|default:"Email Address" }}" required>
-<input name="mobile-number" placeholder="{{ lang.mobile_number|default:"Mobile Number" }}" required>
-{% for f in fields %}
-<label>{{ f.label }}{% if f.required == "true" %} *{% endif %}</label>
-{% if f.type == "textarea" %}<textarea name="{{ f.name }}"></textarea>
-{% elif f.type == "select" %}<select name="{{ f.name }}">{% for o in f.options %}<option>{{ o }}</option>{% endfor %}</select>
-{% elif f.type == "checkbox" %}{% for o in f.options %}<label><input type="checkbox" name="{{ f.name }}[]" value="{{ o }}"> {{ o }}</label>{% endfor %}
-{% elif f.type == "radio" %}{% for o in f.options %}<label><input type="radio" name="{{ f.name }}" value="{{ o }}"> {{ o }}</label>{% endfor %}
-{% elif f.type == "file" %}<input type="file" name="{{ f.name }}"{% if f.accept %} accept="{{ f.accept }}"{% endif %}>
-{% else %}<input type="text" name="{{ f.name }}">
-{% endif %}<br>
+<input type="hidden" name="itemid" value="{{ paymentLink.pid }}">
+<div class="mb-3"><label class="form-label" for="full-name">{{ lang.full_name|default:"Full Name" }} <span class="text-danger">*</span></label>
+<input type="text" name="full-name" id="full-name" class="form-control" required></div>
+<div class="mb-3"><label class="form-label" for="email-address">{{ lang.email_address|default:"Email Address" }} <span class="text-danger">*</span></label>
+<input type="email" name="email-address" id="email-address" class="form-control" required></div>
+<div class="mb-3"><label class="form-label" for="mobile-number">{{ lang.mobile_number|default:"Mobile Number" }} <span class="text-danger">*</span></label>
+<input type="text" name="mobile-number" id="mobile-number" class="form-control" required></div>
+<div class="mb-3"><label class="form-label">{{ lang.amount|default:"Amount" }} <span class="text-danger">*</span></label>
+<div class="input-group mb-2"><span class="input-group-text">{{ paymentLink.currency }}</span>
+<input type="text" class="form-control" value="{{ paymentLink.total }}" autocomplete="off" readonly></div></div>
+{% for f in paymentLink.fields %}
+<div class="mb-3">
+{% if f.type != "checkbox" %}<label class="form-label" for="{{ f.name }}">{{ f.label }}{% if f.required and f.required != "false" %} <span class="text-danger">*</span>{% endif %}</label>{% else %}<label class="form-label" for="{{ f.name }}">{{ f.label }}{% if f.required and f.required != "false" %} <span class="text-danger">*</span>{% endif %}</label>{% endif %}
+{% if f.type == "textarea" %}<textarea name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.required and f.required != "false" %} required{% endif %}></textarea>
+{% elif f.type == "select" %}<select name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.required and f.required != "false" %} required{% endif %}>{% for o in f.options %}<option value="{{ o }}">{{ o }}</option>{% endfor %}</select>
+{% elif f.type == "checkbox" %}{% for o in f.options %}<div class="form-check"><input type="checkbox" name="{{ f.name }}[]" id="{{ f.name }}_{{ forloop.counter }}" class="form-check-input" value="{{ o }}"{% if f.required and f.required != "false" %} required{% endif %}><label class="form-check-label" for="{{ f.name }}_{{ forloop.counter }}">{{ o }}</label></div>{% endfor %}
+{% elif f.type == "radio" %}{% for o in f.options %}<div class="form-check"><input type="radio" name="{{ f.name }}" id="{{ f.name }}_{{ forloop.counter }}" class="form-check-input" value="{{ o }}"{% if f.required and f.required != "false" %} required{% endif %}><label class="form-check-label" for="{{ f.name }}_{{ forloop.counter }}">{{ o }}</label></div>{% endfor %}
+{% elif f.type == "file" %}<input type="file" name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.accept %} accept="{{ f.accept }}"{% endif %}{% if f.required and f.required != "false" %} required{% endif %}>
+{% else %}<input type="text" name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.required and f.required != "false" %} required{% endif %}>
+{% endif %}</div>
 {% endfor %}
-<p>{{ lang.amount|default:"Amount" }}: {{ link.currency }} <input value="{{ link.total }}" readonly></p>
 <button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
 <script>
 document.getElementById('pl-form').addEventListener('submit', async (e) => {

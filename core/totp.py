@@ -11,6 +11,8 @@ import time
 
 
 def generate_secret(length: int = 16) -> str:
+    if not 16 <= length <= 128:
+        raise ValueError("Secret length must be between 16 and 128.")
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
     return "".join(secrets.choice(alphabet) for _ in range(length))
 

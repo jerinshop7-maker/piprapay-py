@@ -1,4 +1,7 @@
 {% extends "base.html" %}{% block content %}<h1>Domains</h1>
+<form method="get"><input name="q" value="{{ q }}" placeholder="domain"><input name="status" value="{{ status }}"><input name="from" type="date" value="{{ date_from }}"><input name="until" type="date" value="{{ date_until }}"><button>Filter</button></form>
 <form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
 <ul>{% for d in page %}<li><input type="checkbox" name="selected_ids" value="{{ d.id }}"> {{ d.domain }} {{ d.status }}</li>{% endfor %}</ul></form>
+<h2>Edit</h2>
+{% for d in page %}<form method="post" style="margin-bottom:.25rem">{% csrf_token %}<input type="hidden" name="edit_id" value="{{ d.id }}"><input name="domain" value="{{ d.domain }}"><select name="status"><option {% if d.status == "active" %}selected{% endif %}>active</option><option {% if d.status == "inactive" %}selected{% endif %}>inactive</option></select><button>Save</button></form>{% endfor %}
 <h2>Whitelist</h2><form method="post">{% csrf_token %}<input name="domain" placeholder="example.com" required><select name="status"><option>active</option><option>inactive</option></select><button>Add</button></form>{% endblock %}

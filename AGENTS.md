@@ -87,6 +87,35 @@ MySQL (legacy reuse): set `DB_ENGINE=django.db.backends.mysql DB_NAME=.. DB_USER
 2. `python manage.py test tests` passes (extends parity tests if you add behaviour).
 3. No new third-party dependency without updating `requirements.txt` + this file.
 4. Any new PHP-parity behaviour gets a row in `README.md` comparison table.
+5. If the change clears a `gaps.md` item, delete that item's checkbox line
+   from `gaps.md` (see §7) — never leave a fixed gap listed as open.
+
+## 7. Gap workflow (`gaps.md`)
+
+- `gaps.md` is the single source of truth for remaining PHP↔Django
+  divergences, grouped by area (Router, API, Money, Render, Auth, Admin,
+  Gateways, Themes). Each item has an ID (`G<area>-<nnn>`), the PHP
+  `file:line`, the Django `file:line`, and a severity.
+- **Before fixing**: re-read the cited PHP lines yourself. Two past audits
+  contained refuted claims (see `gaps.md` → Refuted); never trust an ID
+  blindly. If the claim is wrong, move it to Refuted with evidence instead
+  of "fixing" it.
+- **To clear a gap**:
+  1. Fix the code to match PHP (or record a deliberate deviation with
+     justification in code comments + `README.md`).
+  2. Add or extend a test in `tests/` that fails before and passes after.
+  3. Run the full suite green.
+  4. **Delete the gap's `- [ ]` line from `gaps.md`.** If the fix only
+     partially closes it, rewrite the line to describe exactly what
+     remains instead of deleting.
+  5. Append one line to the Cleared log at the bottom of `gaps.md`.
+- **To add a gap** (new divergence found): append `- [ ] **G<area>-<next>**`
+  under the right area with PHP ref, Django ref, one-line description,
+  severity. Keep IDs stable — never renumber existing ones.
+- Priority order for clearing: BLOCKERs in Area 8 (money/security verify
+  paths) first, then Areas 2/7 (API/admin behavior), then Area 10 (payer
+  UI), MINORs last. Accepted deviations stay listed — do not delete them
+  unless the design decision changes.
 
 ## 6. Gotchas from the PHP original
 

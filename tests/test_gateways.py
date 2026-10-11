@@ -74,7 +74,7 @@ class SslcommerzTests(TestCase):
         self.assertFalse(r["verified"])
         good = {"APIConnect": "DONE", "no_of_trans_found": 1,
                 "element": [{"status": "VALIDATED", "value_a": "R1", "val_id": "V",
-                             "bank_gw": "bkash", "bank_tran_id": "BT"}]}
+                             "tran_id": "T1", "bank_gw": "bkash", "bank_tran_id": "BT"}]}
         with patch("gateways.api_gateways.requests.get", return_value=MockResp(good)):
             r = gw.callback({"transaction": {"ref": "R1"}, "options": {},
                              "post": {"tran_id": "T1"}})

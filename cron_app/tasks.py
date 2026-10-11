@@ -123,7 +123,7 @@ def verify_pending() -> list:
             continue
         brand = Brand.objects.filter(brand_id=row.brand_id).first()
         tolerance = brand.payment_tolerance if brand else "0"
-        if not M.verify_payment_tolerance(str(row.local_net_amount or row.amount), str(sms.amount), tolerance):
+        if not M.verify_payment_tolerance(str(row.local_net_amount), str(sms.amount), tolerance):
             continue
         sms.status = "used"
         sms.save(update_fields=["status", "updated_date"])
@@ -181,9 +181,12 @@ def refresh_currency() -> None:
             for code, rate in rates.items():
                 if code == brand.currency_code.lower() or not rate or rate <= 0:
                     continue
-                # number_format(1/rate, 4): half-up, 4 decimals.
-                converted = format(round(1 / rate, 4), ".4f")
-                Currency.objects.filter(brand_id=brand.brand_id, code=code).update(rate=converted)
+                # number_format(1/rate, 4): half-up, 4 decimals (not banker's).
+                from decimal import Decimal, ROUND_HALF_UP
+                converted = format((Decimal(1) / Decimal(str(rate))).quantize(
+                    Decimal("0.0001"), rounding=ROUND_HALF_UP), "f")
+                Currency.objects.filter(brand_id=brand.brand_id, code=code).update(
+                    rate=converted, updated_date=timezone.now())
         except Exception:
             pass
 
@@ -197,9 +200,9 @@ def reconcile_balances() -> None:
 
 
 def retry_webhooks() -> None:
-    # PHP: (int) cast of the env value ('3abc' -> 3); ''/'--' -> 1.
+    # PHP: ''/'--' -> 1, else (int) cast (leading digits, else 0).
     limit_raw = get_env("geneal-application-settings-webhook_attempts_limit")
-    limit = _leading_int("--" if limit_raw in ("", "--", None) else limit_raw, 1)
+    limit = 1 if limit_raw in ("", "--", None) else _leading_int(limit_raw, 0)
     pendings = list(WebhookLog.objects.filter(status="pending", attempts__lt=limit).order_by("id")[:15])
     jobs = []
     for row in pendings:
@@ -220,7 +223,7 @@ def retry_webhooks() -> None:
             row.status = "canceled"
         else:
             row.status = "pending"
-        row.http_code = str(code)
+        row.http_code = code
         row.save()
 
 

@@ -14,14 +14,18 @@ from core.models import Brand, Currency, Gateway, Invoice, InvoiceItem, Transact
 from core.webhooks import send_ipn_multi
 
 
-def gateway_options(gateway_id: str = "", brand_id: str = "") -> dict:
-    """Mirror pp_get_gateway_options(): BOTH ids required; brand-scoped params."""
+def gateway_options(gateway_id: str = "", brand_id: str | None = "") -> dict:
+    """Render/verify paths query by gateway_id only (pp_gateway_render,
+    transaction-verify); the refund path passes both ids
+    (pp_get_gateway_options requires both)."""
     from core.models import GatewayParameter
 
-    if not gateway_id or not brand_id:
+    if not gateway_id:
         return {}
-    return {p.option_name: p.value for p in GatewayParameter.objects.filter(
-        gateway_id=gateway_id, brand_id=brand_id)}
+    qs = GatewayParameter.objects.filter(gateway_id=gateway_id)
+    if brand_id:
+        qs = qs.filter(brand_id=brand_id)
+    return {p.option_name: p.value for p in qs}
 
 
 def compute_gateway_totals(amount: str, txn_currency: str, gateway: Gateway, brand_id: str) -> dict:
@@ -52,8 +56,10 @@ def compute_gateway_totals(amount: str, txn_currency: str, gateway: Gateway, bra
             "currency": gateway.currency, "rates": rates}
 
 
-def transaction_payload(row: Transaction, name_field: str = "display") -> dict:
-    """16-field payload. API/cron use gateway `display`; transaction-verify uses `name`."""
+def transaction_payload(row: Transaction, name_field: str = "display",
+                        round_total: bool = False) -> dict:
+    """16-field payload. API verify/refund use gateway `display` + ROUNDED total
+    (index.php:827-845); transaction-verify uses `name` + unrounded total."""
     try:
         customer = json.loads(row.customer_info or "{}")
         if not isinstance(customer, dict):
@@ -69,16 +75,19 @@ def transaction_payload(row: Transaction, name_field: str = "display") -> dict:
     gw_label = ""
     if gw:
         gw_label = (gw.display if name_field == "display" else gw.name) or ""
-    # NOTE: PHP does NOT round `total` here (money_sub full precision).
+
+    def _or_na(value):
+        return value if value is not None else "N/A"
+
     total = M.money_sub(M.money_add(str(row.amount), str(row.processing_fee)), str(row.discount_amount))
-    tz = "Asia/Dhaka"
-    if brand and brand.timezone not in ("--", "", None):
-        tz = brand.timezone
+    if round_total:
+        total = M.money_round(total)
+    tz = norm_tz(brand.timezone if brand else "")
     return {
         "pp_id": row.ref,
-        "full_name": customer.get("name", "N/A") or "N/A",
-        "email_address": customer.get("email", "N/A") or "N/A",
-        "mobile_number": customer.get("mobile", "N/A") or "N/A",
+        "full_name": _or_na(customer.get("name", "N/A")),
+        "email_address": _or_na(customer.get("email", "N/A")),
+        "mobile_number": _or_na(customer.get("mobile", "N/A")),
         "gateway": gw_label,
         "amount": M.money_round(str(row.amount)),
         "fee": M.money_round(str(row.processing_fee)),
@@ -95,14 +104,23 @@ def transaction_payload(row: Transaction, name_field: str = "display") -> dict:
     }
 
 
+def norm_tz(tz) -> str:
+    """'--'/''/None timezone -> Asia/Dhaka (index.php pattern)."""
+    if not tz or tz == "--":
+        return "Asia/Dhaka"
+    return tz
+
+
 def queue_or_send_webhook(row: Transaction, payload: dict) -> None:
-    """Immediate sendIPNMulti; on non-200 queue into webhook_log (PHP parity)."""
+    """Immediate sendIPNMulti; on non-200 queue into webhook_log with a random
+    int ref (PHP rand()), like pp_set_transaction_status/transaction-verify."""
     if not row.webhook_url or row.webhook_url == "--":
         return
-    jobs = [{"id": abs(hash((row.ref, row.webhook_url))) % (2 ** 31), "url": row.webhook_url, "payload": payload}]
+    import random
+    jobs = [{"id": random.randint(1, 2 ** 31 - 1), "url": row.webhook_url, "payload": payload}]
     results = send_ipn_multi(jobs)
     if results.get(jobs[0]["id"]) != 200:
-        WebhookLog.objects.create(ref=row.ref[:15], brand_id=row.brand_id,
+        WebhookLog.objects.create(ref=random.randint(1, 2 ** 31 - 1), brand_id=row.brand_id,
                                   payload=json.dumps(payload, ensure_ascii=False), url=row.webhook_url)
 
 
@@ -298,7 +316,7 @@ def verify_transaction_post(*, gateway_id: str, transaction_ref: str, trxid: str
 
 
 def invoice_line_totals(items) -> tuple[list[dict], dict]:
-    """Mirror action-v2 invoice math (VAT is a PERCENT rate)."""
+    """action-v2 invoice math: VAT is a PERCENT rate (adapter:8529-8577)."""
     lines = []
     subtotal = "0"
     total_discount = "0"
@@ -318,6 +336,29 @@ def invoice_line_totals(items) -> tuple[list[dict], dict]:
         subtotal = M.money_add(subtotal, gross)
         total_discount = M.money_add(total_discount, discount)
         total_vat = M.money_add(total_vat, vat_amount)
+    return lines, {"subtotal": subtotal, "discount": total_discount, "vat": total_vat}
+
+
+def invoice_display_totals(items) -> tuple[list[dict], dict]:
+    """index.php invoice DISPLAY math (1366-1408): vat is a FLAT amount there
+    (lineTotal = amount*qty - discount + vat). Theme template uses percent;
+    the router page uses flat — mirrored per surface."""
+    lines = []
+    subtotal = "0"
+    total_discount = "0"
+    total_vat = "0"
+    for row in items:
+        amount = M.money_sanitize(str(row.amount))
+        quantity = M.money_sanitize(str(row.quantity))
+        discount = M.money_sanitize(str(row.discount))
+        vat = M.money_sanitize(str(row.vat))
+        line_total = M.money_add(M.money_sub(M.money_mul(amount, quantity), discount), vat)
+        lines.append({"description": row.description, "unitPrice": M.money_round(amount, 2),
+                      "quantity": quantity, "discount": M.money_round(discount, 2),
+                      "vat": M.money_round(vat, 2), "total": M.money_round(line_total, 2)})
+        subtotal = M.money_add(subtotal, M.money_mul(amount, quantity))
+        total_discount = M.money_add(total_discount, discount)
+        total_vat = M.money_add(total_vat, vat)
     return lines, {"subtotal": subtotal, "discount": total_discount, "vat": total_vat}
 
 
@@ -349,7 +390,11 @@ def create_invoice_transaction(invoice_ref: str, site_base: str) -> dict:
 
 
 def handle_invoice_webhook(data: dict) -> tuple[int, str]:
-    """Mirror index.php:1195-1290 invoice/webhook receiver. Returns (http_code, body)."""
+    """Mirror index.php:1195-1290 invoice/webhook receiver. Exact hook shape:
+    customer_info RAW string, due_date from the (nonexistent) expired_date
+    column (-> None), shipping rounded, updated_date = now, items [] (the
+    items query filters a nonexistent `ref` column). Always 200 OK on shape,
+    400 only for empty/bad JSON with plain-text bodies."""
     if not data:
         return 400, "No payload received"
     pp_id = data.get("pp_id", "")
@@ -367,26 +412,23 @@ def handle_invoice_webhook(data: dict) -> tuple[int, str]:
                 inv.status = "paid"
                 inv.save()
             elif txn.status == "refunded":
+                inv.gateway_id = txn.gateway_id
                 inv.status = "refunded"
                 inv.save()
             inv.refresh_from_db()
-            items = list(InvoiceItem.objects.filter(invoice_id=inv.ref, brand_id=inv.brand_id))
-            lines, _ = invoice_line_totals(items)
             brand = Brand.objects.filter(brand_id=inv.brand_id).first()
-            tz = brand.timezone if brand and brand.timezone not in ("--", "", None) else "Asia/Dhaka"
-            try:
-                customer = json.loads(inv.customer_info or "{}")
-            except ValueError:
-                customer = {}
+            tz = norm_tz(brand.timezone if brand else "")
             hooks.do_action("invoices.updated.status", [{
-                "customer_info": customer,
+                "customer_info": inv.customer_info or "{}",
                 "invoice_info": {
                     "invoice_id": inv.ref, "brand_id": inv.brand_id, "currency": inv.currency,
-                    "due_date": inv.due_date if inv.due_date not in ("--", "", None) else None,
-                    "shipping": inv.shipping, "status": inv.status, "note": inv.note, "private_note": inv.private_note,
+                    "due_date": None,
+                    "shipping": M.money_round(M.money_sanitize(inv.shipping or "0")),
+                    "status": inv.status, "note": inv.note, "private_note": inv.private_note,
                     "created_date": M.convert_utc_to_user_tz(inv.created_date, tz, "%b %d, %Y %I:%M %p"),
-                    "updated_date": M.convert_utc_to_user_tz(inv.updated_date, tz, "%b %d, %Y %I:%M %p")},
-                "invoice_items": lines}])
+                    "updated_date": M.convert_utc_to_user_tz(M.get_current_datetime(), tz,
+                                                             "%b %d, %Y %I:%M %p")},
+                "invoice_items": []}])
     return 200, "OK"
 
 

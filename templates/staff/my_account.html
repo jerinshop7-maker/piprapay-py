@@ -2,8 +2,11 @@
 <form method="post">{% csrf_token %}
 <input name="full_name" value="{{ admin.full_name }}"> <input name="username" value="{{ admin.username }}"> <input name="email" value="{{ admin.email }}">
 <input name="password" type="password" placeholder="New password (blank keeps)">
+<input name="current_password" type="password" placeholder="Current password (required to save)">
 <h2>2FA ({{ admin.twofa_status }})</h2>
-{% if show_secret %}<p>Secret: <code>{{ admin.twofa_secret }}</code></p><p>otpauth: <code>{{ qr_url }}</code></p>{% endif %}
+{% if show_secret %}<p>Secret: <code>{{ admin.twofa_secret }}</code></p>
+<p><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_url|urlencode }}" alt="2FA QR"></p>
+<p><code>{{ qr_url }}</code></p>{% endif %}
 <select name="twofa"><option value="">—</option><option value="enable">Enable</option><option value="disable">Disable</option></select>
 <input name="twofa_code" placeholder="6-digit code">
 <button>Save</button></form>

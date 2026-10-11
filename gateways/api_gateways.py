@@ -21,6 +21,7 @@ import re
 import secrets
 import string
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -47,6 +48,9 @@ class StripeGateway:
 
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
+        callback = data.get("callback_url", "")
+        # PHP appends with ? or & depending on existing query (class.php:45-48).
+        sep = "&" if "?" in callback else "?"
         payload = {
             "payment_method_types[]": "card",
             "line_items[0][price_data][currency]": str(txn.get("local_currency", "USD")),
@@ -54,7 +58,7 @@ class StripeGateway:
             "line_items[0][price_data][unit_amount]": int(round(_float_or_0(txn.get("local_net_amount")) * 100)),
             "line_items[0][quantity]": 1,
             "mode": "payment",
-            "success_url": data.get("callback_url", "") + "?session_id={CHECKOUT_SESSION_ID}",
+            "success_url": callback + sep + "session_id={CHECKOUT_SESSION_ID}",
             "cancel_url": data.get("cancel_url", ""),
             "metadata[invoice_id]": txn.get("ref", ""),
         }
@@ -95,8 +99,8 @@ class SslcommerzGateway:
     slug = "sslcommerz"
 
     def _base(self, options):
-        return ("https://sandbox.sslcommerz.com" if options.get("mode") == "sandbox"
-                else "https://securepay.sslcommerz.com")
+        return ("https://securepay.sslcommerz.com" if (options.get("mode") or "sandbox") == "live"
+                else "https://sandbox.sslcommerz.com")
 
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
@@ -105,12 +109,15 @@ class SslcommerzGateway:
                    "tran_id": _rand_digits(10), "success_url": data.get("callback_url"),
                    "fail_url": data.get("cancel_url"), "cancel_url": data.get("cancel_url"),
                    "ipn_url": data.get("cancel_url"),
-                   "emi": 0, "cus_name": "Customer", "cus_email": "customer@example.com",
-                   "cus_phone": "01700000000", "cus_add1": "Suite 101", "cus_city": "Dhaka",
-                   "cus_postcode": "1207", "cus_country": "Bangladesh",
+                   "emi_option": "0", "cus_name": "Customer", "cus_email": "customer@example.com",
+                   "cus_phone": "01700000000", "cus_add1": "Suite 101", "cus_add2": "Suite 101",
+                   "cus_city": "Dhaka", "cus_state": "Dhaka", "cus_postcode": "1207",
+                   "cus_country": "Bangladesh", "cus_fax": "",
                    "shipping_method": "NO", "num_of_item": 1,
                    "product_name": "Digital Product",
                    "product_category": opts.get("product_category", "general"),
+                   "product_amount": txn.get("local_net_amount"),
+                   "vat": "0.00", "discount_amount": "0.00", "convenience_fee": "0.00",
                    "product_profile": "general",
                    "value_a": txn.get("ref", "")}
         try:
@@ -141,10 +148,10 @@ class SslcommerzGateway:
         el = (v.get("element") or [{}])[0]
         if (el.get("status") in ("VALID", "VALIDATED")
                 and el.get("value_a") == data.get("transaction", {}).get("ref")):
-            return {"verified": True, "trx_id": tran_id,
-                    "source_info": [{"label": "val_id", "value": el.get("val_id", "")},
-                                    {"label": "Bank GW", "value": el.get("bank_gw", "")},
-                                    {"label": "Bank Tran ID", "value": el.get("bank_tran_id", "")}]}
+            return {"verified": True, "trx_id": str(el.get("tran_id", "")),
+                    "source_info": [{"label": "SSLCommerz TransactionId", "value": str(el.get("val_id", ""))},
+                                    {"label": "Financial Entity", "value": str(el.get("bank_gw", ""))},
+                                    {"label": "PG Transaction ID", "value": str(el.get("bank_tran_id", ""))}]}
         return {"verified": False}
 
 
@@ -238,8 +245,8 @@ class NowpaymentsGateway:
     slug = "nowpayments"
 
     def _base(self, options):
-        return ("https://api-sandbox.nowpayments.io/v1" if options.get("mode") == "sandbox"
-                else "https://api.nowpayments.io/v1")
+        return ("https://api.nowpayments.io/v1" if (options.get("mode") or "sandbox") == "live"
+                else "https://api-sandbox.nowpayments.io/v1")
 
     @staticmethod
     def _tksort(obj):
@@ -263,20 +270,23 @@ class NowpaymentsGateway:
         pay_currency = ((data.get("post", {}) or {}).get("nowpay_currency", "")
                         or (data.get("query", {}) or {}).get("nowpay_currency", ""))
         if not pay_currency:
-            # Coin picker grid (mirrors PHP currencies list step).
+            # Coin picker grid: ALL currencies, sorted, with search (class.php:211+).
             currencies = self._api("GET", "/currencies", opts) or {}
             coins = currencies.get("currencies", []) if isinstance(currencies, dict) else []
+            coins = sorted(coins) if isinstance(coins, list) else []
             items = "".join(
                 f'<button type="submit" name="nowpay_currency" value="{c}">{c}</button>'
-                for c in (coins[:40] if isinstance(coins, list) else []))
+                for c in coins)
             return {"action": "form",
-                    "html": f"<form method='post'><div class='coin-grid'>{items}</div></form>"}
+                    "html": ("<form method='post'><input name='q' placeholder='Search coins' "
+                             f"oninput=\"document.querySelectorAll('.coin-grid button').forEach(b=>b.style.display=b.value.includes(this.value)?'':'none')\">"
+                             f"<div class='coin-grid'>{items}</div></form>")}
         inv = self._api("POST", "/invoice", opts, {
             "price_amount": _float_or_0(txn.get("local_net_amount")),
             "price_currency": str(txn.get("local_currency", "USD")).lower(),
             "pay_currency": str(pay_currency).lower(),
             "order_id": txn.get("ref", ""),
-            "order_description": "Digital Product",
+            "order_description": f"Payment #{txn.get('ref', '')}",
             "ipn_callback_url": data.get("ipn_url", ""),
             "success_url": data.get("callback_url", ""),
             "cancel_url": (data.get("callback_url", "") + "&pp_status=cancel"),
@@ -297,10 +307,11 @@ class NowpaymentsGateway:
         status = str(inv.get("payment_status", "") or inv.get("status", ""))
         if status in ("finished", "confirmed"):
             from core.transactions import check_transaction_id
-            if check_transaction_id(str(inv.get("payment_id", ""))):
+            invoice_id = str(inv.get("id", ""))
+            if check_transaction_id(invoice_id):
                 return {"verified": False}
-            return {"verified": True, "trx_id": str(inv.get("payment_id", "")),
-                    "source_info": [{"label": "Invoice ID", "value": str(inv.get("id", ""))},
+            return {"verified": True, "trx_id": invoice_id,
+                    "source_info": [{"label": "NOWPayments Invoice ID", "value": invoice_id},
                                     {"label": "Status", "value": status}]}
         return {"verified": False, "pending": status in ("waiting", "confirming", "sending", "partially_paid")}
 
@@ -309,7 +320,7 @@ class NowpaymentsGateway:
         headers = {str(k).lower(): v for k, v in (data.get("headers", {}) or {}).items()}
         secret = (data.get("options", {}) or {}).get("ipn_secret_key", "")
         if not secret:
-            return {"verified": False, "http_code": 400}
+            return {"verified": False, "http_code": 500}
         try:
             body = json.loads(raw.decode() or "{}")
         except ValueError:
@@ -329,9 +340,11 @@ class NowpaymentsGateway:
         if check_transaction_id(str(body.get("payment_id", ""))):
             return {"verified": False, "http_code": 200}
         return {"verified": True, "trx_id": str(body.get("payment_id", "")), "pp_ref": order_id,
-                "source_info": [{"label": "Payment ID", "value": str(body.get("payment_id", ""))},
-                                {"label": "Paid With", "value": str(body.get("pay_currency", ""))},
-                                {"label": "Amount Paid", "value": str(body.get("pay_amount", ""))},
+                "source_info": [{"label": "NOWPayments Payment ID", "value": str(body.get("payment_id", ""))},
+                                {"label": "Paid With", "value": str(body.get("pay_currency", "")).upper()},
+                                {"label": "Amount Paid",
+                                 "value": f"{body.get('actually_paid', body.get('pay_amount', ''))} "
+                                          f"{str(body.get('pay_currency', '')).upper()}"},
                                 {"label": "Pay Address", "value": str(body.get("pay_address", ""))}]}
 
 
@@ -340,8 +353,8 @@ class AamarpayGateway:
     slug = "aamarpay"
 
     def _base(self, options):
-        return ("https://sandbox.aamarpay.com" if options.get("mode") == "sandbox"
-                else "https://secure.aamarpay.com")
+        return ("https://secure.aamarpay.com" if (options.get("mode") or "sandbox") == "live"
+                else "https://sandbox.aamarpay.com")
 
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
@@ -382,7 +395,7 @@ class AamarpayGateway:
         if (r.get("pay_status") == "Successful" and str(r.get("status_code")) == "2"
                 and r.get("opt_a") == data.get("transaction", {}).get("ref")):
             return {"verified": True, "trx_id": str(r.get("bank_trxid", "")),
-                    "source_info": [{"label": "aamarPay TransactionId", "value": str(r.get("bank_trxid", ""))},
+                    "source_info": [{"label": "ammarPay TransactionId", "value": str(r.get("bank_trxid", ""))},
                                     {"label": "Financial Entity", "value": str(r.get("payment_processor", ""))},
                                     {"label": "PG Transaction ID", "value": str(r.get("pg_txnid", ""))}]}
         return {"verified": False}
@@ -496,8 +509,23 @@ class BkashApiTokenizedGateway:
         status_data = status_res.get("data", {}) or {}
         found = self._find_completed_refund(status_data, refund_amount)
         if found:
-            return {"status": True, "message": "Refund completed.", "data": found}
-        return {"status": False, "message": "Refund not completed yet.", "data": status_data}
+            return {"status": True, "message": "Refund completed.", "data": found,
+                    "status_data": status_data}
+        # Error composition mirrors class.php:321-342 exactly.
+        err = refund_data.get("errorMessageEn", "") or status_data.get("errorMessageEn", "")
+        code = refund_data.get("externalCode", "") or status_data.get("externalCode", "")
+        status_msg = refund_data.get("statusMessage", "") or status_data.get("statusMessage", "")
+        if not err:
+            raw = refund_data.get("raw", "") or status_data.get("raw", "")
+            if raw:
+                err = str(raw)[:300]
+        if not err and status_msg:
+            err = status_msg
+        if not err:
+            err = "Refund failed."
+        if code:
+            err = f"{err} (Code {code})"
+        return {"status": False, "message": err, "data": refund_data, "status_data": status_data}
 
     @staticmethod
     def extract_payment_id(source_info) -> str:
@@ -563,7 +591,7 @@ class BkashApiTokenizedGateway:
     def _find_completed_refund(status_data, amount: str):
         items = []
         if isinstance(status_data, dict):
-            for key in ("refunds", "data", "transactions", "items"):
+            for key in ("refundTransactions", "refunds", "data", "transactions", "items"):
                 if isinstance(status_data.get(key), list):
                     items = status_data[key]
                     break
@@ -572,8 +600,11 @@ class BkashApiTokenizedGateway:
         for item in items:
             if not isinstance(item, dict):
                 continue
-            if (str(item.get("refundTransactionStatus", "")).lower() == "completed"
-                    and M.money_round(item.get("refundAmount", "")) == M.money_round(amount)):
+            if str(item.get("refundTransactionStatus", "")).lower() != "completed":
+                continue
+            # PHP compares money_round() values (always 2dp; the '0' wildcard
+            # branch is effectively dead since money_round never yields '0').
+            if M.money_round(item.get("refundAmount", "0")) == M.money_round(amount or "0"):
                 return item
         return None
 
@@ -604,8 +635,8 @@ class EpsGateway:
     slug = "eps"
 
     def _base(self, options):
-        return ("https://sandboxpgapi.eps.com.bd" if options.get("mode") == "sandbox"
-                else "https://pgapi.eps.com.bd")
+        return ("https://pgapi.eps.com.bd" if (options.get("mode") or "sandbox") == "live"
+                else "https://sandboxpgapi.eps.com.bd")
 
     def _token(self, base: str, options: dict) -> str:
         raw = f"{options.get('username', '')}".encode()
@@ -624,7 +655,7 @@ class EpsGateway:
         base = self._base(opts)
         token = self._token(base, opts)
         if not token:
-            return {"action": "render", "html": "<center>EPS auth failed</center>"}
+            return {"action": "render", "html": "<center>EPS Token Error</center>"}
         merchant_txn = f"{int(datetime.now().timestamp())}{random.randint(1000, 9999)}"
         xhash = __import__("base64").b64encode(
             hmac.new(opts.get("hashkey", "").encode(), merchant_txn.encode(), hashlib.sha512).digest()).decode()
@@ -635,13 +666,15 @@ class EpsGateway:
         try:
             r = requests.post(base + "/v1/EPSEngine/InitializeEPS", json={
                 "merchantId": opts.get("merchant_id"), "storeId": opts.get("store_id"),
-                "CustomerOrderId": str(txn.get("id", txn.get("ref", ""))),
-                "merchantTransactionId": merchant_txn, "transactionTypeId": 1,
-                "totalAmount": _float_or_0(txn.get("local_net_amount")),
+                "CustomerOrderId": merchant_txn, "merchantTransactionId": merchant_txn,
+                "transactionTypeId": 1,
+                "totalAmount": txn.get("local_net_amount"),
                 "successUrl": data.get("callback_url", ""), "failUrl": data.get("cancel_url", ""),
                 "cancelUrl": data.get("cancel_url", ""),
                 "customerName": customer.get("name", "Customer"), "customerEmail": customer.get("email", ""),
-                "customerMobile": customer.get("mobile", ""),
+                "customerPhone": customer.get("mobile", ""),
+                "customerAddress": "N/A", "customerCity": "N/A", "customerState": "N/A",
+                "customerPostcode": "0000", "customerCountry": "BD",
                 "productName": "Digital Products", "ValueA": txn.get("ref", "")},
                 headers={"Authorization": f"Bearer {token}", "x-hash": xhash}, timeout=TIMEOUT).json()
         except Exception as e:
@@ -654,7 +687,8 @@ class EpsGateway:
         opts = data.get("options", {})
         query = data.get("query", {}) or {}
         merchant_txn, eps_txn = query.get("MerchantTransactionId", ""), query.get("EPSTransactionId", "")
-        if not merchant_txn or not eps_txn:
+        # PHP proceeds unless BOTH are missing.
+        if not merchant_txn and not eps_txn:
             return {"verified": False}
         base = self._base(opts)
         token = self._token(base, opts)
@@ -670,7 +704,8 @@ class EpsGateway:
         if r.get("Status") == "Success" and r.get("ValueA") == data.get("transaction", {}).get("ref"):
             return {"verified": True, "trx_id": merchant_txn,
                     "source_info": [{"label": "EPS TransactionId", "value": eps_txn},
-                                    {"label": "Financial Entity", "value": "EPS"}]}
+                                    {"label": "Financial Entity",
+                                     "value": str(r.get("FinancialEntity", "EPS"))}]}
         return {"verified": False}
 
 
@@ -725,30 +760,33 @@ class NagadMerchantApiGateway:
 
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
+        client_ip = data.get("client_ip", "") or ""
         query = data.get("query", {}) or {}
         merchant, order_id, status = query.get("merchant", ""), query.get("order_id", ""), query.get("status", "")
         if merchant and order_id and status:
-            # Callback return lands on the same page (no callback() method in PHP).
+            # Callback return lands on the same page; PHP requires
+            # payment_ref_id AND status == "Success" before verifying.
             if status == "Aborted":
                 return {"action": "render", "html": "<div>Transaction Canceled</div>", "canceled": True}
             payment_ref_id = query.get("payment_ref_id", "")
-            if payment_ref_id:
-                verify = self._verify(payment_ref_id, opts)
-                if verify.get("status") == "Success":
-                    stored = get_env(f"nagad-merchant-api-pp_{verify.get('orderId', '')}")
-                    if stored not in ("--", "") and stored == txn.get("ref"):
-                        return {"verified": True, "trx_id": str(verify.get("issuerPaymentRefNo", "")),
-                                "source_info": [
-                                    {"label": "Client Mobile Number", "value": str(verify.get("clientMobileNo", ""))},
-                                    {"label": "Service Type", "value": str(verify.get("serviceType", ""))}],
-                                "complete_now": True}
+            if not payment_ref_id or status != "Success":
+                return {"action": "render", "html": "<div>Transaction not valid or not found.</div>"}
+            verify = self._verify(payment_ref_id, opts)
+            if verify.get("status") == "Success":
+                stored = get_env(f"nagad-merchant-api-pp_{verify.get('orderId', '')}")
+                if stored not in ("--", "") and stored == txn.get("ref"):
+                    return {"verified": True, "trx_id": str(verify.get("issuerPaymentRefNo", "")),
+                            "source_info": [
+                                {"label": "Client Mobile Number", "value": str(verify.get("clientMobileNo", ""))},
+                                {"label": "Service Type", "value": str(verify.get("serviceType", ""))}],
+                            "complete_now": True}
             return {"action": "render", "html": "<div>Transaction not valid or not found.</div>"}
         # Initial checkout: initialize + complete (mirrors Xenon RequestHandler).
         try:
-            import random as _r
-            sess = "".join(_r.choice(string.ascii_uppercase + string.digits) for _ in range(12))
+            sess = "".join(secrets.choice(string.digits) for _ in range(12))
             set_env(f"nagad-merchant-api-pp_{sess}", txn.get("ref", ""))
-            now = datetime.now().strftime("%Y%m%d%H%M%S")
+            # PHP forces Asia/Dhaka for the YmdHis datetime.
+            now = datetime.now(ZoneInfo("Asia/Dhaka")).strftime("%Y%m%d%H%M%S")
             sensitive = {"merchantId": opts.get("merchant_id"), "datetime": now,
                          "orderId": sess, "challenge": self._challenge()}
             pub, priv = opts.get("public_key", ""), opts.get("private_key", "")
@@ -756,7 +794,7 @@ class NagadMerchantApiGateway:
             init = self._post(f"{base}check-out/initialize/{opts.get('merchant_id')}/{sess}", {
                 "accountNumber": opts.get("app_account"), "dateTime": now,
                 "sensitiveData": self._pub_encrypt(pub, json.dumps(sensitive).encode()),
-                "signature": self._priv_sign(priv, json.dumps(sensitive).encode())})
+                "signature": self._priv_sign(priv, json.dumps(sensitive).encode())}, client_ip)
             if not isinstance(init, dict) or "sensitiveData" not in init:
                 return {"action": "render", "html": f"<center>Gateway error: {init}</center>"}
             plain = json.loads(self._priv_decrypt(priv, init["sensitiveData"]).decode())
@@ -766,7 +804,8 @@ class NagadMerchantApiGateway:
             done = self._post(f"{base}check-out/complete/{plain.get('paymentReferenceId', '')}", {
                 "sensitiveData": self._pub_encrypt(pub, json.dumps(order).encode()),
                 "signature": self._priv_sign(priv, json.dumps(order).encode()),
-                "merchantCallbackURL": data.get("callback_url", "") + f"?merchant={opts.get('merchant_id')}"})
+                "merchantCallbackURL": data.get("callback_url", "")},
+                client_ip)
             if isinstance(done, dict) and done.get("status") == "Success" and done.get("callBackUrl"):
                 return {"action": "redirect", "url": done["callBackUrl"]}
             return {"action": "render", "html": f"<center>Gateway error: {done}</center>"}
@@ -792,8 +831,8 @@ class PathaopayMerchantApiGateway:
     slug = "pathaopay-merchant-api"
 
     def _base(self, options):
-        return ("https://api-stage.pathaopay.com" if options.get("mode") == "sandbox"
-                else "https://api.pathaopay.com")
+        return ("https://api.pathaopay.com" if (options.get("mode") or "sandbox") == "live"
+                else "https://api-stage.pathaopay.com")
 
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
@@ -854,8 +893,8 @@ class PaypalApiGateway:
     slug = "paypal-api"
 
     def _base(self, options):
-        return ("https://api-m.sandbox.paypal.com" if options.get("mode") == "sandbox"
-                else "https://api-m.paypal.com")
+        return ("https://api-m.paypal.com" if (options.get("mode") or "sandbox") == "live"
+                else "https://api-m.sandbox.paypal.com")
 
     def _token(self, base: str, options: dict) -> str:
         try:
@@ -866,11 +905,12 @@ class PaypalApiGateway:
         except Exception:
             return ""
 
-    def _req(self, method: str, url: str, token: str, payload=None, req_id: str = ""):
+    def _req(self, method: str, url: str, token: str, payload=None, req_id: str = "",
+               prefer_representation: bool = False):
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         if req_id:
             headers["PayPal-Request-Id"] = req_id
-        if method == "POST":
+        if prefer_representation:
             headers["Prefer"] = "return=representation"
         try:
             r = requests.request(method, url, json=payload, headers=headers, timeout=TIMEOUT)
@@ -880,43 +920,81 @@ class PaypalApiGateway:
         except Exception as e:
             return {"_error": str(e)}
 
+    @staticmethod
+    def _pp_amount(value) -> str:
+        """number_format(..., 2) half-up (PHP), unlike truncate money_round."""
+        from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+        try:
+            d = Decimal(str(value).replace(",", ""))
+        except InvalidOperation:
+            d = Decimal(0)
+        return format(d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), "f")
+
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
         base = self._base(opts)
         token = self._token(base, opts)
         if not token:
             return {"action": "render", "html": "<center>PayPal auth failed</center>"}
-        amount = M.money_round(str(txn.get("local_net_amount", "0")))
+        amount = self._pp_amount(txn.get("local_net_amount", "0"))
         order = self._req("POST", base + "/v2/checkout/orders", token, {
             "intent": "CAPTURE",
             "purchase_units": [{"reference_id": txn.get("ref", ""), "custom_id": txn.get("ref", ""),
-                                "invoice_id": txn.get("ref", ""), "description": "Digital Product",
-                                "amount": {"currency_code": txn.get("local_currency", "USD"), "value": amount}}],
+                                "invoice_id": txn.get("ref", ""),
+                                "description": f"Payment for transaction {txn.get('ref', '')}",
+                                "amount": {"currency_code": str(txn.get("local_currency", "USD")).upper(),
+                                           "value": amount}}],
             "payment_source": {"paypal": {"experience_context": {
                 "return_url": data.get("callback_url", ""), "cancel_url": data.get("cancel_url", ""),
                 "shipping_preference": "NO_SHIPPING", "user_action": "PAY_NOW"}}}},
             req_id=f"{txn.get('ref', '')}-{_rand_digits(6)}")
         for link in order.get("links", []) or []:
-            if link.get("rel") in ("approve", "payer-action", "approval_url") and link.get("href"):
+            if str(link.get("rel", "")).lower() in ("approve", "payer-action", "approval_url") and link.get("href"):
                 return {"action": "redirect", "url": link["href"]}
         return {"action": "render", "html": f"<center>Gateway error: {order}</center>"}
 
     def _matches(self, order: dict, txn: dict) -> bool:
+        if not isinstance(order, dict):
+            return False
         ref = txn.get("ref", "")
         units = order.get("purchase_units", []) or []
         u = units[0] if units else {}
         refs = {u.get("custom_id", ""), u.get("invoice_id", ""), u.get("reference_id", "")}
         if ref not in refs:
             return False
-        amt = ((u.get("amount", {}) or {}).get("value", "")) if isinstance(u.get("amount"), dict) else ""
-        if not amt and order.get("payments", {}).get("captures"):
-            amt = (order["payments"]["captures"][0].get("amount", {}) or {}).get("value", "")
+        amt = ""
+        if isinstance(u.get("amount"), dict):
+            amt = (u.get("amount") or {}).get("value", "")
+        if not amt:
+            try:
+                amt = (u.get("payments", {}).get("captures", []) or [{}])[0].get("amount", {}).get("value", "")
+            except (AttributeError, IndexError, TypeError):
+                amt = ""
+        if not amt:
+            return False
         try:
             if abs(float(str(amt).replace(",", "")) - float(str(txn.get("local_net_amount", "0")).replace(",", ""))) > 0.01:
                 return False
         except (ValueError, TypeError):
             return False
-        return (u.get("amount", {}) or {}).get("currency_code", txn.get("local_currency")) == txn.get("local_currency")
+        if isinstance(u.get("amount"), dict):
+            return (u.get("amount") or {}).get("currency_code") == txn.get("local_currency")
+        return True
+
+    @staticmethod
+    def _capture_id(order: dict, token_id: str) -> str:
+        try:
+            units = order.get("purchase_units", []) or []
+            payments = (units[0].get("payments", {}) if units else {}) or {}
+            for cap in payments.get("captures", []) or []:
+                if cap.get("id"):
+                    return cap["id"]
+            for auth in payments.get("authorizations", []) or []:
+                if auth.get("id"):
+                    return auth["id"]
+        except (AttributeError, IndexError, TypeError):
+            pass
+        return token_id
 
     def callback(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
@@ -929,19 +1007,24 @@ class PaypalApiGateway:
         if not self._matches(order, txn):
             return {"verified": False}
         if order.get("status") == "APPROVED":
-            order = self._req("POST", base + f"/v2/checkout/orders/{token_id}/capture", token, {},
-                              req_id=f"cap-{txn.get('ref', '')}-{_rand_digits(6)}") or order
+            captured = self._req("POST", base + f"/v2/checkout/orders/{token_id}/capture", token, {},
+                                 req_id=f"cap-{txn.get('ref', '')}-{_rand_digits(6)}",
+                                 prefer_representation=True)
+            # Failed capture falls back to re-GETting the order (class.php:183-199).
+            if not isinstance(captured, dict) or "_http" in captured or "_error" in captured:
+                captured = self._req("GET", base + f"/v2/checkout/orders/{token_id}", token)
+            order = captured
             if not self._matches(order, txn):
                 return {"verified": False}
         if order.get("status") != "COMPLETED":
             return {"verified": False}
-        caps = (order.get("payments", {}) or {}).get("captures", []) or []
-        cap = caps[0] if caps else {}
         payer = order.get("payer", {}) or {}
-        return {"verified": True, "trx_id": cap.get("id", token_id),
-                "source_info": [{"label": "Order ID", "value": token_id},
-                                {"label": "Payer ID", "value": payer.get("payer_id", "")},
-                                {"label": "Payer Email", "value": payer.get("email_address", "")}]}
+        info = [{"label": "PayPal Order ID", "value": token_id}]
+        if payer.get("payer_id"):
+            info.append({"label": "PayPal Payer ID", "value": payer["payer_id"]})
+        if payer.get("email_address"):
+            info.append({"label": "PayPal Payer Email", "value": payer["email_address"]})
+        return {"verified": True, "trx_id": self._capture_id(order, token_id), "source_info": info}
 
 
 # ------------------------------------------------------------ PayStation
@@ -949,8 +1032,8 @@ class PaystationGateway:
     slug = "paystation"
 
     def _base(self, options):
-        return ("https://sandbox.paystation.com.bd" if options.get("mode") == "sandbox"
-                else "https://api.paystation.com.bd")
+        return ("https://api.paystation.com.bd" if (options.get("mode") or "sandbox") == "live"
+                else "https://sandbox.paystation.com.bd")
 
     def process_payment(self, data):
         txn, opts = data.get("transaction", {}), data.get("options", {})
@@ -985,12 +1068,14 @@ class PaystationGateway:
                               timeout=TIMEOUT).json()
         except Exception:
             return {"verified": False}
+        # Response fields live under nested `data.*` (class.php:149-153).
+        d = r.get("data", {}) if isinstance(r.get("data"), dict) else r
         if (int(r.get("status_code", 0) or 0) == 200 and str(r.get("status", "")).lower() == "success"
-                and str(r.get("trx_status", "")) in ("successful", "Success")):
-            return {"verified": True, "trx_id": str(r.get("trx_id", "")),
+                and str(d.get("trx_status", "")) in ("successful", "Success")):
+            return {"verified": True, "trx_id": str(d.get("trx_id", "")),
                     "source_info": [{"label": "Invoice Number", "value": invoice_number},
-                                    {"label": "Payer Mobile Number", "value": str(r.get("payer_mobile", ""))},
-                                    {"label": "Financial Entity", "value": "PayStation"}]}
+                                    {"label": "Payer Mobile Number", "value": str(d.get("payer_mobile_no", ""))},
+                                    {"label": "Financial Entity", "value": str(d.get("payment_method", ""))}]}
         return {"verified": False}
 
 
@@ -999,8 +1084,8 @@ class ShurjopayGateway:
     slug = "shurjopay"
 
     def _base(self, options):
-        return ("https://sandbox.shurjopayment.com" if options.get("mode") == "sandbox"
-                else "https://engine.shurjopayment.com")
+        return ("https://engine.shurjopayment.com" if (options.get("mode") or "sandbox") == "live"
+                else "https://sandbox.shurjopayment.com")
 
     def _token(self, base: str, options: dict) -> str:
         try:
@@ -1019,17 +1104,20 @@ class ShurjopayGateway:
             return {"action": "render", "html": "<center>shurjoPay auth failed</center>"}
         try:
             r = requests.post(base + "/api/secret-pay", data={
-                "prefix": opts.get("prefix", ""), "token": token,
+                "prefix": opts.get("prefix", "bp"), "token": token,
                 "return_url": data.get("ipn_url", ""), "cancel_url": data.get("cancel_url", ""),
-                "store_id": opts.get("prefix", ""), "amount": txn.get("local_net_amount"),
+                "store_id": opts.get("prefix", "bp"), "amount": txn.get("local_net_amount"),
                 "order_id": f"{random.randint(10**7, 10**8 - 1)}-BP-{txn.get('ref', '')}",
                 "currency": "BDT", "customer_name": "Customer", "customer_address": "Dhaka",
-                "customer_phone": "01700000000", "customer_city": "Dhaka", "customer_post_code": "2113",
+                "customer_phone": "01700000000", "customer_city": "Dhaka", "customer_postcode": "2113",
                 "customer_country": "BD", "client_ip": "102.101.1.1", "discount_amount": 0,
                 "disc_percent": 0, "customer_email": "customer@example.com"},
                 headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT).json()
         except Exception as e:
             return {"action": "render", "html": f"<center>Gateway error: {e}</center>"}
+        # store_id for later calls comes from the live token response.
+        if isinstance(r, dict) and r.get("store_id"):
+            set_env(f"shurjopay-store-{txn.get('ref', '')}", str(r["store_id"]))
         if r.get("checkout_url"):
             return {"action": "redirect", "url": r["checkout_url"]}
         return {"action": "render", "html": f"<center>Gateway error: {r}</center>"}
@@ -1038,27 +1126,31 @@ class ShurjopayGateway:
         opts = data.get("options", {})
         order_id = (data.get("query", {}) or {}).get("order_id", "")
         if not order_id:
-            return {"verified": False, "http_code": 400}
+            return {"verified": False, "http_code": 200}
         base = self._base(opts)
         token = self._token(base, opts)
         try:
-            r = requests.post(base + "/api/verification", data={"order_id": order_id},
-                              headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT).json()
+            r = requests.post(base + "/api/verification", json={"order_id": order_id},
+                              headers={"Authorization": f"Bearer {token}",
+                                       "Content-Type": "application/json"},
+                              timeout=TIMEOUT).json()
         except Exception:
-            return {"verified": False, "http_code": 400}
+            return {"verified": False, "http_code": 200}
         rows = r if isinstance(r, list) else [r]
         row = rows[0] if rows and isinstance(rows[0], dict) else {}
+        cust_order = str(row.get("customer_order_id", ""))
+        ref = cust_order.split("-BP-")[1] if "-BP-" in cust_order else ""
         if str(row.get("sp_code")) == "1000" or row.get("bank_status") == "Success":
-            cust_order = str(row.get("customer_order_id", ""))
-            ref = cust_order.split("-BP-")[1] if "-BP-" in cust_order else ""
             if ref:
                 return {"verified": True, "trx_id": str(row.get("bank_trx_id", "")), "pp_ref": ref,
                         "redirect": "checkout",
                         "source_info": [{"label": "PG ID", "value": str(row.get("id", ""))},
                                         {"label": "Order ID", "value": order_id},
-                                        {"label": "Method", "value": str(row.get("method", ""))}]}
-        # Mark canceled like PHP (handled by caller via canceled flag + pp_ref derivation).
-        return {"verified": False, "canceled": True, "http_code": 200}
+                                        {"label": "Financial Entity", "value": str(row.get("method", ""))}]}
+        # Failed verification marks the derived ref canceled (class.php:211-221).
+        if ref:
+            return {"verified": False, "canceled": True, "pp_ref": ref, "http_code": 200}
+        return {"verified": False, "http_code": 200}
 
 
 # ------------------------------------------------------------ Binance personal
@@ -1067,6 +1159,9 @@ class BinancePersonalGateway:
 
     def process_payment(self, data):
         txn = data.get("transaction", {})
+        # class.php:203 persists the expected net amount for the IPN check.
+        set_env(f"binance-personal-pp_amount{txn.get('ref', '')}",
+                str(txn.get("local_net_amount", "0")))
         lang = data.get("lang", {}) or {}
         order_label = lang.get("order_id", "Order ID")
         enter_label = lang.get("enter_order_id", "Enter Order ID")
@@ -1084,12 +1179,21 @@ class BinancePersonalGateway:
         order_id = str(post.get("order_id", "")).strip()
         bpid = str(post.get("bpid", "")).strip()
         if not order_id:
-            return {"verified": False, "json": {"status": False, "message": "Order ID required."}}
+            return {"verified": False, "json": {"status": "false",
+                                                "message": "Please fill in all required fields before proceeding."}}
         from core.transactions import check_transaction, check_transaction_id
         if check_transaction_id(order_id):
-            return {"verified": False, "json": {"status": False, "message": "Duplicate order."}}
+            return {"verified": False, "json": {"status": "false",
+                                                "message": "This Transaction ID is already exits. Please provide a different one."}}
         if not bpid or not check_transaction(bpid):
-            return {"verified": False, "json": {"status": False, "message": "Invalid payment."}}
+            return {"verified": False, "json": {"status": "false",
+                                                "message": "Please fill in all required fields before proceeding."}}
+        # Expected amount persisted at process_payment (class.php:203).
+        stored = get_env(f"binance-personal-pp_amount{bpid}")
+        try:
+            expected = float(str(stored).replace(",", "")) if stored not in ("", "--", None) else 0.0
+        except (ValueError, TypeError):
+            expected = 0.0
         import time as _time
         params = {"limit": 100, "timestamp": int(_time.time() * 1000)}
         query = "&".join(f"{k}={v}" for k, v in params.items())
@@ -1100,18 +1204,20 @@ class BinancePersonalGateway:
                              headers={"X-MBX-APIKEY": opts.get("api_key", "")},
                              timeout=TIMEOUT).json()
         except Exception as e:
-            return {"verified": False, "json": {"status": False, "message": str(e)}}
+            return {"verified": False, "json": {"status": "false", "message": str(e)}}
         txns = r.get("data", []) if isinstance(r, dict) else []
-        stored = _float_or_0((data.get("transaction") or {}).get("local_net_amount"))
         for t in txns:
             if str(t.get("orderId", "")) == order_id and t.get("currency") == "USDT":
-                if stored <= _float_or_0(t.get("amount", 0) or t.get("totalAmount", 0)):
+                paid = _float_or_0(t.get("amount", 0))
+                if expected <= paid:
                     number = str(t.get("payerInfo", {}).get("name", "") or t.get("counterparty", ""))
                     return {"verified": True, "trx_id": order_id, "pp_ref": bpid,
-                            "json": {"status": True, "visible_number": number},
+                            "json": {"status": "true", "visible_number": number},
                             "source_info": [{"label": "Binance Order", "value": order_id}]}
-                return {"verified": False, "json": {"status": False, "message": "Amount mismatch."}}
-        return {"verified": False, "json": {"status": False, "message": "Order not found."}}
+                return {"verified": False, "json": {"status": "false",
+                                                    "message": (r.get("msg") or "Amount mismatch.")}}
+        return {"verified": False, "json": {"status": "false",
+                                            "message": (r.get("msg") or "Order not found.")}}
 
 
 def register(classes: dict) -> None:

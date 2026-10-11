@@ -72,10 +72,29 @@ def _body(request):
         return None
 
 
-def _check_domain(url: str, kind: str):
-    if url in ("", "--"):
+def _loose_domain(url: str):
+    """Inline getDomainFromUrl() used by the API router (index.php:412-420):
+    filter_var URL + parse_url host. No scheme default, no www-strip, no TLD
+    check — looser than pp-functions getDomainValue()."""
+    from urllib.parse import urlparse
+    s = (url or "").strip()
+    if not s:
+        return False
+    if "://" not in s:
+        return False
+    try:
+        host = urlparse(s).hostname
+    except Exception:
+        return False
+    return host or False
+
+
+def _check_domain(url: str | None, kind: str):
+    # Missing/empty input becomes '--'; an explicit '--' still goes through
+    # validation and fails (index.php:412-420,464+).
+    if url is None or url == "":
         return "--", None
-    host = M.get_domain_value(url)
+    host = _loose_domain(url)
     if not host:
         return None, _err("INVALID_URL", f"{kind} URL is invalid.")
     row = Domain.objects.filter(domain=host).first()
@@ -93,36 +112,42 @@ def _check_domain(url: str, kind: str):
 def _parse_metadata(raw):
     if isinstance(raw, dict):
         return raw, None
+    if isinstance(raw, list):
+        return raw, None
     if isinstance(raw, str):
+        # Explicit "" is invalid JSON in PHP (json_decode("") -> null + error).
+        if raw == "":
+            return None, _err("INVALID_JSON", "The metadata JSON is invalid.")
         try:
-            parsed = json.loads(raw or "{}")
+            return json.loads(raw or "{}"), None
         except ValueError:
             return None, _err("INVALID_JSON", "The metadata JSON is invalid.")
-        return parsed if isinstance(parsed, dict) else parsed, None
     return None, _err("INVALID_METADATA", "Metadata must be an array or valid JSON string.")
 
 
 def _is_numeric(value) -> bool:
-    """PHP is_numeric(): plain number, no commas/thousands separators."""
+    """PHP is_numeric(): optional whitespace + sign + decimals + exponent.
+    No commas/thousands separators; inf/nan are NOT numeric."""
     if isinstance(value, bool):
         return False
     if isinstance(value, (int, float)):
         return True
-    s = str(value).strip()
-    return bool(re.fullmatch(r"[+-]?(\d+(\.\d*)?|\.\d+)", s))
+    s = str(value)
+    return bool(re.fullmatch(r"\s*[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?\s*", s))
 
 
 def _validate_customer_fields(data):
     name = (data.get("full_name") or "").strip()
-    email = (data.get("email_address") or "").strip()
+    raw_email = data.get("email_address") or ""
     mobile = (data.get("mobile_number") or "").strip()
     amount = data.get("amount", "0")
     if not name:
         return None, _err("MISSING_FIELD", "Full name is required.")
     try:
-        validate_email(email)
+        validate_email(raw_email)
     except ValidationError:
         return None, _err("INVALID_EMAIL", "A valid email address is required.")
+    email = raw_email.strip()
     if not mobile:
         return None, _err("MISSING_FIELD", "Mobile number is required.")
     if not _is_numeric(amount) or float(str(amount).strip()) <= 0:
@@ -134,11 +159,11 @@ def _suspend_error(brand_id: str, email: str):
     suspended = Customer.objects.filter(brand_id=brand_id, email=email, status="suspend").first()
     if not suspended:
         return None
-    reason = suspended.suspend_reason
-    if not reason or reason == "--":
+    # PHP branches only on == "--"; empty reason still gets the suffix.
+    if suspended.suspend_reason == "--" or suspended.suspend_reason is None:
         msg = "Customer is already suspended by the admin."
     else:
-        msg = f"Customer is already suspended by the admin. Reason: {reason}"
+        msg = f"Customer is already suspended by the admin. Reason: {suspended.suspend_reason}"
     return _err("INVALID_CUSTOMER", msg)
 
 
@@ -167,16 +192,16 @@ def checkout_redirect(request):
     api, err = _require_auth(request)
     if err:
         return err
-    if "create_payment" not in _scopes(api):
-        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Create Payment")
     data = _body(request)
     if not data:
         return _err("INVALID_JSON_PAYLOAD", "The JSON payload is invalid or malformed.")
+    if "create_payment" not in _scopes(api):
+        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Create Payment")
 
-    return_url, err = _check_domain(data.get("return_url") or "--", "Return")
+    return_url, err = _check_domain(data.get("return_url"), "Return")
     if err:
         return err
-    webhook_url, err = _check_domain(data.get("webhook_url") or "--", "Webhook")
+    webhook_url, err = _check_domain(data.get("webhook_url"), "Webhook")
     if err:
         return err
     metadata, err = _parse_metadata(data.get("metadata", "{}") if "metadata" in data else "{}")
@@ -196,7 +221,8 @@ def checkout_redirect(request):
     pp_id = M.generate_item_id(27, 27)
     Transaction.objects.create(
         brand_id=api.brand_id, source="api", ref=pp_id,
-        customer_info=json.dumps({"name": cust["name"], "email": cust["email"], "mobile": cust["mobile"]}),
+        customer_info=json.dumps({"name": cust["name"], "email": cust["email"], "mobile": cust["mobile"]},
+                                 ensure_ascii=False),
         amount=M.money_sanitize(cust["amount"]), currency=currency,
         metadata=_empty_metadata_json(metadata), return_url=return_url, webhook_url=webhook_url)
     _ensure_customer(api.brand_id, cust)
@@ -210,12 +236,13 @@ def checkout_popup(request):
     api, err = _require_auth(request)
     if err:
         return err
-    if "create_payment" not in _scopes(api):
-        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Create Payment")
     data = _body(request)
     if not data:
         return _err("INVALID_JSON_PAYLOAD", "The JSON payload is invalid or malformed.")
-    webhook_url = data.get("webhook_url") or "--"
+    if "create_payment" not in _scopes(api):
+        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Create Payment")
+    webhook_url = data.get("webhook_url")
+    webhook_url = "--" if webhook_url is None or webhook_url == "" else webhook_url
     metadata, err = _parse_metadata(data.get("metadata", "{}") if "metadata" in data else "{}")
     if err:
         return err
@@ -231,7 +258,8 @@ def checkout_popup(request):
     pp_id = M.generate_item_id(27, 27)
     Transaction.objects.create(
         brand_id=api.brand_id, source="api", ref=pp_id,
-        customer_info=json.dumps({"name": cust["name"], "email": cust["email"], "mobile": cust["mobile"]}),
+        customer_info=json.dumps({"name": cust["name"], "email": cust["email"], "mobile": cust["mobile"]},
+                                 ensure_ascii=False),
         amount=M.money_sanitize(cust["amount"]), currency=currency,
         metadata=_empty_metadata_json(metadata), return_url="--", webhook_url=webhook_url)
     _ensure_customer(api.brand_id, cust)
@@ -245,18 +273,18 @@ def verify_payment(request):
     api, err = _require_auth(request)
     if err:
         return err
-    if "verify_payment" not in _scopes(api):
-        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Verify Payment")
     data = _body(request)
     if not data:
         return _err("INVALID_JSON_PAYLOAD", "The JSON payload is invalid or malformed.")
+    if "verify_payment" not in _scopes(api):
+        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Verify Payment")
     pp_id = data.get("pp_id") or ""
     if not pp_id:
         return _err("INVALID_PP_ID", "A valid bp id is required.")
     txn = Transaction.objects.filter(ref=pp_id).first()
     if not txn:
         return _err("INVALID_PP_ID", "A valid bp id is required.")
-    return JsonResponse(transaction_payload(txn))
+    return JsonResponse(transaction_payload(txn, round_total=True))
 
 
 @csrf_exempt
@@ -266,11 +294,11 @@ def refund_payment(request):
     api, err = _require_auth(request)
     if err:
         return err
-    if "refund_payment" not in _scopes(api):
-        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Refund Payment")
     data = _body(request)
     if not data:
         return _err("INVALID_JSON_PAYLOAD", "The JSON payload is invalid or malformed.")
+    if "refund_payment" not in _scopes(api):
+        return _err("INSUFFICIENT_SCOPE", "The API key does not have the required permission: Refund Payment")
     pp_id = data.get("pp_id") or ""
     if not pp_id:
         return _err("INVALID_PP_ID", "A valid bp id is required.")
@@ -293,16 +321,20 @@ def refund_payment(request):
                 info = []
         except ValueError:
             info = []
+        changed = False
         for label, key in (("Refund TrxID", "refundTrxId"), ("Refund Amount", "refundAmount"),
                            ("Refund Time", "completedTime")):
             val = (result.get("data") or {}).get(key, "")
             if val:
                 info.append({"label": label, "value": val})
-        txn.source_info = json.dumps(info, ensure_ascii=False)
+                changed = True
+        # source_info rewritten only when a refund field was appended.
+        if changed:
+            txn.source_info = json.dumps(info, ensure_ascii=False)
 
     txn.status = "refunded"
     txn.save()
-    payload = transaction_payload(txn)
+    payload = transaction_payload(txn, round_total=True)
     payload["status"] = "refunded"
     return JsonResponse(payload)
 

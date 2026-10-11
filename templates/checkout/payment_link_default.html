@@ -6,7 +6,7 @@
 <input name="full-name" placeholder="{{ lang.full_name|default:"Full Name" }}" required>
 <input name="email-address" placeholder="{{ lang.email_address|default:"Email Address" }}" required>
 <input name="mobile-number" placeholder="{{ lang.mobile_number|default:"Mobile Number" }}" required>
-<input name="amount" type="number" step="any" placeholder="{{ lang.amount|default:"Amount" }}" required>
+<input name="amount" type="number" value="0" placeholder="{{ lang.amount|default:"Amount" }}">
 <p>{{ lang.currency|default:"Currency" }}: {{ currency }}</p>
 <button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
 <script>

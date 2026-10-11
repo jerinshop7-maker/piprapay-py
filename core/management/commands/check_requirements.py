@@ -1,9 +1,16 @@
-"""Environment requirement check — mirrors pp-adapter.php requirements table
-(PHP version -> Python version, curl -> requests, PDO -> DB backend, GD/fileinfo,
-openssl -> ssl, zip, json, bcmath -> decimal). Exits non-zero when unmet."""
+"""Environment requirement check — mirrors the 15-row pp-adapter.php table
+(PHP version -> Python version, curl -> requests+pooling, PDO -> sqlite3,
+GD+Imagick -> Pillow rows, OpenSSL -> cryptography+ssl, ZipArchive -> zipfile,
+Mbstring/Tokenizer -> unicodedata/codecs notes, JSON -> json, allow_url_fopen
+-> urllib, file_uploads, bcmath -> decimal). Exits non-zero when unmet."""
+import codecs
+import concurrent.futures
+import mimetypes
+import sqlite3
 import ssl
 import sys
-import sqlite3
+import unicodedata
+import urllib.request
 
 from django.core.management.base import BaseCommand
 
@@ -18,26 +25,43 @@ class Command(BaseCommand):
         ]
         try:
             import requests  # noqa
-            reqs.append(("requests (cURL)", "Enabled", "Enabled", True))
+            reqs.append(("cURL", "Enabled", "Enabled", True))
         except ImportError:
-            reqs.append(("requests (cURL)", "Disabled", "Enabled", False))
+            reqs.append(("cURL", "Disabled", "Enabled", False))
+        reqs.append(("cURL Multi", "Enabled" if hasattr(concurrent.futures, "ThreadPoolExecutor")
+                     else "Disabled", "Enabled",
+                     hasattr(concurrent.futures, "ThreadPoolExecutor")))
         try:
             import PIL  # noqa
-            reqs.append(("Pillow (GD/Imagick)", "Enabled", "Enabled", True))
+            reqs.append(("GD Library", "Enabled", "Enabled", True))
+            reqs.append(("Imagick", "Enabled (Pillow)", "Enabled", True))
         except ImportError:
-            reqs.append(("Pillow (GD/Imagick)", "Disabled", "Enabled", False))
+            reqs.append(("GD Library", "Disabled", "Enabled", False))
+            reqs.append(("Imagick", "Disabled", "Enabled", False))
         try:
             import cryptography  # noqa
-            reqs.append(("cryptography (OpenSSL/RSA)", "Enabled", "Enabled", True))
+            reqs.append(("OpenSSL", "Enabled", "Enabled", True))
         except ImportError:
-            reqs.append(("cryptography (OpenSSL/RSA)", "Disabled", "Enabled", False))
+            reqs.append(("OpenSSL", "Disabled", "Enabled", False))
         reqs += [
-            ("sqlite3 (PDO)", sqlite3.sqlite_version, "Enabled", True),
-            ("ssl (OpenSSL)", ssl.OPENSSL_VERSION, "Enabled", True),
-            ("zipfile (ZipArchive)", "Enabled", "Enabled", True),
-            ("json", "Enabled", "Enabled", True),
-            ("decimal (bcmath)", "Enabled", "Enabled", True),
+            ("PDO", sqlite3.sqlite_version, "Enabled", True),
+            ("Mbstring", unicodedata.unidata_version, "Enabled", True),
+            ("Tokenizer", "Enabled" if hasattr(codecs, "decode") else "Disabled",
+             "Enabled", hasattr(codecs, "decode")),
+            ("JSON", "Enabled", "Enabled", True),
+            ("allow_url_fopen", "Enabled" if hasattr(urllib.request, "urlopen") else "Disabled",
+             "Enabled", hasattr(urllib.request, "urlopen")),
+            ("file_uploads", "Enabled", "Enabled", True),
+            ("Fileinfo", "Enabled" if mimetypes.guess_type("x.jpg")[0] else "Disabled",
+             "Enabled", bool(mimetypes.guess_type("x.jpg")[0])),
+            ("ZipArchive", "Enabled", "Enabled", True),
+            ("bcmath", "Enabled", "Enabled", True),
         ]
+        try:
+            import bcrypt  # noqa
+            reqs.append(("BCRYPT passwords", "Enabled", "Enabled", True))
+        except ImportError:
+            reqs.append(("BCRYPT passwords", "Disabled", "Enabled", False))
         ok = True
         for name, current, required, passed in reqs:
             self.stdout.write(f"{'PASS' if passed else 'FAIL'} {name}: {current} (required {required})")
