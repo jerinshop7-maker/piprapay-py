@@ -15,19 +15,11 @@ edge-case, or message-text-only difference.
 
 ## Area 1 — Router, guards, IPN entry, cron entry (`index.php` 1-330, 1730-2110)
 
-- [ ] **G1-010** — Extra URL segments (`ipn/X/Y/`) 404 in Django; PHP silently
-  ignores segments[2+]. Accepted divergence (Django convention is safer).
-  _(MINOR)_
 - [ ] **G1-011** — Maintenance middleware exempts `/admin/system-settings/`;
   PHP has no exemption. Accepted: the exemption is required to ever disable
   maintenance without SSH. _(MINOR)_
-  plugin's `supported_languages`/`lang_text` hooks. Open: no plugin consumes
-  `lang` on the IPN path today, so no behavioral effect yet.
-  `gateways/ipn_views.py:60-76`. _(MINOR)_
 - [ ] **G1-029** — Custom `$path_admin` slugs are not honored (Django fixes
   `admin/`; `PIPRAPAY_PATHS` is reserved for future use). Accepted. _(MINOR)_
-- [ ] **G1-032** — Cron bad-token body is JSON `{"error":"not found"}` (404);
-  PHP serves the HTML 404 page. Accepted wire deviation. _(MINOR)_
 - [ ] **G1-033** — Lock file lives at `media/storage/cron.lock`, not
   `pp-media/storage/cron.lock`. Accepted (Django layout). _(MINOR)_
 - [ ] **G1-035** — Cron responds after work completes; PHP echoes instantly
@@ -57,8 +49,6 @@ edge-case, or message-text-only difference.
   deviation (same wire behavior). _(MINOR)_
 - [ ] **G2-036** — Gateway list rows carry an extra `converted` key. Accepted
   superset (templates use it). _(MINOR)_
-- [ ] **G2-037** — `add_query_params` lowercases host / drops port (PHP keeps
-  case, drops port+fragment too). Edge-only. _(MINOR)_
 - [ ] **G2-044** — Empty-string `due_date` renders `""`; PHP converts it
   (which yields current-date — a PHP quirk). Intentional non-mirror. _(MINOR)_
 - [ ] **G2-047** — `index.php:1513` reads `$brandRow` before definition
@@ -71,16 +61,10 @@ edge-case, or message-text-only difference.
 
 ## Area 3 — Money, utils, hooks, DB (`pp-functions.php` 1-800, 3210-3545)
 
-- [ ] **G3-006/008/009** — `generateStrongPassword` uses CSPRNG not
-  `str_shuffle`; `getNameChars` keeps `"0"` words + Unicode case; date
-  helpers take `strftime` tokens. Same charset/outputs on realistic inputs.
-  _(MINOR)_
+- [ ] **G3-006/009** — `generateStrongPassword` uses CSPRNG not `str_shuffle`; date helpers take `strftime` tokens. Same charset/outputs on realistic inputs. _(MINOR)_
 - [ ] **G3-011/018/020/022** — No cookie helpers, `getAdminPath`,
   MySQL-charset function, or `dateformat` default use (all callers pass
   explicit formats). Dead/low-use surface. _(MINOR)_
-  update (PHP `getData`/`insertData`/`updateData` coerce). Code consistently
-  checks `in ("--", "", None)`;ADMIN_TEMPLATE_DEFAULT_FILTERS unset spots may
-  render `None`/blank instead of `--`. Open display sweep. _(MINOR)_
 - [ ] **G3-016** — `limit_checker` dead code (zero callers in PHP).
   Intentionally unported. _(MINOR)_
 - [ ] **G3-017** — `pp_site_url` Full/fulldomain/maindomain modes unported
@@ -104,14 +88,11 @@ edge-case, or message-text-only difference.
 - [ ] **G4-001/002/005** — Unmatched optional SMS captures (`None` vs
   `null`), `mfs` key trim, `set_env` return value. No observable effect.
   _(MINOR)_
-- [ ] **G4-006/007/008/009/011/014/015** — Upload message strings, Pillow vs
-  Imagick conversion details (alpha flatten, GIF handling, filename case),
-  `deleteImage` bool vs 3-message JSON, extract multi-root nesting,
-  `rand()` vs `secrets` filenames. Cosmetic. _(MINOR)_
 - [ ] **G4-016** — `callback_url` carries `?gateway=&pp_callback&gid`
   (superset of bare `?pp_callback`); plugins treat it opaquely. _(MINOR)_
-- [ ] **G4-020/023/024** — `hexToRgba` interior-`#`, receipt section helpers
-  and status colors unported (HTML receipt). _(MINOR)_
+- [ ] **G4-011** — `deleteImage` returns bool; PHP returns a 3-message JSON
+  string. Internal return only (all callers use truthiness identically). _(MINOR)_
+- [ ] **G4-023/024** — Receipt section helpers and status colors unported (HTML receipt). _(MINOR)_
 - [ ] **G4-026/027/028** — Language fallback is `en` (PHP: first key /
   session-first). Equivalent on all shipped packs (en-first). _(MINOR)_
 - [ ] **G4-029** — Framework lang keys fill-if-absent instead of overwrite.
@@ -119,11 +100,7 @@ edge-case, or message-text-only difference.
 - [ ] **G4-030/031/035/036/037/038** — Rate sanitize, extra `converted` key,
   missing-class dead render, stored-vs-computed display fees, float comma
   format. Cosmetic/edge. _(MINOR)_
-  Presentational. _(MINOR)_
-- [ ] **G4-041/042/043/044/045/047/052/055** — Empty-`<ol>` render, spinner/
-  restore/toast details, `verify/` vs same-URL POST, `action-v2` hidden
-  inputs, invoice branch location, bare inputs. Accepted wire/markup
-  deviations with identical JSON shapes. _(MINOR)_
+- [ ] **G4-042/043/044/045/047/052/055** — Spinner/restore/toast details, `verify/` vs same-URL POST, `action-v2` hidden inputs, invoice branch location, bare inputs. Accepted wire/markup deviations with identical JSON shapes. _(MINOR)_
 
 ## Area 5 — Adapter infra + auth (`pp-adapter.php` 1-700)
 
@@ -136,8 +113,7 @@ edge-case, or message-text-only difference.
 - [ ] **G5-024/025/026/027** — No custom CSRF-token echo/rotation,
   `pp-token` HMAC app bypass, or `session_token` JSON bodies (HTML + Django
   CSRF + `csrf_exempt` companion endpoints cover the flows). _(MINOR)_
-- [ ] **G5-028/034** — Session keys (`pp_admin_id`, `pp_cookie`) instead of
-  `pp_admin`/`pp_2fa` cookies. Accepted session architecture. _(MINOR)_
+- [ ] **G5-028/034** — Cookie names (`pp_admin`/`pp_2fa`/`pp_brand`) now mirrored alongside the session backend; native PHP session storage itself is architectural. _(MINOR)_
 - [ ] **G5-030/036** — PHP sets login/2FA flags even for suspended users
   (bugs). Intentionally NOT mirrored (deny). _(MINOR)_
 - [ ] **G5-037** — No brand-currency template globals (unused by Django
@@ -146,24 +122,15 @@ edge-case, or message-text-only difference.
   password stage. Same end state. _(MINOR)_
 - [ ] **G5-045/049/057** — Redirects instead of JSON `target`/`session_token`
   bodies; unknown-action `Oops` branch N/A (URL routing). _(MINOR)_
-- [ ] **G5-050** — New cookie per login instead of reusing the 2FA cookie
-  (with `cycle_key()` fixation protection). Accepted. _(MINOR)_
 - [ ] **G5-058** — No `escape_string` (ORM parameterization). _(MINOR)_
 
 ## Area 6 — Staff admin A–M (adapter staff→general-setting)
 
-- [ ] **G6-001/003/006/008/015/025/030/034/038/058/064/065/067/073/074/079** —
-  Cosmetic: list-scope message text, date filters present (staff), value
-  shapes, `deleteable` search parity, domain/gateway info endpoints (HTML
-  flow needs none), gateway required-gate (form posts all fields), expiry
-  message quirk, currency ordering/display, info endpoints, faq bulk perm
-  nuance, api list shape. _(MINOR)_
-- [ ] **G6-063** — Link `quantity` parsed to int; PHP stores decimal string
-  into an INT column (MySQL coerces identically). Same end state. _(MINOR)_
+- [ ] **G6-001/006/008/025/034/038/058/064/065/067/073/079** — Cosmetic: list-scope message text, value shapes, domain/gateway info endpoints (HTML flow needs none), expiry message quirk, currency display, info endpoints, api list shape. _(MINOR)_
+
 
 ## Area 7 — Staff admin N–Z + companion (adapter 5600-9671)
 
-  minor. _(MINOR)_
 - [ ] **G7-011** — Bulk status transitions are whitelisted
   (approved/awaiting-review/used); PHP writes any verbatim actionID.
   Intentional (safer). _(MINOR)_
@@ -348,3 +315,15 @@ edge-case, or message-text-only difference.
   route matrix refreshed (`/install/`, companion, info endpoints, `?page=`
   shim, `set-brand`); `brand_api` expired derivation, transaction
   gateway-slug search, addon search, base-first currencies.
+
+- Continuation pass 3: trailing-segment tolerance on all PHP-routed surfaces
+  (G1-010); cron bad-token serves the HTML 404 page (G1-032); host case
+  preserved in `add_query_params` (G2-037); exact `getNameChars`
+  (G3-006/008/009 remainder); upload message strings + size-before-ext order
+  (G4-006); lossless WEBP + palette-transparency detection (G4-007/008);
+  first-entry prefix strip in `extract_update` (G4-014); replace-all `#`
+  (G4-020); always-rendered instruction `<ol>` (G4-041); faq bulk entry gate
+  (G6-074); gateway 12-field required gate (G6-030 remainder); self-edit
+  message (G6-015); cookie mirroring (`pp_admin`/`pp_2fa`/`pp_brand`,
+  reuse-on-2FA, cleanup on logout) + cookie-first auth (G5-028/034/050);
+  `DEBUG` defaults off; always-PASS requirement rows kept as listed.

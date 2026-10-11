@@ -340,6 +340,14 @@ def refund_payment(request):
 
 
 @csrf_exempt
+def checkout_extra(request, extra: str = ""):
+    # PHP ignores segments past api_type/checkout_type.
+    if extra == "redirect":
+        return checkout_redirect(request)
+    return checkout_popup(request)
+
+
+@csrf_exempt
 def unknown_api(request, path: str = ""):
     """Unknown api_type / checkout_type -> 400 INVALID_JSON_PAYLOAD (PHP parity)."""
     return _err("INVALID_JSON_PAYLOAD", "The JSON payload is invalid or malformed.")

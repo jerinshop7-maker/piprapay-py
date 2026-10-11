@@ -801,6 +801,12 @@ def gateway_edit(request, gateway_id: str = ""):
         slug = request.POST.get("slug", gw.slug if gw else ("bank" if is_bank_form else ""))
         plugin = plugins.get(slug)
         if gw:
+            required = ("display", "currency", "status", "tab", "min_allow", "max_allow",
+                        "fixed_discount", "percentage_discount", "fixed_charge",
+                        "percentage_charge", "primary_color", "text_color")
+            if any(not request.POST.get(f, "") for f in required):
+                messages.error(request, "Please fill in all required fields before proceeding.")
+                return redirect(f"/admin/gateways/{gateway_id}/")
             for f in ("name", "display", "currency", "status", "tab", "logo", "primary_color",
                       "text_color", "btn_color", "btn_text_color"):
                 if f in request.POST:
@@ -1666,11 +1672,11 @@ def brand_faq(request):
             Faq.objects.filter(id=request.POST["delete"]).delete()
             return redirect("/admin/brand-setting/faq/")
         if "bulk" in request.POST:
+            if not has_permission(request.pp_permissions, "faq_settings", "delete", request.pp_admin.role):
+                return render(request, "staff/denied.html", status=403)
             action = request.POST.get("bulk")
             ids = request.POST.getlist("selected_ids")
             if action == "deleted":
-                if not has_permission(request.pp_permissions, "faq_settings", "delete", request.pp_admin.role):
-                    return render(request, "staff/denied.html", status=403)
                 Faq.objects.filter(id__in=ids).delete()
             elif action in ("activated", "inactivated"):
                 if not has_permission(request.pp_permissions, "faq_settings", "edit", request.pp_admin.role):
@@ -2392,4 +2398,8 @@ def addon_edit(request, addon_id: str):
 @login_required
 def logout_view(request):
     request.session.flush()
-    return redirect("/login/")
+    resp = redirect("/login/")
+    resp.delete_cookie("pp_admin")
+    resp.delete_cookie("pp_2fa")
+    resp.delete_cookie("pp_brand")
+    return resp

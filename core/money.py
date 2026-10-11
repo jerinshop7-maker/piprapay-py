@@ -137,13 +137,24 @@ def generate_strong_password(length: int = 8) -> str:
 
 
 def get_name_chars(full_name: str, length: int = 2) -> str:
+    # explode(' ') + array_filter drops "" AND "0" words; byte substr +
+    # ASCII-only strtoupper (non-ASCII bytes pass through unchanged).
     full_name = (full_name or "").strip()
     if not full_name or length <= 0:
         return ""
-    parts = [p for p in full_name.split(" ") if p]
+    parts = [p for p in full_name.split(" ") if p and p != "0"]
+    if not parts:
+        return ""
+
+    def _ascii_upper(text: str) -> str:
+        return "".join(chr(ord(c) - 32) if "a" <= c <= "z" else c for c in text)
+
+    def _byteslice(text: str, n: int) -> str:
+        return text.encode("utf-8")[: max(0, n)].decode("utf-8", "ignore")
+
     if len(parts) > 1:
-        return (parts[0][0] + parts[-1][: max(0, length - 1)]).upper()
-    return parts[0][:length].upper()
+        return _ascii_upper(_byteslice(parts[0], 1) + _byteslice(parts[-1], length - 1))
+    return _ascii_upper(_byteslice(parts[0], length))
 
 
 def get_current_datetime(fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
@@ -222,13 +233,17 @@ def add_query_params(url: str, params: dict | None = None) -> str:
     base = ""
     if parts.scheme:
         base += parts.scheme + "://"
-    base += parts.hostname or ""
+    # PHP parse_url preserves host case (unlike .hostname); port/userinfo
+    # and fragment are still dropped, and '?' is always appended.
+    netloc = parts.netloc or ""
+    host = netloc.rsplit("@", 1)[-1].split(":")[0]
+    base += host
     base += parts.path or ""
     return base + "?" + query
 
 
 def hex_to_rgba(hex_color: str, opacity: float = 1.0) -> str:
-    h = (hex_color or "").lstrip("#")
+    h = (hex_color or "").replace("#", "")
     if len(h) == 3:
         h = "".join(c * 2 for c in h)
     try:

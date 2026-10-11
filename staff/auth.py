@@ -9,6 +9,15 @@ from core.permissions import can_access_page, has_permission
 
 
 def current_admin(request):
+    # PHP reads the pp_admin cookie -> browser_log -> admin; fall back to the
+    # mirrored session keys when no cookie is present (e.g. tests).
+    cookie = request.COOKIES.get("pp_admin", "") or request.session.get("pp_cookie", "")
+    if cookie:
+        log = BrowserLog.objects.filter(cookie=cookie[:40], status="active").first()
+        if log:
+            admin = Admin.objects.filter(a_id=log.a_id, status="active").first()
+            if admin:
+                return admin
     a_id = request.session.get("pp_admin_id")
     if not a_id:
         return None
@@ -16,9 +25,9 @@ def current_admin(request):
     if not admin:
         return None
     # The pp_cookie browser session must still be live (PHP browser_log gate).
-    cookie = request.session.get("pp_cookie", "")
-    if not cookie or not BrowserLog.objects.filter(a_id=a_id, cookie=cookie[:40],
-                                                   status="active").exists():
+    scookie = request.session.get("pp_cookie", "")
+    if not scookie or not BrowserLog.objects.filter(a_id=a_id, cookie=scookie[:40],
+                                                    status="active").exists():
         return None
     return admin
 

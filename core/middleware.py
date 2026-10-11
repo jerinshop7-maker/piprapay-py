@@ -33,7 +33,11 @@ class PipraPayLogoutMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if request.method == "GET" and "logout" in request.GET:
             request.session.flush()
-            return redirect("/login/")
+            resp = redirect("/login/")
+            resp.delete_cookie("pp_admin")
+            resp.delete_cookie("pp_2fa")
+            resp.delete_cookie("pp_brand")
+            return resp
         return None
 
 

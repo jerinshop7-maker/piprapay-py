@@ -274,8 +274,14 @@ def checkout_payment(request, pp_id: str):
         supported_langs = plugin.supported_languages() if plugin else {}
         if plugin and gtype == "api":
             if "pp_callback" in request.GET:
+                _brand = Brand.objects.filter(brand_id=txn.brand_id).first()
                 result = plugin.callback({"transaction": txn_ctx, "options": options,
                                           "query": request.GET.dict(), "post": request.POST.dict(),
+                                          "brand": {"id": txn.brand_id,
+                                                    "currency": _brand.currency_code if _brand else "BDT",
+                                                    "timezone": _brand.timezone if _brand else "Asia/Dhaka"},
+                                          "gateway": {"gateway_id": gw.gateway_id, "slug": gw.slug,
+                                                      "currency": gw.currency},
                                           "callback_url": callback_url,
                                           "cancel_url": f"{base}/payment/{pp_id}/"})
                 if result.get("complete_now") or result.get("verified"):

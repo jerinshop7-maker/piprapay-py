@@ -26,21 +26,22 @@ def _random_filename(ext: str) -> str:
 
 
 def upload_image(uploaded_file, max_file_size: int) -> dict:
-    """Mirror uploadImage(): returns {status, file?, note?}."""
+    """Mirror uploadImage(): error -> size -> ext checks, Imagick conversion,
+    move_uploaded_file fallback. Returns {status, file?, note?/message?}."""
     if uploaded_file is None:
-        return {"status": False, "message": "No file uploaded."}
+        return {"status": False, "message": "No file uploaded or upload failed."}
+    try:
+        data = uploaded_file.read()
+    except Exception:
+        return {"status": False, "message": "No file uploaded or upload failed."}
+    if not data:
+        return {"status": False, "message": "No file uploaded or upload failed."}
+    if len(data) > max_file_size:
+        return {"status": False, "message": "File size exceeds maximum allowed."}
     name = getattr(uploaded_file, "name", "") or ""
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
     if ext not in ALLOWED_IMAGE_EXTS:
-        return {"status": False, "message": "Invalid image type."}
-    try:
-        size = uploaded_file.size
-    except AttributeError:
-        uploaded_file.seek(0, os.SEEK_END)
-        size = uploaded_file.tell()
-        uploaded_file.seek(0)
-    if size > max_file_size:
-        return {"status": False, "message": "File too large."}
+        return {"status": False, "message": "Only JPG, PNG, GIF, and WEBP files are allowed."}
 
     storage = Path(settings.MEDIA_ROOT) / "storage"
     try:
@@ -48,35 +49,31 @@ def upload_image(uploaded_file, max_file_size: int) -> dict:
     except OSError:
         return {"status": False, "message": "Failed to create folder!"}
 
-    data = uploaded_file.read()
     filename = _random_filename(ext)
     try:
         from PIL import Image
 
+        probe = Image.open(io.BytesIO(data))
+        has_alpha = "A" in probe.getbands() or bool(probe.info.get("transparency"))
         img = Image.open(io.BytesIO(data))
-        if img.mode in ("RGBA", "LA", "PA"):
-            out = Image.new("RGB", img.size, (255, 255, 255))
-            out.paste(img, mask=img.split()[-1])
-            img = out
+        if has_alpha:
+            # Mirror Imagick: alpha -> WEBP lossless q85.
+            filename = filename.rsplit(".", 1)[0] + ".webp"
+            img.save(storage / filename, "WEBP", quality=85, lossless=True, method=6)
         else:
             img = img.convert("RGB")
-        # Mirror Imagick: alpha image -> WEBP lossless q85, else JPEG q75 stripped.
-        has_alpha = "A" in Image.open(io.BytesIO(data)).getbands()
-        if has_alpha:
-            filename = filename.rsplit(".", 1)[0] + ".webp"
-            img.save(storage / filename, "WEBP", quality=85, lossless=False, method=6)
-        else:
             filename = filename.rsplit(".", 1)[0] + ".jpg"
             img.save(storage / filename, "JPEG", quality=75, optimize=True)
         return {"status": True, "file": filename}
     except Exception:
         pass
 
-    # Fallback: move_uploaded_file equivalent.
+    # Fallback: keep original name/ext like move_uploaded_file.
     try:
         with open(storage / filename, "wb") as fh:
             fh.write(data)
-        return {"status": True, "file": filename, "note": "stored without conversion"}
+        return {"status": True, "file": filename,
+                "note": "Imagick not used. File uploaded without processing."}
     except OSError as e:
         return {"status": False, "message": str(e)}
 
@@ -115,15 +112,27 @@ def extract_update(zip_file: str | Path, destination: str | Path) -> bool:
     tmp = Path(settings.MEDIA_ROOT) / "storage" / "temp" / ("upd_" + secrets.token_hex(4))
     try:
         with zipfile.ZipFile(zip_file) as zf:
+            names = zf.namelist()
+            if not names:
+                return False
+            prefix = names[0].split("/")[0] + "/"
             zf.extractall(tmp)
-        children = [c for c in tmp.iterdir()]
-        root = children[0] if len(children) == 1 and children[0].is_dir() else tmp
-        for item in root.iterdir():
-            target = destination / item.name
-            if item.is_dir():
-                copy_folder(item, target)
+        # Strip the first entry's top folder from every entry (PHP semantics:
+        # multi-root zips merge at the destination root).
+        for item in list(tmp.iterdir()):
+            if item.is_dir() and item.name == prefix[:-1] and len(names) > 1:
+                for child in item.iterdir():
+                    target = destination / child.name
+                    if child.is_dir():
+                        copy_folder(child, target)
+                    else:
+                        shutil.copy2(child, target)
             else:
-                shutil.copy2(item, target)
+                target = destination / item.name
+                if item.is_dir():
+                    copy_folder(item, target)
+                else:
+                    shutil.copy2(item, target)
         return True
     except (zipfile.BadZipFile, OSError):
         return False

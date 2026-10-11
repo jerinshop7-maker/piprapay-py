@@ -13,7 +13,7 @@
 {% for code,label in supported_langs.items %}<option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ label }}</option>{% endfor %}
 </select></p>{% endif %}
 <p>Pay <strong>{{ transaction.local_net_amount }} {{ transaction.local_currency }}</strong></p>
-{% if instructions %}<ol class="payment-instructions">
+<ol class="payment-instructions">
 {% for s in instructions %}<li class="li-{{ s.row|default:forloop.counter }}">
 {% if s.icon %}{{ s.icon|safe }}{% else %}<div class="dot"></div>{% endif %}
 <p>{{ s.text|safe }}
@@ -32,7 +32,6 @@ function pp_close_image(){ document.getElementById('pp-image-modal').style.displ
 function success(d){ location.reload(); }
 function failed(t, m){ var el=document.getElementById('verify-msg'); if(el) el.textContent = t + ': ' + m; toast(t + ': ' + m); }
 </script>
-{% endif %}
 {% if gateway_html %}{{ gateway_html|safe }}{% endif %}
 {% if gateway_type == "automation" %}
 <form class="payment-form-submit" method="POST" enctype="multipart/form-data">

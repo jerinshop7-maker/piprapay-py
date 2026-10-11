@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from checkout import views
 
 urlpatterns = [
@@ -15,4 +15,12 @@ urlpatterns = [
     path("payment-link/<str:ref>/submit/", views.payment_link_submit, name="payment-link-submit"),
     path("payment-link/<str:ref>/<str:brand_id>/", views.payment_link_page, name="payment-link-brand"),
     path("payment-link/<str:ref>/", views.payment_link_page, name="payment-link"),
+]
+
+# PHP ignores URL segments past the id (segments[2+] dropped): serve the
+# same views for trailing paths. Listed last so specific routes win.
+urlpatterns += [
+    re_path(r"^payment/(?P<pp_id>[^/]+)/(.+/?)$", views.checkout_payment, name="checkout-tolerant"),
+    re_path(r"^invoice/(?P<ref>[^/]+)/(.+/?)$", views.invoice_page, name="invoice-tolerant"),
+    re_path(r"^payment-link/(?P<ref>[^/]+)/(.+/?)$", views.payment_link_page, name="link-tolerant"),
 ]

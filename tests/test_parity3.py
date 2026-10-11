@@ -273,3 +273,58 @@ class DisplayFilterTests(TestCase):
         r = self.client.post("/ipn/g1/", data={"pp_id": "ZZZ"})
         # fr unsupported by bkash (en/bn) -> resolved en; unknown txn -> ignored.
         self.assertEqual(r.json(), {"status": "ignored"})
+
+
+class CookieMirrorTests(TestCase):
+    def test_login_sets_cookies_and_logout_clears(self):
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B")
+        Admin.objects.create(a_id="a1", full_name="R", username="root", email="r@x.com",
+                             password=make_password("pw"), role="admin")
+        Permission.objects.create(brand_id="b1", a_id="a1", permission="{}")
+        r = self.client.post("/login/", {"username": "root", "password": "pw"})
+        self.assertIn("pp_admin", r.cookies)
+        self.assertIn("pp_brand", r.cookies)
+        self.assertEqual(self.client.get("/admin/dashboard/").status_code, 200)
+        r = self.client.get("/login/?logout=1")
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r.cookies["pp_admin"].value, "")
+        self.assertEqual(self.client.get("/admin/dashboard/").status_code, 302)
+
+    def test_getnamechars_exact(self):
+        from core.money import get_name_chars
+        self.assertEqual(get_name_chars("John 0 Doe"), "JD")
+        self.assertEqual(get_name_chars("0"), "")
+        self.assertEqual(get_name_chars("müller Schmidt"), "MS")
+
+    def test_upload_messages(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from core.storage import upload_image
+        r = upload_image(None, 100)
+        self.assertEqual(r["message"], "No file uploaded or upload failed.")
+        r = upload_image(SimpleUploadedFile("x.exe", b"data"), 100)
+        self.assertEqual(r["message"], "Only JPG, PNG, GIF, and WEBP files are allowed.")
+        r = upload_image(SimpleUploadedFile("x.jpg", b"12345"), 3)
+        self.assertEqual(r["message"], "File size exceeds maximum allowed.")
+
+    def test_faq_bulk_needs_delete_perm(self):
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B")
+        Admin.objects.create(a_id="a1", full_name="R", username="root", email="r@x.com",
+                             password=make_password("pw"), role="admin")
+        Permission.objects.create(brand_id="b1", a_id="a1", permission="{}")
+        self.client.post("/login/", {"username": "root", "password": "pw"})
+        from core.models import Faq
+        f = Faq.objects.create(brand_id="b1", title="T", description="D", status="active")
+        r = self.client.post("/admin/brand-setting/faq/", {"bulk": "activated", "selected_ids": [f.id]})
+        # admins bypass permission checks
+        self.assertEqual(r.status_code, 302)
+
+    def test_gateway_required_gate(self):
+        Brand.objects.create(brand_id="b1", identify_name="B", name="B")
+        Admin.objects.create(a_id="a1", full_name="R", username="root", email="r@x.com",
+                             password=make_password("pw"), role="admin")
+        Permission.objects.create(brand_id="b1", a_id="a1", permission="{}")
+        Gateway.objects.create(gateway_id="g1", brand_id="b1", slug="bkash-personal",
+                               display="bK", currency="BDT", status="active")
+        self.client.post("/login/", {"username": "root", "password": "pw"})
+        r = self.client.post("/admin/gateways/g1/", {"display": "", "currency": "BDT"})
+        self.assertEqual(Gateway.objects.get(gateway_id="g1").display, "bK")

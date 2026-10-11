@@ -1,7 +1,7 @@
 """Root URLconf. Mirrors index.php router (?page= switch)."""
 from django.conf import settings
 from django.conf.urls.static import static
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.http import HttpResponse
 
 from core import views as core_views
@@ -13,6 +13,12 @@ def ipn_empty(request):
     return _JsonResponse({"error": {"code": "INVALID_GATEWAY",
                                     "message": "The Gateway provided is incorrect or invalid."}},
                          status=400)
+
+
+def ipn_tolerant(request, gateway_id: str, extra: str = ""):
+    # PHP ignores URL segments past the gateway id; serve the same view.
+    from gateways.ipn_views import ipn_entry
+    return ipn_entry(request, gateway_id)
 
 urlpatterns = [
     # Public: login / forgot / 2fa  (index.php case 'login','forgot','2fa')
@@ -27,6 +33,7 @@ urlpatterns = [
 
     # IPN per gateway  (index.php case 'ipn' -> ipn/<gateway_id>)
     path("ipn/<str:gateway_id>/", include("gateways.ipn_urls")),
+    re_path(r"^ipn/(?P<gateway_id>[^/]+)/(.+/?)$", ipn_tolerant, name="gateway-ipn-extra"),
     path("ipn/", ipn_empty, name="gateway-ipn-empty"),
     path("ipn", ipn_empty),
 
