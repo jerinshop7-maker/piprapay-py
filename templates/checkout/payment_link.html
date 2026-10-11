@@ -1,19 +1,23 @@
-{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}<p>{{ options.watermark_text|default:"" }}</p>
-{% endblock %}
+{% extends "checkout/base_checkout.html" %}
+{% block title %}{{ lang.payment_link|default:"Payment Link" }} — {{ brand.name }}{% endblock %}
 {% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
 {% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
 {% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
 {% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
 {% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
-<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}
-{% block content %}
+{% block checkout_content %}
+{% include "checkout/_brand_header.html" %}
+<div class="px-3 pb-2">
 {% if paymentLink.status != "active" %}
-<h1>{{ lang.product_not_active|default:"Product Not Active" }}</h1>
-<p>{{ lang.product_not_active_text|default:"This product is currently inactive." }}</p>
+<div class="text-center py-4">
+<svg class="pp-status-bad" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M18 6L6 18M6 6l12 12"/></svg>
+<h2>{{ lang.product_not_active|default:"Product Not Active" }}</h2>
+<p class="text-secondary">{{ lang.product_not_active_text|default:"This product is currently inactive." }}</p>
+</div>
 {% else %}
-<h1>{{ paymentLink.product.title }}</h1>
-<p>{{ paymentLink.product.description }}</p>
+<h2>{{ paymentLink.product.title }}</h2>
+<p class="text-secondary">{{ paymentLink.product.description }}</p>
 <form id="pl-form" method="post" action="submit/" enctype="multipart/form-data">{% csrf_token %}
 <input type="hidden" name="itemid" value="{{ paymentLink.pid }}">
 <div class="mb-3"><label class="form-label" for="full-name">{{ lang.full_name|default:"Full Name" }} <span class="text-danger">*</span></label>
@@ -27,7 +31,7 @@
 <input type="text" class="form-control" value="{{ paymentLink.total }}" autocomplete="off" readonly></div></div>
 {% for f in paymentLink.fields %}
 <div class="mb-3">
-{% if f.type != "checkbox" %}<label class="form-label" for="{{ f.name }}">{{ f.label }}{% if f.required and f.required != "false" %} <span class="text-danger">*</span>{% endif %}</label>{% else %}<label class="form-label" for="{{ f.name }}">{{ f.label }}{% if f.required and f.required != "false" %} <span class="text-danger">*</span>{% endif %}</label>{% endif %}
+<label class="form-label" for="{{ f.name }}">{{ f.label }}{% if f.required and f.required != "false" %} <span class="text-danger">*</span>{% endif %}</label>
 {% if f.type == "textarea" %}<textarea name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.required and f.required != "false" %} required{% endif %}></textarea>
 {% elif f.type == "select" %}<select name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.required and f.required != "false" %} required{% endif %}>{% for o in f.options %}<option value="{{ o }}">{{ o }}</option>{% endfor %}</select>
 {% elif f.type == "checkbox" %}{% for o in f.options %}<div class="form-check"><input type="checkbox" name="{{ f.name }}[]" id="{{ f.name }}_{{ forloop.counter }}" class="form-check-input" value="{{ o }}"{% if f.required and f.required != "false" %} required{% endif %}><label class="form-check-label" for="{{ f.name }}_{{ forloop.counter }}">{{ o }}</label></div>{% endfor %}
@@ -36,17 +40,20 @@
 {% else %}<input type="text" name="{{ f.name }}" id="{{ f.name }}" class="form-control"{% if f.required and f.required != "false" %} required{% endif %}>
 {% endif %}</div>
 {% endfor %}
-<button id="plBtn" type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+<button id="plBtn" type="submit" class="btn btn-primary w-100">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+{% endif %}
+</div>
+{% endblock %}
+{% block checkout_foot %}
 <script>
-document.getElementById('pl-form').addEventListener('submit', async (e) => {
+var plForm = document.getElementById('pl-form');
+if (plForm) plForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
   document.getElementById("plBtn").disabled = true;
+  const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
   const d = await r.json();
   if (d.status === 'true') location.href = d.redirect;
-  else alert(d.title + ': ' + d.message);
+  else { alert(d.title + ': ' + d.message); document.getElementById("plBtn").disabled = false; }
 });
 </script>
-{% endif %}
-<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}

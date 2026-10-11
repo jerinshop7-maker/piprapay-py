@@ -33,6 +33,7 @@ under the same names/slugs.
 pip install -r requirements.txt
 python manage.py check_requirements  # mirrors pp-requirement.php table
 python manage.py migrate
+python manage.py collectstatic --noinput  # WhiteNoise serves /static/ from staticfiles/
 python manage.py pp_install          # mirrors pp-install wizard (admin+brand+BDT+permission+cron key)
 python manage.py createsuperuser          # optional; staff login uses core.Admin instead
 python manage.py run_cron                 # cron step (or GET /cron/<token>/)
@@ -68,7 +69,10 @@ MySQL (legacy reuse): set `DB_ENGINE=django.db.backends.mysql DB_NAME=.. DB_USER
   `gateways/lang_data.json` (regenerate via `tools/extract_gateway_lang.py`).
   Real HTTP for the 13 API gateways lives in `gateways/api_gateways.py`
   (use `requests`, never `urllib` directly in plugins). Nagad RSA uses
-  `cryptography`; image uploads use `Pillow` (both in requirements.txt).
+  `cryptography`; image uploads use `Pillow` (all in requirements.txt). Static
+  assets are served by `WhiteNoise` (`whitenoise.middleware.WhiteNoiseMiddleware`
+  + `CompressedStaticFilesStorage`); re-run `collectstatic` after changing
+  `static/` or `templates/` asset references.
 - **Permissions**: never rename keys in `core/permissions.py:PERMISSION_SCHEMA` (17 resources / 15 pages) — staff UI depends on them.
 - **SMS parsing**: exact PHP regexes in `core/sms_engine.py:FORMATS`
   (telecash/ipay have none — always False, like PHP); output keys are

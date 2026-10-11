@@ -1,1 +1,9 @@
-{% extends "base.html" %}{% block content %}<h1>Link not active</h1>{% endblock %}
+{% extends "checkout/base_checkout.html" %}
+{% block title %}Link not active — {{ brand.name }}{% endblock %}
+{% block checkout_content %}
+<div class="text-center py-5 px-3">
+<svg class="pp-status-bad" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M18 6L6 18M6 6l12 12"/></svg>
+<h2>Link not active</h2>
+<p class="text-secondary">This payment link is currently unavailable.</p>
+</div>
+{% endblock %}

@@ -1,22 +1,27 @@
-{% extends "base.html" %}{% block title %}{{ lang.payment_link|default:"Payment Link" }}<p>{{ options.watermark_text|default:"" }}</p>
-{% endblock %}
+{% extends "checkout/base_checkout.html" %}
+{% block title %}{{ lang.payment_link|default:"Payment Link" }} — {{ brand.name }}{% endblock %}
 {% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
 {% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
 {% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
 {% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
 {% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
-<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}
-{% block content %}
-<h1>{{ lang.payment_link|default:"Payment Link" }}</h1>
+{% block checkout_content %}
+{% include "checkout/_brand_header.html" %}
+<div class="px-3 pb-2">
+<h2>{{ lang.payment_link|default:"Payment Link" }}</h2>
 <form id="pld-form" method="post" action="submit/">{% csrf_token %}
 <input type="hidden" name="itemid" value="{{ brandId }}">
-<input name="full-name" placeholder="{{ lang.full_name|default:"Full Name" }}" required>
-<input name="email-address" placeholder="{{ lang.email_address|default:"Email Address" }}" required>
-<input name="mobile-number" placeholder="{{ lang.mobile_number|default:"Mobile Number" }}" required>
-<input name="amount" type="number" value="0" placeholder="{{ lang.amount|default:"Amount" }}">
-<p>{{ lang.currency|default:"Currency" }}: {{ currency }}</p>
-<button type="submit">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+<div class="mb-3"><label class="form-label">{{ lang.full_name|default:"Full Name" }}</label><input name="full-name" class="form-control" placeholder="{{ lang.full_name|default:"Full Name" }}" required></div>
+<div class="mb-3"><label class="form-label">{{ lang.email_address|default:"Email Address" }}</label><input name="email-address" class="form-control" placeholder="{{ lang.email_address|default:"Email Address" }}" required></div>
+<div class="mb-3"><label class="form-label">{{ lang.mobile_number|default:"Mobile Number" }}</label><input name="mobile-number" class="form-control" placeholder="{{ lang.mobile_number|default:"Mobile Number" }}" required></div>
+<div class="mb-3"><label class="form-label">{{ lang.amount|default:"Amount" }}</label>
+<div class="input-group"><span class="input-group-text">{{ currency }}</span><input name="amount" type="number" class="form-control" value="0" placeholder="{{ lang.amount|default:"Amount" }}"></div></div>
+<p class="text-secondary">{{ lang.currency|default:"Currency" }}: {{ currency }}</p>
+<button type="submit" class="btn btn-primary w-100">{{ lang.pay_now|default:"Pay Now" }}</button></form>
+</div>
+{% endblock %}
+{% block checkout_foot %}
 <script>
 document.getElementById('pld-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -26,5 +31,4 @@ document.getElementById('pld-form').addEventListener('submit', async (e) => {
   else alert(d.title + ': ' + d.message);
 });
 </script>
-<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}

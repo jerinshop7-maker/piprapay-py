@@ -1,19 +1,44 @@
-{% extends "base.html" %}{% block content %}<h1>{% if gw %}Edit{% else %}New{% endif %} gateway {% if is_bank_form %}(Bank){% endif %}</h1>
-<form method="post" enctype="multipart/form-data">{% csrf_token %}
-{% if not gw %}<select name="slug">{% for slug,gw2 in plugins.items %}<option value="{{ slug }}">{{ slug }}</option>{% endfor %}</select>
-<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select><br>{% endif %}
-<input name="name" value="{{ gw.name|default:"" }}" placeholder="Name"> <input name="display" value="{{ gw.display|default:"" }}" placeholder="Display">
-<input name="currency" value="{{ gw.currency|default:"BDT" }}"> <input name="tab" value="{{ gw.tab|default:"mfs" }}">
-<select name="status"><option {% if gw.status == "active" %}selected{% endif %}>active</option><option {% if gw.status == "inactive" %}selected{% endif %}>inactive</option></select><br>
-<input name="min_allow" value="{{ gw.min_allow|default:"0" }}" placeholder="min"> <input name="max_allow" value="{{ gw.max_allow|default:"0" }}" placeholder="max">
-<input name="fixed_discount" value="{{ gw.fixed_discount|default:"0" }}"> <input name="percentage_discount" value="{{ gw.percentage_discount|default:"0" }}">
-<input name="fixed_charge" value="{{ gw.fixed_charge|default:"0" }}"> <input name="percentage_charge" value="{{ gw.percentage_charge|default:"0" }}"><br>
-<input name="primary_color" value="{{ gw.primary_color|default:"" }}"> <input name="text_color" value="{{ gw.text_color|default:"" }}">
-<input name="btn_color" value="{{ gw.btn_color|default:"" }}"> <input name="btn_text_color" value="{{ gw.btn_text_color|default:"" }}">
-Logo: <input type="file" name="logo">
-<h3>Plugin fields</h3>{% for f in fields %}<label>{{ f.label }} ({{ f.name }})</label>
-{% if f.type == "select" %}<select name="{{ f.name }}">{% for k,v in f.options.items %}<option value="{{ k }}" {% if params|default:"" %}{% endif %}>{{ v }}</option>{% endfor %}</select>
-{% elif f.type == "image" %}<input type="file" name="{{ f.name }}"> <small>current: {{ f.name }}</small>
-{% elif f.type == "textarea" %}<textarea name="{{ f.name }}"></textarea>
-{% else %}<input name="{{ f.name }}" placeholder="{{ f.placeholder|default:"" }}">{% endif %}<br>{% endfor %}
-<button>Save</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}{% if gw %}Edit{% else %}New{% endif %} gateway {% if is_bank_form %}(Bank){% endif %} — PipraPay Admin{% endblock %}
+{% block pretitle %}Payments{% endblock %}
+{% block pagetitle %}{% if gw %}Edit{% else %}New{% endif %} gateway {% if is_bank_form %}(Bank){% endif %}{% endblock %}
+{% block actions %}<a class="btn btn-ghost-secondary" href="/admin/gateways/">Back</a>{% endblock %}
+{% block admin_content %}
+<div class="card"><div class="card-body"><form method="post" enctype="multipart/form-data">{% csrf_token %}
+{% if not gw %}
+<div class="pp-form-grid mb-2">
+<div><label class="form-label">Plugin</label><select name="slug" class="form-select">{% for slug,gw2 in plugins.items %}<option value="{{ slug }}">{{ slug }}</option>{% endfor %}</select></div>
+<div><label class="form-label">Brand</label><select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select></div>
+</div>
+{% endif %}
+<div class="pp-form-grid">
+<div><label class="form-label">Name</label><input name="name" class="form-control" value="{{ gw.name|default:"" }}" placeholder="Name"></div>
+<div><label class="form-label">Display</label><input name="display" class="form-control" value="{{ gw.display|default:"" }}" placeholder="Display"></div>
+<div><label class="form-label">Currency</label><input name="currency" class="form-control" value="{{ gw.currency|default:"BDT" }}"></div>
+<div><label class="form-label">Tab</label><input name="tab" class="form-control" value="{{ gw.tab|default:"mfs" }}"></div>
+<div><label class="form-label">Status</label><select name="status" class="form-select"><option{% if gw.status == "active" %} selected{% endif %}>active</option><option{% if gw.status == "inactive" %} selected{% endif %}>inactive</option></select></div>
+<div><label class="form-label">Logo</label><input type="file" name="logo" class="form-control"></div>
+<div><label class="form-label">Min allow</label><input name="min_allow" class="form-control" value="{{ gw.min_allow|default:"0" }}" placeholder="min"></div>
+<div><label class="form-label">Max allow</label><input name="max_allow" class="form-control" value="{{ gw.max_allow|default:"0" }}" placeholder="max"></div>
+<div><label class="form-label">Fixed discount</label><input name="fixed_discount" class="form-control" value="{{ gw.fixed_discount|default:"0" }}"></div>
+<div><label class="form-label">Percentage discount</label><input name="percentage_discount" class="form-control" value="{{ gw.percentage_discount|default:"0" }}"></div>
+<div><label class="form-label">Fixed charge</label><input name="fixed_charge" class="form-control" value="{{ gw.fixed_charge|default:"0" }}"></div>
+<div><label class="form-label">Percentage charge</label><input name="percentage_charge" class="form-control" value="{{ gw.percentage_charge|default:"0" }}"></div>
+<div><label class="form-label">Primary color</label><input name="primary_color" class="form-control" value="{{ gw.primary_color|default:"" }}"></div>
+<div><label class="form-label">Text color</label><input name="text_color" class="form-control" value="{{ gw.text_color|default:"" }}"></div>
+<div><label class="form-label">Button color</label><input name="btn_color" class="form-control" value="{{ gw.btn_color|default:"" }}"></div>
+<div><label class="form-label">Button text color</label><input name="btn_text_color" class="form-control" value="{{ gw.btn_text_color|default:"" }}"></div>
+</div>
+<h3 class="card-title mt-3">Plugin fields</h3>
+<div class="pp-form-grid">
+{% for f in fields %}<div>
+<label class="form-label">{{ f.label }} ({{ f.name }})</label>
+{% if f.type == "select" %}<select name="{{ f.name }}" class="form-select">{% for k,v in f.options.items %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+{% elif f.type == "image" %}<input type="file" name="{{ f.name }}" class="form-control"><small class="text-secondary">current: {{ f.name }}</small>
+{% elif f.type == "textarea" %}<textarea name="{{ f.name }}" class="form-control"></textarea>
+{% else %}<input name="{{ f.name }}" class="form-control" placeholder="{{ f.placeholder|default:"" }}">{% endif %}
+</div>{% endfor %}
+</div>
+<div class="mt-3"><button class="btn btn-primary" type="submit">Save</button></div>
+</form></div></div>
+{% endblock %}

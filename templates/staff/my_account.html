@@ -1,14 +1,52 @@
-{% extends "base.html" %}{% block content %}<h1>My account</h1>
-<form method="post">{% csrf_token %}
-<input name="full_name" value="{{ admin.full_name }}"> <input name="username" value="{{ admin.username }}"> <input name="email" value="{{ admin.email }}">
-<input name="password" type="password" placeholder="New password (blank keeps)">
-<input name="current_password" type="password" placeholder="Current password (required to save)">
-<h2>2FA ({{ admin.twofa_status }})</h2>
-{% if show_secret %}<p>Secret: <code>{{ admin.twofa_secret }}</code></p>
-<p><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_url|urlencode }}" alt="2FA QR"></p>
-<p><code>{{ qr_url }}</code></p>{% endif %}
-<select name="twofa"><option value="">—</option><option value="enable">Enable</option><option value="disable">Disable</option></select>
-<input name="twofa_code" placeholder="6-digit code">
-<button>Save</button></form>
-<h2>Browser sessions</h2><ul>{% for s in sessions %}<li>{{ s.browser }} {{ s.device }} {{ s.ip }} {{ s.status }} {% if s.cookie == current_cookie %}(current){% endif %}</li>{% endfor %}</ul>
-<form method="post">{% csrf_token %}<button name="logout_others" value="1">Log out other sessions</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}My account — PipraPay Admin{% endblock %}
+{% block pretitle %}Profile{% endblock %}
+{% block pagetitle %}My account{% endblock %}
+{% block admin_content %}
+<div class="row row-deck row-cards">
+<div class="col-lg-6">
+<div class="card"><div class="card-header"><h3 class="card-title">Profile</h3></div>
+<div class="card-body"><form method="post">{% csrf_token %}
+<div class="mb-2"><label class="form-label">Full name</label><input name="full_name" class="form-control" value="{{ admin.full_name }}"></div>
+<div class="mb-2"><label class="form-label">Username</label><input name="username" class="form-control" value="{{ admin.username }}"></div>
+<div class="mb-2"><label class="form-label">Email</label><input name="email" class="form-control" value="{{ admin.email }}"></div>
+<div class="mb-2"><label class="form-label">New password</label><input name="password" type="password" class="form-control" placeholder="New password (blank keeps)"></div>
+<div class="mb-3"><label class="form-label">Current password</label><input name="current_password" type="password" class="form-control" placeholder="Current password (required to save)"></div>
+<h3 class="card-title">2FA ({{ admin.twofa_status }})</h3>
+{% if show_secret %}
+<div class="alert alert-info">Secret: <code>{{ admin.twofa_secret }}</code></div>
+<p><img class="pp-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_url|urlencode }}" alt="2FA QR"></p>
+<p class="text-break"><code>{{ qr_url }}</code></p>
+<div id="qr-local"></div>
+{% endif %}
+<div class="pp-form-grid">
+<div><label class="form-label">2FA action</label><select name="twofa" class="form-select"><option value="">—</option><option value="enable">Enable</option><option value="disable">Disable</option></select></div>
+<div><label class="form-label">2FA code</label><input name="twofa_code" class="form-control" placeholder="6-digit code"></div>
+</div>
+<div class="mt-3"><button class="btn btn-primary" type="submit">Save</button></div>
+</form></div></div>
+</div>
+<div class="col-lg-6">
+<div class="card"><div class="card-header"><h3 class="card-title">Browser sessions</h3></div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th>Browser</th><th>Device</th><th>IP</th><th>Status</th><th></th></tr></thead>
+<tbody>
+{% for s in sessions %}<tr><td>{{ s.browser }}</td><td>{{ s.device }}</td><td>{{ s.ip }}</td><td>{{ s.status }}</td>
+<td>{% if s.cookie == current_cookie %}<span class="badge bg-blue">current</span>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="5" class="text-secondary">No sessions.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer"><form method="post">{% csrf_token %}<button name="logout_others" value="1" class="btn btn-outline-danger" type="submit">Log out other sessions</button></form></div>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block foot %}
+{% if show_secret %}
+<script>
+try {
+  var el = document.getElementById('qr-local');
+  if (el && typeof QRCode !== 'undefined') { new QRCode(el, {text: {{ qr_url|escapejs }}, width: 200, height: 200}); }
+} catch (e) {}
+</script>
+{% endif %}
+{% endblock %}

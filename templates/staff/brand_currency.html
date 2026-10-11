@@ -1,7 +1,32 @@
-{% extends "base.html" %}{% block content %}<h1>Currencies</h1>
-<form method="post">{% csrf_token %}<button name="bulk_sync" value="1">Sync selected</button> <button name="bulk_import" value="1">Import defaults</button>
-<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
-<ul>{% for c in currencies %}<li><input type="checkbox" name="selected_ids" value="{{ c.id }}"> {{ c.brand_id }} {{ c.code }} {{ c.symbol }} {{ c.rate }}</li>{% endfor %}</ul></form>
-<h2>Upsert</h2><form method="post">{% csrf_token %}
-<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
-<input name="code" placeholder="CODE"> <input name="symbol" placeholder="$"> <input name="rate" placeholder="rate"><button>Save</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Currencies — PipraPay Admin{% endblock %}
+{% block pretitle %}Brand Settings{% endblock %}
+{% block pagetitle %}Currencies{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Currencies</h3>
+<div class="ms-auto d-flex gap-2"><form method="post" class="d-inline">{% csrf_token %}<button name="bulk_sync" value="1" class="btn btn-sm btn-outline-primary" type="submit">Sync selected</button> <button name="bulk_import" value="1" class="btn btn-sm btn-ghost-secondary" type="submit">Import defaults</button></form></div></div>
+<form method="post">{% csrf_token %}
+<div class="card-body">
+<div class="mb-2"><label class="form-label">Brand</label><select name="brand_id" class="form-select w-auto">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select></div>
+</div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Brand</th><th>Code</th><th>Symbol</th><th>Rate</th></tr></thead>
+<tbody>
+{% for c in currencies %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ c.id }}"></td>
+<td><code>{{ c.brand_id }}</code></td><td><strong>{{ c.code }}</strong></td><td>{{ c.symbol }}</td><td>{{ c.rate }}</td></tr>
+{% empty %}<tr><td colspan="5" class="text-secondary">No currencies.</td></tr>{% endfor %}
+</tbody></table></div>
+</form></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Upsert currency</h3></div>
+<div class="card-body"><form method="post" class="pp-filter-bar">{% csrf_token %}
+<div><label class="form-label">Brand</label><select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select></div>
+<div><label class="form-label">Code</label><input name="code" class="form-control" placeholder="CODE"></div>
+<div><label class="form-label">Symbol</label><input name="symbol" class="form-control" placeholder="$"></div>
+<div><label class="form-label">Rate</label><input name="rate" class="form-control" placeholder="rate"></div>
+<div><button class="btn btn-primary" type="submit">Save</button></div>
+</form></div></div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

@@ -1,23 +1,36 @@
-{% extends "base.html" %}{% block title %}Install — PipraPay{% endblock %}
-{% block content %}<h1>PipraPay Installation</h1>
+{% extends "base.html" %}
+{% block title %}Install — PipraPay{% endblock %}
+{% block content %}
+<div class="pp-auth-wrap"><div class="pp-auth-card" style="max-width:560px">
+<div class="text-center mb-3"><img src="/static/vendor/logo-light.png" alt="PipraPay" style="height:40px"></div>
+<div class="card"><div class="card-body p-4">
+<h2 class="card-title text-center mb-3">PipraPay Installation</h2>
 {% if step == "admin" %}
-<h2>Step: Admin account</h2>
-{% if error %}<p>{{ error }}</p>{% endif %}
+<h3>Step 2: Admin account</h3>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
 <form method="post" action="/install/admin/">{% csrf_token %}
-<input name="full_name" placeholder="Full name" required>
-<input name="username" placeholder="Username" required>
-<input name="email" placeholder="Email" required>
-<input name="password" id="pw" type="password" placeholder="Password" required oninput="meter(this.value)">
-<div id="meter" style="height:8px;background:#eee;width:200px"><div id="meterfill" style="height:8px;width:0%"></div></div><small id="meterlabel"></small>
+<div class="mb-2"><label class="form-label">Full name</label><input name="full_name" class="form-control" placeholder="Full name" required></div>
+<div class="mb-2"><label class="form-label">Username</label><input name="username" class="form-control" placeholder="Username" required></div>
+<div class="mb-2"><label class="form-label">Email</label><input name="email" type="email" class="form-control" placeholder="Email" required></div>
+<div class="mb-2"><label class="form-label">Password</label><input name="password" id="pw" type="password" class="form-control" placeholder="Password" required oninput="meter(this.value)">
+<div id="meter" class="progress mt-1"><div id="meterfill" class="progress-bar" style="width:0%"></div></div><small id="meterlabel" class="text-secondary"></small></div>
 <script>function meter(v){var s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[a-z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;var L=["None","Very Weak","Weak","Medium","Strong","Very Strong"];var C=["#ccc","#e00","#e60","#ec0","#6c0","#0a0"];document.getElementById("meterfill").style.width=(s*20)+"%";document.getElementById("meterfill").style.background=C[s];document.getElementById("meterlabel").textContent=L[s];}</script>
-<input name="password_confirm" type="password" placeholder="Confirm password" required>
-<button>Complete install</button></form>
+<div class="mb-3"><label class="form-label">Confirm password</label><input name="password_confirm" type="password" class="form-control" placeholder="Confirm password" required></div>
+<button class="btn btn-primary w-100">Complete install</button></form>
 {% elif step == "complete" %}
-<h2>Installation Complete</h2>
-<p>Delete the installer if you deployed a copy of the source. <a href="/login/">Go to Dashboard</a></p>
+<div class="text-center py-3">
+<svg class="pp-status-ok" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg>
+<h3>Installation Complete</h3>
+<p class="text-secondary">Delete the installer if you deployed a copy of the source.</p>
+<p><a class="btn btn-primary" href="/login/">Go to Dashboard</a></p>
+</div>
 {% else %}
-<h2>Step: Requirements</h2>
-<ul>{% for r in rows %}<li>{{ r.name }}: {{ r.current }} (required {{ r.required }}) — {% if r.ok %}Pass{% else %}Failed{% endif %}</li>{% endfor %}</ul>
-{% if ok %}<p><a href="/install/admin/">Continue to admin setup</a></p>{% endif %}
-<p>Database schema is managed by Django migrations (<code>python manage.py migrate</code>).</p>
-{% endif %}{% endblock %}
+<h3>Step 1: Requirements</h3>
+<div class="table-responsive"><table class="table"><thead><tr><th>Check</th><th>Current</th><th>Required</th><th>Result</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td>{{ r.name }}</td><td>{{ r.current }}</td><td>{{ r.required }}</td><td>{% if r.ok %}<span class="badge bg-green">Pass</span>{% else %}<span class="badge bg-red">Failed</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% if ok %}<p><a class="btn btn-primary" href="/install/admin/">Continue to admin setup</a></p>{% endif %}
+<p class="text-secondary">Database schema is managed by Django migrations (<code>python manage.py migrate</code>).</p>
+{% endif %}
+</div></div>
+</div></div>
+{% endblock %}

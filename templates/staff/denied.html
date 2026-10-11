@@ -1,1 +1,11 @@
-{% extends "base.html" %}{% block content %}<h1>403 — Permission denied</h1>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}403 — Permission denied{% endblock %}
+{% block pretitle %}Error{% endblock %}
+{% block pagetitle %}403 — Permission denied{% endblock %}
+{% block admin_content %}
+<div class="card"><div class="card-body text-center py-5">
+<div class="h1">403</div>
+<p class="text-secondary">Access denied. You need permission to perform this action. Please contact the admin.</p>
+<a class="btn btn-primary" href="/admin/dashboard/">Back to dashboard</a>
+</div></div>
+{% endblock %}

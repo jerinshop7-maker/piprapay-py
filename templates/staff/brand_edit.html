@@ -1,2 +1,10 @@
-{% extends "base.html" %}{% block content %}<h1>{% if brand %}Rename brand{% else %}Create brand{% endif %}</h1>
-<form method="post">{% csrf_token %}<input name="identify_name" value="{{ brand.identify_name|default:"" }}" required><button>Save</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}{% if brand %}Rename brand{% else %}Create brand{% endif %} — PipraPay Admin{% endblock %}
+{% block pretitle %}Tenancy{% endblock %}
+{% block pagetitle %}{% if brand %}Rename brand{% else %}Create brand{% endif %}{% endblock %}
+{% block actions %}<a class="btn btn-ghost-secondary" href="/admin/brands/">Back</a>{% endblock %}
+{% block admin_content %}
+<div class="card"><div class="card-body"><form method="post">{% csrf_token %}
+<div class="mb-3"><label class="form-label">Identify name</label><input name="identify_name" class="form-control" value="{{ brand.identify_name|default:"" }}" required></div>
+<button class="btn btn-primary" type="submit">Save</button></form></div></div>
+{% endblock %}

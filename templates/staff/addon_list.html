@@ -1,5 +1,34 @@
-{% extends "base.html" %}{% block content %}<h1>Addons</h1>
-<form method="get"><input name="q" value="{{ q }}" placeholder="name/slug"><input name="status" value="{{ status }}"><button>Filter</button></form>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for a in page %}<li><input type="checkbox" name="selected_ids" value="{{ a.addon_id }}"> <a href="/admin/addons/{{ a.addon_id }}/">{{ a.name }}</a> {{ a.slug }} {{ a.status }}</li>{% endfor %}</ul></form>
-<h2>Install (zip)</h2><form method="post" enctype="multipart/form-data">{% csrf_token %}<input name="name" placeholder="Name"><input type="file" name="addon_zip" accept=".zip"><button name="upload" value="1">Install</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Addons — PipraPay Admin{% endblock %}
+{% block pretitle %}Extensions{% endblock %}
+{% block pagetitle %}Addons{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Search</label><input name="q" class="form-control" value="{{ q }}" placeholder="name / slug"></div>
+<div><label class="form-label">Status</label><input name="status" class="form-control" value="{{ status }}"></div>
+<div><button class="btn btn-primary" type="submit">Filter</button></div>
+</form>
+</div></div>
+<div class="card mb-3"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Name</th><th>Slug</th><th>Status</th></tr></thead>
+<tbody>
+{% for a in page %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ a.addon_id }}"></td>
+<td><a href="/admin/addons/{{ a.addon_id }}/">{{ a.name }}</a></td><td><code>{{ a.slug }}</code></td>
+<td><span class="badge {% if a.status == "active" %}bg-green{% else %}bg-secondary{% endif %}">{{ a.status }}</span></td></tr>
+{% empty %}<tr><td colspan="4" class="text-secondary">No addons.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Install (zip)</h3></div>
+<div class="card-body"><form method="post" enctype="multipart/form-data" class="pp-filter-bar">{% csrf_token %}
+<div><label class="form-label">Name</label><input name="name" class="form-control" placeholder="Name"></div>
+<div><label class="form-label">Addon zip</label><input type="file" name="addon_zip" accept=".zip" class="form-control"></div>
+<div><button name="upload" value="1" class="btn btn-primary" type="submit">Install</button></div>
+</form></div></div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

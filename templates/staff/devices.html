@@ -1,8 +1,34 @@
-{% extends "base.html" %}{% block content %}<h1>Devices</h1>
-<button id="connect">Connect Device</button><div id="otp"></div>
-<script>document.getElementById('connect').onclick = async () => {
-  const r = await fetch('connect-info/', {method: 'POST', headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}});
-  const d = await r.json(); document.getElementById('otp').textContent = d.otp || d.message; };</script>
+{% extends "staff/base_admin.html" %}
+{% block title %}Devices — PipraPay Admin{% endblock %}
+{% block pretitle %}Automation{% endblock %}
+{% block pagetitle %}Devices{% endblock %}
+{% block actions %}<button id="connect" class="btn btn-primary">Connect Device</button>{% endblock %}
+{% block admin_content %}
+<div id="otp" class="alert alert-info d-none" role="alert"></div>
 {% csrf_token %}
-<form method="post">{% csrf_token %}<select name="bulk"><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for d in page %}<li><input type="checkbox" name="selected_ids" value="{{ d.id }}"> {{ d.device_id }} {{ d.name }} {{ d.status }} last_sync {{ d.last_sync }} <a href="/admin/devices/balance-verification/?d_id={{ d.device_id }}">Balance verification</a></li>{% endfor %}</ul></form>{% endblock %}
+<div class="card"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Device</th><th>Name</th><th>Status</th><th>Last sync</th><th></th></tr></thead>
+<tbody>
+{% for d in page %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ d.id }}"></td>
+<td><code>{{ d.device_id }}</code></td><td>{{ d.name }}</td>
+<td><span class="badge {% if d.status == "active" %}bg-green{% else %}bg-secondary{% endif %}">{{ d.status }}</span></td>
+<td>last_sync {{ d.last_sync }}</td>
+<td><a href="/admin/devices/balance-verification/?d_id={{ d.device_id }}">Balance verification</a></td></tr>
+{% empty %}<tr><td colspan="6" class="text-secondary">No devices.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+{% endblock %}
+{% block foot %}
+<script>
+document.getElementById('connect').onclick = async () => {
+  const r = await fetch('connect-info/', {method: 'POST', headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}});
+  const d = await r.json();
+  const el = document.getElementById('otp');
+  el.textContent = d.otp || d.message; el.classList.remove('d-none');
+};
+document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="pp-checkout-bg{% if options.enable_bg_image == "enabled" and options.background_image %} has-bg{% endif %}"{% if options.enable_bg_image == "enabled" and options.background_image %} style="background-image:url({{ options.background_image }})"{% endif %}>
+<div class="card pp-checkout-card" style="--pp-primary:{{ options.primary_color|default:"#5f38f9" }};--pp-text-on-primary:{{ options.text_color|default:"#FFFFFF" }};">
+{% block checkout_top %}{% endblock %}
+{% block checkout_content %}{% endblock %}
+{% if options.watermark_text %}<div class="pp-watermark">{{ options.watermark_text }}</div>{% endif %}
+</div>
+</div>
+{% endblock %}
+{% block foot %}{% block checkout_foot %}{% endblock %}{% endblock %}

@@ -1,6 +1,29 @@
-{% extends "base.html" %}{% block content %}<h1>Invoices</h1>
-<p>{% for s,n in tabs.items %}<a href="?status={{ s }}">{{ s }} ({{ n }})</a> {% endfor %}</p>
-<form method="get"><input name="q" value="{{ q }}"><button>Search</button></form>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for i in page %}<li><input type="checkbox" name="selected_ids" value="{{ i.ref }}"> <a href="/admin/invoice/{{ i.ref }}/">{{ i.ref }}</a> {{ i.status }}</li>{% endfor %}</ul></form>
-<a href="/admin/invoice/create/">Create</a>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Invoices — PipraPay Admin{% endblock %}
+{% block pretitle %}Billing{% endblock %}
+{% block pagetitle %}Invoices{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="/admin/invoice/create/">Create invoice</a>{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<div class="mb-2">{% for s,n in tabs.items %}<a class="btn btn-sm {% if status == s %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?status={{ s }}">{{ s }} ({{ n }})</a> {% endfor %}</div>
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Search</label><input name="q" class="form-control" value="{{ q }}"></div>
+<div><button class="btn btn-primary" type="submit">Search</button></div>
+</form>
+</div></div>
+<div class="card"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Ref</th><th>Status</th></tr></thead>
+<tbody>
+{% for i in page %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ i.ref }}"></td>
+<td><a href="/admin/invoice/{{ i.ref }}/">{{ i.ref }}</a></td>
+<td><span class="badge {% if i.status == "paid" %}bg-green{% else %}bg-yellow{% endif %}">{{ i.status }}</span></td></tr>
+{% empty %}<tr><td colspan="3" class="text-secondary">No invoices.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

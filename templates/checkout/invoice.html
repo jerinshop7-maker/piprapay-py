@@ -1,45 +1,58 @@
-{% extends "base.html" %}
-{% load pp_display %}{% block title %}{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}<p>{{ options.watermark_text|default:"" }}</p>
-{% endblock %}
+{% extends "checkout/base_checkout.html" %}
+{% load pp_display %}
+{% block title %}{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }} — {{ brand.name }}{% endblock %}
 {% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
 {% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
 {% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
 {% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
 {% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
-<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}
-{% block content %}
-<h1>{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}</h1>
+{% block checkout_content %}
+<div class="px-3 pt-3 d-print-none"><a href="./">← {{ lang.invoice|default:"Invoice" }}</a></div>
+{% include "checkout/_brand_header.html" %}
+<div class="px-3">
+<h2 class="mt-1">{{ lang.invoice|default:"Invoice" }} {{ invoice.iid }}</h2>
 <p><span class="badge {% if invoice.status == "paid" %}bg-green{% else %}bg-red{% endif %}">{{ invoice.status }}</span></p>
-<p>{{ lang.invoice_date|default:"Date" }}: {{ invoice.created_date }} · {{ lang.due_date|default:"Due" }}: {{ invoice.due_date|default:"—" }}</p>
+<p class="text-secondary">{{ lang.invoice_date|default:"Date" }}: {{ invoice.created_date }} · {{ lang.due_date|default:"Due" }}: {{ invoice.due_date|default:"—" }}</p>
 {% if invoice.status == "paid" %}<p>{{ lang.payment_method|default:"Payment Method" }}: {{ invoice.gateway }}</p>{% endif %}
-<h2>{{ lang.bill_from|default:"Bill From" }}</h2>
-<p>{{ brand.name }}</p>
-<h2>{{ lang.bill_to|default:"Bill To" }}</h2>
-<p>{{ invoice.customer.name|pp }} · {{ invoice.customer.email|pp }} · {{ invoice.customer.mobile|pp }}</p>
-<table><tr><th>{{ lang.description|default:"Description" }}</th><th>{{ lang.qty|default:"Qty" }}</th><th>{{ lang.unit_price|default:"Unit Price" }}</th><th>{{ lang.discount|default:"Discount" }}</th><th>{{ lang.tax|default:"Tax" }}</th><th>{{ lang.total|default:"Total" }}</th></tr>
-{% for it in items %}<tr><td>{{ it.description|pp }}</td><td>{{ it.quantity }}</td><td>{{ it.unitPrice }} {{ invoice.currency }}</td><td>{{ it.discount }} {{ invoice.currency }}</td><td>{{ it.vat }} {{ invoice.currency }}</td><td>{{ it.total }} {{ invoice.currency }}</td></tr>{% endfor %}</table>
-{% if invoice.status == "paid" %}<p>{{ lang.total|default:"Total" }}: {{ grandTotal }} {{ invoice.currency }}</p>
-{% else %}<p><strong>{{ lang.total_due|default:"Total Due" }}: {{ grandTotal }} {{ invoice.currency }}</strong></p>{% endif %}
-<p>{{ lang.subtotal|default:"Subtotal" }}: {{ subtotal }} · {{ lang.shipping|default:"Shipping" }}: {{ invoice.shippingFee }} · {{ lang.tax|default:"Tax" }}: {{ totalVat }} · {{ lang.discount|default:"Discount" }}: {{ totalDiscount }}</p>
+<div class="row">
+<div class="col-6"><h3>{{ lang.bill_from|default:"Bill From" }}</h3><p><strong>{{ brand.name }}</strong><br>{{ brand.address.street|default:"" }} {{ brand.address.city|default:"" }} {{ brand.address.postal|default:"" }} {{ brand.address.country|default:"" }}</p></div>
+<div class="col-6"><h3>{{ lang.bill_to|default:"Bill To" }}</h3><p>{{ invoice.customer.name|pp }}<br>{{ invoice.customer.email|pp }}<br>{{ invoice.customer.mobile|pp }}</p></div>
+</div>
+<div class="table-responsive"><table class="table">
+<thead><tr><th>{{ lang.description|default:"Description" }}</th><th>{{ lang.qty|default:"Qty" }}</th><th>{{ lang.unit_price|default:"Unit Price" }}</th><th>{{ lang.discount|default:"Discount" }}</th><th>{{ lang.tax|default:"Tax" }}</th><th>{{ lang.total|default:"Total" }}</th></tr></thead>
+<tbody>
+{% for it in items %}<tr><td>{{ it.description|pp }}</td><td>{{ it.quantity }}</td><td>{{ it.unitPrice }} {{ invoice.currency }}</td><td>{{ it.discount }} {{ invoice.currency }}</td><td>{{ it.vat }} {{ invoice.currency }}</td><td>{{ it.total }} {{ invoice.currency }}</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="table-responsive"><table class="table pp-kv">
+<tr><td>{{ lang.subtotal|default:"Subtotal" }}</td><td>{{ subtotal }} {{ invoice.currency }}</td></tr>
+<tr><td>{{ lang.shipping|default:"Shipping" }}</td><td>{{ invoice.shippingFee }} {{ invoice.currency }}</td></tr>
+<tr><td>{{ lang.tax|default:"Tax" }}</td><td>{{ totalVat }} {{ invoice.currency }}</td></tr>
+<tr><td>{{ lang.discount|default:"Discount" }}</td><td>{{ totalDiscount }} {{ invoice.currency }}</td></tr>
+<tr><td><strong>{% if invoice.status == "paid" %}{{ lang.total|default:"Total" }}{% else %}{{ lang.total_due|default:"Total Due" }}{% endif %}</strong></td><td><strong>{{ grandTotal }} {{ invoice.currency }}</strong></td></tr>
+</table></div>
 {% if invoice.note %}<h3>{{ lang.note|default:"Notes" }}</h3><p>{{ invoice.note }}</p>{% endif %}
-<p>{{ lang.no_signature|default:"" }}</p>
-<p>{{ brand.address.street|default:"" }} {{ brand.address.city|default:"" }} {{ brand.address.postal|default:"" }} {{ brand.address.country|default:"" }}</p>
-<p><button class="btn" onclick="window.print()">{{ lang.print_invoice|default:"Print" }}</button></p>
+<p class="text-secondary">{{ lang.no_signature|default:"" }}</p>
+<p class="d-print-none"><button class="btn btn-ghost-secondary" onclick="window.print()">{{ lang.print_invoice|default:"Print" }}</button></p>
 {% if invoice.status == "unpaid" %}
-<form id="pay-form" method="post" action="pay/">{% csrf_token %}
+<form id="pay-form" method="post" action="pay/" class="d-print-none">{% csrf_token %}
 <input type="hidden" name="itemid" value="{{ invoice.iid }}">
-<button id="payButton" type="submit">{{ lang.pay_now|default:"Pay Now" }}</button>
-<script>document.getElementById("pay-form").addEventListener("submit",()=>{var b=document.getElementById("payButton");b.disabled=true;b.textContent="…";});</script></form>
+<button id="payButton" type="submit" class="btn btn-primary w-100">{{ lang.pay_now|default:"Pay Now" }}</button>
+</form>
+{% endif %}
+</div>
+{% endblock %}
+{% block checkout_foot %}
+{% if invoice.status == "unpaid" %}
 <script>
 document.getElementById('pay-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  var b = document.getElementById('payButton'); b.disabled = true; b.textContent = '…';
   const r = await fetch(e.target.action, {method: 'POST', body: new FormData(e.target)});
   const d = await r.json();
   if (d.status === 'true') location.href = d.redirect;
-  else alert(d.title + ': ' + d.message);
+  else { alert(d.title + ': ' + d.message); b.disabled = false; b.textContent = '{{ lang.pay_now|default:"Pay Now"|escapejs }}'; }
 });
 </script>
 {% endif %}
-<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}

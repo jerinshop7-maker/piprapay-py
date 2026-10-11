@@ -1,4 +1,12 @@
-{% extends "base.html" %}{% block title %}Maintenance{% endblock %}
-{% block content %}<h1>Temporarily down for maintenance</h1>
-<p>Sorry for the inconvenience. We are performing scheduled maintenance. Please check back soon.</p>
-<p><a href="/">Take me home</a></p>{% endblock %}
+{% extends "base.html" %}
+{% block title %}Maintenance — PipraPay{% endblock %}
+{% block content %}
+<div class="page page-center"><div class="container-tight py-4">
+<div class="empty">
+<div class="empty-header">🛠</div>
+<p class="empty-title">Temporarily down for maintenance</p>
+<p class="empty-subtitle text-secondary">Sorry for the inconvenience. We are performing scheduled maintenance. Please check back soon.</p>
+<div class="empty-action"><a href="/" class="btn btn-primary">Retry</a></div>
+</div>
+</div></div>
+{% endblock %}

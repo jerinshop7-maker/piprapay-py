@@ -1,8 +1,35 @@
-{% extends "base.html" %}{% block content %}<h1>Payment links</h1>
-<form method="get"><select name="status"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select><button>Filter</button></form>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for r in rows %}<li><input type="checkbox" name="selected_ids" value="{{ r.link.ref }}"> <a href="/admin/payment-link/{{ r.link.ref }}/">{{ r.link.ref }}</a> {{ r.display_status }} {{ r.link.amount }}</li>{% endfor %}</ul></form>
-<a href="/admin/payment-link/create/">Create</a>
-<h2>Default link currency</h2><form method="post">{% csrf_token %}
-<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
-<input name="currency" placeholder="BDT"> <button name="default_currency" value="1">Save</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Payment links — PipraPay Admin{% endblock %}
+{% block pretitle %}Billing{% endblock %}
+{% block pagetitle %}Payment links{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="/admin/payment-link/create/">Create link</a>{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Status</label><select name="status" class="form-select"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+<div><button class="btn btn-primary" type="submit">Filter</button></div>
+</form>
+</div></div>
+<div class="card mb-3"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Ref</th><th>Status</th><th>Amount</th></tr></thead>
+<tbody>
+{% for r in rows %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ r.link.ref }}"></td>
+<td><a href="/admin/payment-link/{{ r.link.ref }}/">{{ r.link.ref }}</a></td>
+<td><span class="badge {% if r.display_status == "active" %}bg-green{% else %}bg-secondary{% endif %}">{{ r.display_status }}</span></td>
+<td>{{ r.link.amount }}</td></tr>
+{% empty %}<tr><td colspan="4" class="text-secondary">No payment links.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Default link currency</h3></div>
+<div class="card-body"><form method="post" class="pp-filter-bar">{% csrf_token %}
+<div><label class="form-label">Brand</label><select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select></div>
+<div><label class="form-label">Currency</label><input name="currency" class="form-control" placeholder="BDT"></div>
+<div><button name="default_currency" value="1" class="btn btn-primary" type="submit">Save</button></div>
+</form></div></div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

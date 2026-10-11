@@ -8,9 +8,10 @@ API contract, SMS parser, cron step and theme string.
 ## Quickstart
 
 ```bash
-pip install -r requirements.txt   # Django, requests, Pillow, cryptography
+pip install -r requirements.txt   # Django, requests, Pillow, cryptography, whitenoise
 python manage.py check_requirements
 python manage.py migrate
+python manage.py collectstatic --noinput   # required once: /static/ is served by WhiteNoise, not runserver
 python manage.py pp_install        # seeds admin + Default brand + BDT + cron key
 python manage.py test tests
 python manage.py runserver 0.0.0.0:8080

@@ -1,15 +1,49 @@
-{% extends "base.html" %}{% block content %}<h1>System settings ({{ section }})</h1>
-<p><a href="?section=general">General</a> <a href="?section=cron">Cron</a> <a href="?section=update">Update</a> <a href="?section=import">Import</a></p>
-{% if section == "cron" %}<p><code>{{ cron_command }}</code></p>
-<form method="post">{% csrf_token %}<button name="op" value="cron-regenerate">Generate new cron key</button></form>
-{% elif section == "update" %}<p>Current: {{ current_version.version_name }} ({{ current_version.version_code }}) · Channel: {{ update_channel }} · Auto: {{ auto_update }} · Last check: {{ last_check }} · Latest: {{ last_version_name }} {{ last_version }}</p>
-<form method="post">{% csrf_token %}
-<select name="update_channel"><option value="stable">stable</option><option value="beta" {% if update_channel == "beta" %}selected{% endif %}>beta</option></select>
-<input name="automatic_update" value="{{ auto_update }}" placeholder="yes"> <input name="create_backup" value="{{ create_backup }}" placeholder="yes">
-<button name="op" value="update-setting">Save</button></form>
-<form method="post">{% csrf_token %}<button name="op" value="update-check">Check for updates</button> <button name="op" value="update-download">Download</button> <button name="op" value="update-install" onclick="return confirm('Install update? A backup will be taken.')">Install</button></form>
-{% elif section == "import" %}<form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="file" name="module_zip" accept=".zip"><button name="op" value="import">Import module</button></form>
-{% else %}<form method="post">{% csrf_token %}
-<input name="env_geneal-application-settings-webhook_attempts_limit" value="{{ webhook_limit }}" placeholder="webhook attempts">
-<input name="env_geneal-application-settings-homepageRedirect" placeholder="homepage redirect">
-<button name="op" value="general">Save</button></form>{% endif %}{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}System settings ({{ section }}) — PipraPay Admin{% endblock %}
+{% block pretitle %}System{% endblock %}
+{% block pagetitle %}System settings <small class="text-secondary">({{ section }})</small>{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<a class="btn btn-sm {% if section == "general" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?section=general">General</a>
+<a class="btn btn-sm {% if section == "cron" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?section=cron">Cron</a>
+<a class="btn btn-sm {% if section == "update" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?section=update">Update</a>
+<a class="btn btn-sm {% if section == "import" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?section=import">Import</a>
+</div></div>
+{% if section == "cron" %}
+<div class="card"><div class="card-header"><h3 class="card-title">Cron</h3></div>
+<div class="card-body">
+<p>Command: <code>{{ cron_command }}</code></p>
+<form method="post">{% csrf_token %}<button name="op" value="cron-regenerate" class="btn btn-outline-primary" type="submit">Generate new cron key</button></form>
+</div></div>
+{% elif section == "update" %}
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Update</h3></div>
+<div class="card-body">
+<div class="table-responsive"><table class="table pp-kv">
+<tr><td>Current</td><td>{{ current_version.version_name }} ({{ current_version.version_code }})</td></tr>
+<tr><td>Channel</td><td>{{ update_channel }}</td></tr>
+<tr><td>Auto update</td><td>{{ auto_update }}</td></tr>
+<tr><td>Last check</td><td>{{ last_check }}</td></tr>
+<tr><td>Latest</td><td>{{ last_version_name }} {{ last_version }}</td></tr>
+</table></div>
+<form method="post" class="pp-filter-bar mt-2">{% csrf_token %}
+<div><label class="form-label">Channel</label><select name="update_channel" class="form-select"><option value="stable">stable</option><option value="beta"{% if update_channel == "beta" %} selected{% endif %}>beta</option></select></div>
+<div><label class="form-label">Automatic update</label><input name="automatic_update" class="form-control" value="{{ auto_update }}" placeholder="yes"></div>
+<div><label class="form-label">Create backup</label><input name="create_backup" class="form-control" value="{{ create_backup }}" placeholder="yes"></div>
+<div><button name="op" value="update-setting" class="btn btn-primary" type="submit">Save</button></div>
+</form>
+<form method="post" class="d-flex gap-2 mt-2">{% csrf_token %}<button name="op" value="update-check" class="btn btn-outline-primary" type="submit">Check for updates</button> <button name="op" value="update-download" class="btn btn-outline-primary" type="submit">Download</button> <button name="op" value="update-install" class="btn btn-outline-danger" onclick="return confirm('Install update? A backup will be taken.')" type="submit">Install</button></form>
+</div></div>
+{% elif section == "import" %}
+<div class="card"><div class="card-header"><h3 class="card-title">Import module</h3></div>
+<div class="card-body"><form method="post" enctype="multipart/form-data" class="pp-filter-bar">{% csrf_token %}
+<div><label class="form-label">Module zip</label><input type="file" name="module_zip" accept=".zip" class="form-control"></div>
+<div><button name="op" value="import" class="btn btn-primary" type="submit">Import module</button></div>
+</form></div></div>
+{% else %}
+<div class="card"><div class="card-header"><h3 class="card-title">General</h3></div>
+<div class="card-body"><form method="post">{% csrf_token %}
+<div class="mb-2"><label class="form-label">Webhook attempts limit</label><input name="env_geneal-application-settings-webhook_attempts_limit" class="form-control" value="{{ webhook_limit }}" placeholder="webhook attempts"></div>
+<div class="mb-3"><label class="form-label">Homepage redirect</label><input name="env_geneal-application-settings-homepageRedirect" class="form-control" placeholder="homepage redirect"></div>
+<button name="op" value="general" class="btn btn-primary" type="submit">Save</button></form></div></div>
+{% endif %}
+{% endblock %}

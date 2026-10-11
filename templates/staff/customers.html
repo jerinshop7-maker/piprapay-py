@@ -1,10 +1,44 @@
-{% extends "base.html" %}{% block content %}<h1>Customers</h1>
-<p><a href="?">All</a> <a href="?tab=manual">Manual</a> <a href="?tab=checkout">Checkout</a></p>
-<form method="get"><input name="q" value="{{ q }}"><input name="status" value="{{ status }}"><button>Search</button></form>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="suspended">Suspend</option><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for c in page %}<li><input type="checkbox" name="selected_ids" value="{{ c.id }}"> {{ c.name }} {{ c.email }} {{ c.mobile }} {{ c.status }} {{ c.inserted_via }}</li>{% endfor %}</ul></form>
-<h2>Create</h2><form method="post">{% csrf_token %}
-<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
-<input name="name" placeholder="Name" required> <input name="email" placeholder="Email" required> <input name="mobile" placeholder="Mobile" required>
-<select name="status"><option>active</option><option>suspend</option></select> <input name="suspend_reason" placeholder="Suspend reason">
-<button>Create</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Customers — PipraPay Admin{% endblock %}
+{% block pretitle %}Payments{% endblock %}
+{% block pagetitle %}Customers{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<div class="mb-2"><a class="btn btn-sm btn-ghost-secondary" href="?">All</a> <a class="btn btn-sm btn-ghost-secondary" href="?tab=manual">Manual</a> <a class="btn btn-sm btn-ghost-secondary" href="?tab=checkout">Checkout</a></div>
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Search</label><input name="q" class="form-control" value="{{ q }}"></div>
+<div><label class="form-label">Status</label><input name="status" class="form-control" value="{{ status }}"></div>
+<div><button class="btn btn-primary" type="submit">Search</button></div>
+</form>
+</div></div>
+<div class="row row-deck row-cards">
+<div class="col-lg-8">
+<div class="card"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Name</th><th>Email</th><th>Mobile</th><th>Status</th><th>Via</th></tr></thead>
+<tbody>
+{% for c in page %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ c.id }}"></td>
+<td>{{ c.name }}</td><td>{{ c.email }}</td><td>{{ c.mobile }}</td>
+<td><span class="badge {% if c.status == "active" %}bg-green{% else %}bg-yellow{% endif %}">{{ c.status }}</span></td><td>{{ c.inserted_via }}</td></tr>
+{% empty %}<tr><td colspan="6" class="text-secondary">No customers.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="activated">Activate</option><option value="suspended">Suspend</option><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+</div>
+<div class="col-lg-4">
+<div class="card"><div class="card-header"><h3 class="card-title">Create customer</h3></div>
+<div class="card-body"><form method="post">{% csrf_token %}
+<div class="mb-2"><label class="form-label">Brand</label><select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select></div>
+<div class="mb-2"><label class="form-label">Name</label><input name="name" class="form-control" placeholder="Name" required></div>
+<div class="mb-2"><label class="form-label">Email</label><input name="email" class="form-control" placeholder="Email" required></div>
+<div class="mb-2"><label class="form-label">Mobile</label><input name="mobile" class="form-control" placeholder="Mobile" required></div>
+<div class="mb-2"><label class="form-label">Status</label><select name="status" class="form-select"><option>active</option><option>suspend</option></select></div>
+<div class="mb-3"><label class="form-label">Suspend reason</label><input name="suspend_reason" class="form-control" placeholder="Suspend reason"></div>
+<button class="btn btn-primary w-100" type="submit">Create</button></form></div></div>
+</div>
+</div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

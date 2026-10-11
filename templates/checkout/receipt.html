@@ -1,6 +1,17 @@
-{% extends "base.html" %}{% block title %}Receipt {{ transaction.pp_id }}{% endblock %}
-{% block content %}
-<h1>Receipt {{ transaction.pp_id }}</h1>
-<p>{{ transaction.full_name }} · {{ transaction.amount_paid|default:transaction.total }} {{ transaction.currency }}</p>
-<p>Status: {{ transaction.status }} · Date: {{ transaction.date }}</p>
+{% extends "checkout/base_checkout.html" %}
+{% block title %}Receipt {{ transaction.pp_id }} — {{ brand.name }}{% endblock %}
+{% block checkout_content %}
+<div class="px-3 pt-3 d-print-none"><a href="/payment/{{ transaction.pp_id }}/">← Back</a></div>
+{% include "checkout/_brand_header.html" %}
+<div class="px-3 pb-2">
+<h2 class="text-center">Receipt</h2>
+<p class="text-center text-secondary">{{ transaction.pp_id }}</p>
+<div class="table-responsive"><table class="table pp-kv">
+<tr><td>Name</td><td>{{ transaction.full_name }}</td></tr>
+<tr><td>Amount</td><td>{{ transaction.amount_paid|default:transaction.total }} {{ transaction.currency }}</td></tr>
+<tr><td>Status</td><td>{{ transaction.status }}</td></tr>
+<tr><td>Date</td><td>{{ transaction.date }}</td></tr>
+</table></div>
+<p class="d-print-none"><button class="btn btn-ghost-secondary w-100" onclick="window.print()">Print</button></p>
+</div>
 {% endblock %}

@@ -1,4 +1,35 @@
-{% extends "base.html" %}{% block content %}<h1>Activities</h1>
-<form method="get"><input name="q" value="{{ q }}" placeholder="ip/user/browser"><input name="status" value="{{ status }}"><input name="from" type="date" value="{{ date_from }}"><input name="until" type="date" value="{{ date_until }}"><button>Filter</button></form>
-<ul>{% for l in page %}<li>{{ l.a_id }} {{ l.browser }} {{ l.device }} {{ l.ip }} {{ l.status }} {% if l.cookie == current_cookie %}(current){% endif %}</li>{% endfor %}</ul>
-<h2>Webhooks</h2><ul>{% for w in webhooks %}<li>{{ w.ref }} {{ w.status }} {{ w.attempts }} {{ w.http_code }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Activities — PipraPay Admin{% endblock %}
+{% block pretitle %}Audit log{% endblock %}
+{% block pagetitle %}Activities{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Search</label><input name="q" class="form-control" value="{{ q }}" placeholder="ip / user / browser"></div>
+<div><label class="form-label">Status</label><input name="status" class="form-control" value="{{ status }}"></div>
+<div><label class="form-label">From</label><input name="from" type="date" class="form-control" value="{{ date_from }}"></div>
+<div><label class="form-label">Until</label><input name="until" type="date" class="form-control" value="{{ date_until }}"></div>
+<div><button class="btn btn-primary" type="submit">Filter</button></div>
+</form>
+</div></div>
+<div class="card mb-3">
+<div class="card-header"><h3 class="card-title">Browser sessions</h3></div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th>Admin</th><th>Browser</th><th>Device</th><th>IP</th><th>Status</th><th></th></tr></thead>
+<tbody>
+{% for l in page %}<tr><td>{{ l.a_id }}</td><td>{{ l.browser }}</td><td>{{ l.device }}</td><td>{{ l.ip }}</td>
+<td><span class="badge {% if l.status == "active" %}bg-green{% else %}bg-secondary{% endif %}">{{ l.status }}</span></td>
+<td>{% if l.cookie == current_cookie %}<span class="badge bg-blue">current</span>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6" class="text-secondary">No activity.</td></tr>{% endfor %}
+</tbody></table></div>
+</div>
+<div class="card">
+<div class="card-header"><h3 class="card-title">Webhooks</h3></div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th>Ref</th><th>Status</th><th>Attempts</th><th>HTTP</th></tr></thead>
+<tbody>
+{% for w in webhooks %}<tr><td>{{ w.ref }}</td><td>{{ w.status }}</td><td>{{ w.attempts }}</td><td>{{ w.http_code }}</td></tr>
+{% empty %}<tr><td colspan="4" class="text-secondary">No webhook deliveries.</td></tr>{% endfor %}
+</tbody></table></div>
+</div>
+{% endblock %}

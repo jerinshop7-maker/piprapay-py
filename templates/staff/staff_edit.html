@@ -1,9 +1,19 @@
-{% extends "base.html" %}{% block content %}<h1>{% if member %}Edit{% else %}Create{% endif %} staff</h1>
-<form method="post">{% csrf_token %}
-<input name="full_name" value="{{ member.full_name|default:"" }}" placeholder="Full name" required>
-<input name="username" value="{{ member.username|default:"" }}" placeholder="Username" required>
-<input name="email" value="{{ member.email|default:"" }}" placeholder="Email" required>
-<input name="password" type="password" placeholder="Password (blank keeps on edit)">
-<select name="status"><option>active</option><option>suspend</option></select><br>
-Brands: {% for b in brands %}<label><input type="checkbox" name="brands" value="{{ b.brand_id }}" {% if b.brand_id in assigned %}checked{% endif %}> {{ b.identify_name }}</label>{% endfor %}<br>
-<button>Save</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}{% if member %}Edit{% else %}Create{% endif %} staff — PipraPay Admin{% endblock %}
+{% block pretitle %}Team{% endblock %}
+{% block pagetitle %}{% if member %}Edit{% else %}Create{% endif %} staff{% endblock %}
+{% block actions %}<a class="btn btn-ghost-secondary" href="/admin/staff/">Back</a>{% endblock %}
+{% block admin_content %}
+<div class="card"><div class="card-body"><form method="post">{% csrf_token %}
+<div class="pp-form-grid">
+<div><label class="form-label">Full name</label><input name="full_name" class="form-control" value="{{ member.full_name|default:"" }}" placeholder="Full name" required></div>
+<div><label class="form-label">Username</label><input name="username" class="form-control" value="{{ member.username|default:"" }}" placeholder="Username" required></div>
+<div><label class="form-label">Email</label><input name="email" class="form-control" value="{{ member.email|default:"" }}" placeholder="Email" required></div>
+<div><label class="form-label">Password</label><input name="password" type="password" class="form-control" placeholder="Password (blank keeps on edit)"></div>
+<div><label class="form-label">Status</label><select name="status" class="form-select"><option>active</option><option>suspend</option></select></div>
+<div class="full"><label class="form-label">Brands</label>
+<div class="d-flex flex-wrap gap-3">{% for b in brands %}<label class="form-check"><input type="checkbox" class="form-check-input" name="brands" value="{{ b.brand_id }}"{% if b.brand_id in assigned %} checked{% endif %}> <span class="form-check-label">{{ b.identify_name }}</span></label>{% endfor %}</div></div>
+</div>
+<div class="mt-3"><button class="btn btn-primary" type="submit">Save</button></div>
+</form></div></div>
+{% endblock %}

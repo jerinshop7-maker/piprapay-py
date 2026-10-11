@@ -1,19 +1,54 @@
-{% extends "base.html" %}
-{% load pp_display %}{% block content %}<h1>SMS data</h1>
-<p><a href="?">All</a> <a href="?tab=approved">Approved</a> <a href="?tab=awaiting-review">Awaiting review</a> <a href="?tab=used">Used</a></p>
-<form method="get"><input name="q" value="{{ q }}"><input name="status" value="{{ status }}"><button>Filter</button></form>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="approved">Approve</option><option value="awaiting-review">Review</option><option value="used">Used</option><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for s in page %}<li><input type="checkbox" name="selected_ids" value="{{ s.id }}"> {{ s.sender_key|pp_blank }} {{ s.trx_id|pp_blank }} {{ s.amount }} {{ s.status }} {{ s.entry_type }} {{ s.reason|pp_blank }}</li>{% endfor %}</ul></form>
-<h2>Add (automatic: paste SMS)</h2><form method="post">{% csrf_token %}
+{% extends "staff/base_admin.html" %}
+{% load pp_display %}
+{% block title %}SMS data — PipraPay Admin{% endblock %}
+{% block pretitle %}Automation{% endblock %}
+{% block pagetitle %}SMS data{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<div class="mb-2"><a class="btn btn-sm btn-ghost-secondary" href="?">All</a> <a class="btn btn-sm btn-ghost-secondary" href="?tab=approved">Approved</a> <a class="btn btn-sm btn-ghost-secondary" href="?tab=awaiting-review">Awaiting review</a> <a class="btn btn-sm btn-ghost-secondary" href="?tab=used">Used</a></div>
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Search</label><input name="q" class="form-control" value="{{ q }}"></div>
+<div><label class="form-label">Status</label><input name="status" class="form-control" value="{{ status }}"></div>
+<div><button class="btn btn-primary" type="submit">Filter</button></div>
+</form>
+</div></div>
+<div class="card mb-3"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Sender</th><th>TrxID</th><th>Amount</th><th>Status</th><th>Entry</th><th>Reason</th></tr></thead>
+<tbody>
+{% for s in page %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ s.id }}"></td>
+<td>{{ s.sender_key|pp_blank }}</td><td>{{ s.trx_id|pp_blank }}</td><td>{{ s.amount }}</td>
+<td><span class="badge {% if s.status == "approved" %}bg-green{% elif s.status == "awaiting-review" %}bg-yellow{% else %}bg-secondary{% endif %}">{{ s.status }}</span></td>
+<td>{{ s.entry_type }}</td><td>{{ s.reason|pp_blank }}</td></tr>
+{% empty %}<tr><td colspan="7" class="text-secondary">No SMS records.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="approved">Approve</option><option value="awaiting-review">Review</option><option value="used">Used</option><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+<div class="row row-deck row-cards">
+<div class="col-lg-6">
+<div class="card"><div class="card-header"><h3 class="card-title">Add (automatic: paste SMS)</h3></div>
+<div class="card-body"><form method="post">{% csrf_token %}
 <input type="hidden" name="entry_type" value="automatic">
-<select name="sender_key">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select>
-<textarea name="message" placeholder="Paste SMS"></textarea>
-<select name="status"><option>approved</option><option>awaiting-review</option></select>
-<button>Create</button></form>
-<h2>Add (manual)</h2><form method="post">{% csrf_token %}
+<div class="mb-2"><label class="form-label">Sender</label><select name="sender_key" class="form-select">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select></div>
+<div class="mb-2"><label class="form-label">Message</label><textarea name="message" class="form-control" placeholder="Paste SMS"></textarea></div>
+<div class="mb-3"><label class="form-label">Status</label><select name="status" class="form-select"><option>approved</option><option>awaiting-review</option></select></div>
+<button class="btn btn-primary w-100" type="submit">Create</button></form></div></div>
+</div>
+<div class="col-lg-6">
+<div class="card"><div class="card-header"><h3 class="card-title">Add (manual)</h3></div>
+<div class="card-body"><form method="post">{% csrf_token %}
 <input type="hidden" name="entry_type" value="manual">
-<select name="sender_key">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select>
-<select name="type"><option>Personal</option><option>Agent</option><option>Merchant</option></select>
-<input name="number" placeholder="number"> <input name="amount" placeholder="amount"> <input name="trx_id" placeholder="trx id">
-<select name="status"><option>approved</option><option>awaiting-review</option></select>
-<button>Create</button></form>{% endblock %}
+<div class="mb-2"><label class="form-label">Sender</label><select name="sender_key" class="form-select">{% for k,p in providers.items %}<option value="{{ k }}">{{ p.name }}</option>{% endfor %}</select></div>
+<div class="mb-2"><label class="form-label">Type</label><select name="type" class="form-select"><option>Personal</option><option>Agent</option><option>Merchant</option></select></div>
+<div class="mb-2"><label class="form-label">Number</label><input name="number" class="form-control" placeholder="number"></div>
+<div class="mb-2"><label class="form-label">Amount</label><input name="amount" class="form-control" placeholder="amount"></div>
+<div class="mb-2"><label class="form-label">TrxID</label><input name="trx_id" class="form-control" placeholder="trx id"></div>
+<div class="mb-3"><label class="form-label">Status</label><select name="status" class="form-select"><option>approved</option><option>awaiting-review</option></select></div>
+<button class="btn btn-primary w-100" type="submit">Create</button></form></div></div>
+</div>
+</div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

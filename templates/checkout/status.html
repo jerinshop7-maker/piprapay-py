@@ -1,41 +1,50 @@
-{% extends "base.html" %}
-{% load pp_display %}{% block title %}Payment {{ transaction.status|title }}<p>{{ options.watermark_text|default:"" }}</p>
-{% endblock %}
+{% extends "checkout/base_checkout.html" %}
+{% load pp_display %}
+{% block title %}Payment {{ transaction.status|title }} — {{ brand.name }}{% endblock %}
 {% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
 {% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
 {% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
 {% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
 {% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
-<p>{{ options.watermark_text|default:"" }}</p>
 {% endblock %}
-{% block content %}
-<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/>{% if transaction.status == "completed" %}<path d="M8 12l3 3 5-6"/>{% elif transaction.status == "pending" %}<path d="M12 7v5l3 3"/>{% elif transaction.status == "refunded" %}<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>{% else %}<path d="M18 6L6 18M6 6l12 12"/>{% endif %}</svg>
-{% if transaction.status == "completed" %}<h1>{{ lang.payment_successful|default:"Payment Successful!" }}</h1>
-{% elif transaction.status == "pending" %}<h1>{{ lang.payment_pending|default:"Payment Pending" }}</h1>
-{% elif transaction.status == "refunded" %}<h1>{{ lang.payment_refunded|default:"Payment Refunded" }}</h1>
-{% elif transaction.status == "canceled" %}<h1>{{ lang.payment_canceled|default:"Payment Canceled" }}</h1>
-{% else %}<h1>Payment {{ transaction.status|title }}</h1>{% endif %}
-<p>Order {{ transaction.pp_id|pp }}</p>
+{% block checkout_content %}
+{% include "checkout/_brand_header.html" %}
+<div class="pp-status-hero">
+{% if transaction.status == "completed" %}
+<svg class="pp-status-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg>
+<h1>{{ lang.payment_successful|default:"Payment Successful!" }}</h1>
+{% elif transaction.status == "pending" %}
+<svg class="pp-status-pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 7v5l3 3"/></svg>
+<h1>{{ lang.payment_pending|default:"Payment Pending" }}</h1>
+{% elif transaction.status == "refunded" %}
+<svg class="pp-status-refund" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+<h1>{{ lang.payment_refunded|default:"Payment Refunded" }}</h1>
+{% elif transaction.status == "canceled" %}
+<svg class="pp-status-bad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M18 6L6 18M6 6l12 12"/></svg>
+<h1>{{ lang.payment_canceled|default:"Payment Canceled" }}</h1>
+{% else %}
+<svg class="pp-status-bad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M18 6L6 18M6 6l12 12"/></svg>
+<h1>Payment {{ transaction.status|title }}</h1>
+{% endif %}
+<p class="text-secondary">Order {{ transaction.pp_id|pp }}</p>
 {% if transaction.status == "completed" %}<p>{{ lang.change_status_completed|default:"" }}</p>
 {% elif transaction.status == "pending" %}<p>{{ lang.change_status_pending|default:"" }}</p>
 {% elif transaction.status == "refunded" %}<p>{{ lang.change_status_refunded|default:"" }}</p>
 {% elif transaction.status == "canceled" %}<p>{{ lang.change_status_cancled|default:"" }}</p>{% endif %}
+</div>
 {% if transaction.status != "canceled" %}
-<table>
+<div class="px-3"><div class="table-responsive"><table class="table pp-kv">
 <tr><td>{{ lang.payment_method|default:"Method" }}</td><td>{{ transaction.gateway|pp|default:"N/A" }}</td></tr>
 <tr><td>{{ lang.amount|default:"Amount" }}</td><td>{{ transaction.amount }} {{ transaction.currency }}</td></tr>
 <tr><td>{{ lang.discount|default:"Discount" }}</td><td>{{ transaction.discount_amount }} {{ transaction.currency }}</td></tr>
 <tr><td>{{ lang.processing_fee|default:"Fee" }}</td><td>{{ transaction.fee }} {{ transaction.currency }}</td></tr>
 <tr><td>Net</td><td>{{ transaction.total }} {{ transaction.currency }}</td></tr>
 <tr><td>{{ lang.net_local_amount|default:"Net local" }}</td><td>{{ transaction.local_net_amount }} {{ transaction.local_currency }}</td></tr>
-<tr><td>{{ lang.status|default:"Status" }}</td><td>{{ transaction.status|title }}</td></tr>
-</table>
+<tr><td>{{ lang.status|default:"Status" }}</td><td><span class="badge {% if transaction.status == "completed" %}bg-green{% elif transaction.status == "pending" %}bg-yellow{% elif transaction.status == "refunded" %}bg-blue{% else %}bg-red{% endif %}">{{ transaction.status|title }}</span></td></tr>
+</table></div></div>
 {% if transaction.status == "completed" or transaction.status == "pending" or transaction.status == "refunded" %}
-{% if transaction.status == "completed" or transaction.status == "pending" or transaction.status == "refunded" %}
-<p><a class="btn btn-success" href="/payment/{{ transaction.pp_id }}/receipt/">{{ lang.download_receipt|default:"Download Receipt" }}</a></p>
+<p class="px-3"><a class="btn btn-success w-100" href="/payment/{{ transaction.pp_id }}/receipt/">{{ lang.download_receipt|default:"Download Receipt" }}</a></p>
 {% endif %}
 {% endif %}
-{% endif %}
-{% if transaction.return_url and transaction.return_url != "--" and transaction.return_url != "" %}<p><a class="btn btn-primary" href="{{ transaction.return_url }}">{{ lang.go_to_site|default:"Go to Site" }}</a></p>{% endif %}
-<p>{{ options.watermark_text|default:"" }}</p>
+{% if transaction.return_url and transaction.return_url != "--" and transaction.return_url != "" %}<p class="px-3"><a class="btn btn-primary w-100" href="{{ transaction.return_url }}">{{ lang.go_to_site|default:"Go to Site" }}</a></p>{% endif %}
 {% endblock %}

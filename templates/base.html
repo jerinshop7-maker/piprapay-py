@@ -1,20 +1,35 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="author" content="PipraPay">
 <title>{% block title %}PipraPay{% endblock %}</title>
 {% block seo %}{% endblock %}
+<link rel="icon" href="/static/vendor/favicon-light.png">
 <link rel="stylesheet" href="/static/app.css">
 <link rel="stylesheet" href="/static/vendor/css/tabler.min.css">
 <link rel="stylesheet" href="/static/vendor/css/choices.min.css">
 <link rel="stylesheet" href="/static/vendor/css/inter.css">
 {% block head %}{% endblock %}
 </head>
-<body>
-{% if messages %}<ul>{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+<body class="{% block bodyclass %}{% endblock %}">
+<div class="page">
+{% if messages %}
+<div class="container-xl mt-2" id="pp-messages">
+{% for m in messages %}<div class="alert alert-{{ m.tags|default:"info" }} alert-dismissible" role="alert">{{ m }}<a href="#" class="btn-close" data-bs-dismiss="alert" aria-label="close"></a></div>{% endfor %}
+</div>
+{% endif %}
 {% block content %}{% endblock %}
+<footer class="footer footer-transparent d-print-none">
+<div class="container-xl"><div class="row text-center align-items-center"><div class="col-12 text-secondary">PipraPay — self-hosted payment automation · AGPL-3.0</div></div></div>
+</footer>
+</div>
 <script src="/static/vendor/js/jquery-3.6.4.min.js"></script>
 <script src="/static/vendor/js/tabler.min.js"></script>
 <script src="/static/vendor/js/choices.min.js"></script>
 <script src="/static/vendor/js/qrcode.min.js"></script>
 <script src="/static/vendor/js/custom-toast.js"></script>
 {% block foot %}{% endblock %}
-</body></html>
+</body>
+</html>

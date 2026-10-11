@@ -1,11 +1,46 @@
-{% extends "base.html" %}{% block content %}<h1>{% if inv %}Edit{% else %}Create{% endif %} invoice</h1>
-<form method="post">{% csrf_token %}
-<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}" {% if inv.brand_id == b.brand_id %}selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select>
-<select name="gateway_id"><option value="--">—</option>{% for g in gateways %}<option value="{{ g.gateway_id }}" {% if inv.gateway_id == g.gateway_id %}selected{% endif %}>{{ g.display }}</option>{% endfor %}</select>
-<input name="currency" value="{{ inv.currency|default:"BDT" }}"> <input name="due_date" type="date" value="{{ inv.due_date|default:"" }}">
-<input name="shipping" value="{{ inv.shipping|default:"0" }}"> <input name="status" value="{{ inv.status|default:"unpaid" }}">
-<h3>Customer</h3><input name="customer_name" value="{{ customer.name|default:"" }}" placeholder="name"> <input name="customer_email" value="{{ customer.email|default:"" }}" placeholder="email"> <input name="customer_mobile" value="{{ customer.mobile|default:"" }}" placeholder="mobile">
-<h3>Items</h3><div>{% for it in items %}<div><input name="item_description" value="{{ it.description }}"> <input name="item_amount" value="{{ it.amount }}"> <input name="item_quantity" value="{{ it.quantity }}"> <input name="item_discount" value="{{ it.discount }}"> <input name="item_vat" value="{{ it.vat }}"></div>{% endfor %}
-<div>New: <input name="item_description" placeholder="desc"> <input name="item_amount" placeholder="amount"> <input name="item_quantity" placeholder="qty"> <input name="item_discount" placeholder="discount"> <input name="item_vat" placeholder="vat %"></div></div>
-<input name="note" value="{{ inv.note|default:"" }}" placeholder="note"> <input name="private_note" value="{{ inv.private_note|default:"" }}" placeholder="private note">
-<button>Save</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}{% if inv %}Edit{% else %}Create{% endif %} invoice — PipraPay Admin{% endblock %}
+{% block pretitle %}Billing{% endblock %}
+{% block pagetitle %}{% if inv %}Edit{% else %}Create{% endif %} invoice{% endblock %}
+{% block actions %}<a class="btn btn-ghost-secondary" href="/admin/invoice/">Back</a>{% endblock %}
+{% block admin_content %}
+<div class="card"><div class="card-body"><form method="post">{% csrf_token %}
+<div class="pp-form-grid">
+<div><label class="form-label">Brand</label><select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}"{% if inv.brand_id == b.brand_id %} selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select></div>
+<div><label class="form-label">Gateway</label><select name="gateway_id" class="form-select"><option value="--">—</option>{% for g in gateways %}<option value="{{ g.gateway_id }}"{% if inv.gateway_id == g.gateway_id %} selected{% endif %}>{{ g.display }}</option>{% endfor %}</select></div>
+<div><label class="form-label">Currency</label><input name="currency" class="form-control" value="{{ inv.currency|default:"BDT" }}"></div>
+<div><label class="form-label">Due date</label><input name="due_date" type="date" class="form-control" value="{{ inv.due_date|default:"" }}"></div>
+<div><label class="form-label">Shipping</label><input name="shipping" class="form-control" value="{{ inv.shipping|default:"0" }}"></div>
+<div><label class="form-label">Status</label><input name="status" class="form-control" value="{{ inv.status|default:"unpaid" }}"></div>
+</div>
+<h3 class="card-title mt-3">Customer</h3>
+<div class="pp-form-grid">
+<div><label class="form-label">Name</label><input name="customer_name" class="form-control" value="{{ customer.name|default:"" }}" placeholder="name"></div>
+<div><label class="form-label">Email</label><input name="customer_email" class="form-control" value="{{ customer.email|default:"" }}" placeholder="email"></div>
+<div><label class="form-label">Mobile</label><input name="customer_mobile" class="form-control" value="{{ customer.mobile|default:"" }}" placeholder="mobile"></div>
+</div>
+<h3 class="card-title mt-3">Items</h3>
+<div class="table-responsive"><table class="table"><thead><tr><th>Description</th><th>Amount</th><th>Qty</th><th>Discount</th><th>VAT %</th></tr></thead>
+<tbody>
+{% for it in items %}<tr>
+<td><input name="item_description" class="form-control" value="{{ it.description }}"></td>
+<td><input name="item_amount" class="form-control" value="{{ it.amount }}"></td>
+<td><input name="item_quantity" class="form-control" value="{{ it.quantity }}"></td>
+<td><input name="item_discount" class="form-control" value="{{ it.discount }}"></td>
+<td><input name="item_vat" class="form-control" value="{{ it.vat }}"></td>
+</tr>{% endfor %}
+<tr>
+<td><input name="item_description" class="form-control" placeholder="New item desc"></td>
+<td><input name="item_amount" class="form-control" placeholder="amount"></td>
+<td><input name="item_quantity" class="form-control" placeholder="qty"></td>
+<td><input name="item_discount" class="form-control" placeholder="discount"></td>
+<td><input name="item_vat" class="form-control" placeholder="vat %"></td>
+</tr>
+</tbody></table></div>
+<div class="pp-form-grid mt-2">
+<div class="full"><label class="form-label">Note</label><input name="note" class="form-control" value="{{ inv.note|default:"" }}" placeholder="note"></div>
+<div class="full"><label class="form-label">Private note</label><input name="private_note" class="form-control" value="{{ inv.private_note|default:"" }}" placeholder="private note"></div>
+</div>
+<div class="mt-3"><button class="btn btn-primary" type="submit">Save</button></div>
+</form></div></div>
+{% endblock %}

@@ -1,14 +1,52 @@
-{% extends "base.html" %}{% block content %}<h1>Transaction {{ txn.ref }}</h1>
-<p>{{ txn.status }} · {{ txn.amount }} {{ txn.currency }} · Date: {{ txn.created_date }}</p>
-<h2>Transaction Details</h2>
-<ul><li>Gateway: {{ txn.gateway_id }}</li><li>Sender: {{ txn.sender }} ({{ txn.sender_key }} {{ txn.sender_type }})</li>
-<li>TrxID: {{ txn.trx_id }}</li>{% if txn.trx_slip %}<li>Slip: <a href="{{ txn.trx_slip }}">view</a></li>{% endif %}
-<li>Fee: {{ txn.processing_fee }} · Discount: {{ txn.discount_amount }} · Net local: {{ txn.local_net_amount }} {{ txn.local_currency }}</li></ul>
-<h2>Customer</h2><p>{{ customer.name }} · {{ customer.email }} · {{ customer.mobile }}</p>
-<h2>Metadata</h2><pre>{{ metadata }}</pre>
-<h2>More Info</h2><ul>{% for i in source_info %}<li>{{ i.label }}: {{ i.value }}</li>{% endfor %}</ul>
-<h2>Endpoint</h2><p>Return: {{ txn.return_url }} · Webhook: {{ txn.webhook_url }}</p>
-<form method="post">{% csrf_token %}
-<input name="sender" value="{{ txn.sender }}" placeholder="sender"> <input name="trx_id" value="{{ txn.trx_id }}" placeholder="trx_id"><br>
-<button name="action" value="approve">Approve</button><button name="action" value="cancel">Cancel</button><button name="action" value="refund">Refund</button><button name="action" value="send_ipn">Send IPN</button></form>
-<form method="post" onsubmit="return confirm('Delete?')">{% csrf_token %}<button name="delete" value="{{ txn.id }}">Delete</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Transaction {{ txn.ref }} — PipraPay Admin{% endblock %}
+{% block pretitle %}Payments{% endblock %}
+{% block pagetitle %}Transaction {{ txn.ref }}{% endblock %}
+{% block actions %}<a class="btn btn-ghost-secondary" href="/admin/transaction/">Back</a>{% endblock %}
+{% block admin_content %}
+<div class="row row-deck row-cards">
+<div class="col-lg-8">
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Transaction Details</h3>
+<span class="ms-auto badge {% if txn.status == "completed" %}bg-green{% elif txn.status == "pending" %}bg-yellow{% elif txn.status == "canceled" %}bg-red{% elif txn.status == "refunded" %}bg-blue{% else %}bg-secondary{% endif %}">{{ txn.status }}</span></div>
+<div class="card-body"><div class="table-responsive"><table class="table pp-kv">
+<tr><td>Amount</td><td>{{ txn.amount }} {{ txn.currency }}</td></tr>
+<tr><td>Date</td><td>{{ txn.created_date }}</td></tr>
+<tr><td>Gateway</td><td>{{ txn.gateway_id }}</td></tr>
+<tr><td>Sender</td><td>{{ txn.sender }} ({{ txn.sender_key }} {{ txn.sender_type }})</td></tr>
+<tr><td>TrxID</td><td>{{ txn.trx_id }}</td></tr>
+{% if txn.trx_slip %}<tr><td>Slip</td><td><a href="{{ txn.trx_slip }}" target="_blank" rel="noopener">view</a></td></tr>{% endif %}
+<tr><td>Fee</td><td>{{ txn.processing_fee }}</td></tr>
+<tr><td>Discount</td><td>{{ txn.discount_amount }}</td></tr>
+<tr><td>Net local</td><td>{{ txn.local_net_amount }} {{ txn.local_currency }}</td></tr>
+</table></div></div></div>
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Customer</h3></div>
+<div class="card-body">{{ customer.name }} · {{ customer.email }} · {{ customer.mobile }}</div></div>
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Metadata</h3></div>
+<div class="card-body"><pre class="pp-pre">{{ metadata }}</pre></div></div>
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">More Info</h3></div>
+<div class="card-body"><div class="table-responsive"><table class="table pp-kv">
+{% for i in source_info %}<tr><td>{{ i.label }}</td><td>{{ i.value }}</td></tr>{% empty %}<tr><td class="text-secondary">No extra info.</td><td></td></tr>{% endfor %}
+</table></div></div></div>
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Endpoint</h3></div>
+<div class="card-body"><div class="table-responsive"><table class="table pp-kv">
+<tr><td>Return</td><td class="text-break">{{ txn.return_url }}</td></tr>
+<tr><td>Webhook</td><td class="text-break">{{ txn.webhook_url }}</td></tr>
+</table></div></div></div>
+</div>
+<div class="col-lg-4">
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Update</h3></div>
+<div class="card-body"><form method="post">{% csrf_token %}
+<div class="mb-2"><label class="form-label">Sender</label><input name="sender" class="form-control" value="{{ txn.sender }}" placeholder="sender"></div>
+<div class="mb-3"><label class="form-label">TrxID</label><input name="trx_id" class="form-control" value="{{ txn.trx_id }}" placeholder="trx_id"></div>
+<div class="d-grid gap-2">
+<button name="action" value="approve" class="btn btn-success">Approve</button>
+<button name="action" value="cancel" class="btn btn-outline-warning">Cancel</button>
+<button name="action" value="refund" class="btn btn-outline-primary">Refund</button>
+<button name="action" value="send_ipn" class="btn btn-ghost-secondary">Send IPN</button>
+</div>
+</form></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title text-danger">Danger zone</h3></div>
+<div class="card-body"><form method="post" onsubmit="return confirm('Delete this transaction?')">{% csrf_token %}<button name="delete" value="{{ txn.id }}" class="btn btn-outline-danger w-100">Delete</button></form></div></div>
+</div>
+</div>
+{% endblock %}

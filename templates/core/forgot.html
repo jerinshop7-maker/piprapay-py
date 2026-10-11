@@ -1,6 +1,16 @@
-{% extends "base.html" %}{% block title %}Forgot — PipraPay{% endblock %}
-{% block content %}<h1>Forgot password</h1>
+{% extends "base.html" %}
+{% block title %}Forgot — PipraPay{% endblock %}
+{% block content %}
+<div class="pp-auth-wrap"><div class="pp-auth-card">
+<div class="text-center mb-3"><img src="/static/vendor/logo-light.png" alt="PipraPay" style="height:40px"></div>
+<div class="card"><div class="card-body p-4">
+<h2 class="card-title text-center mb-3">Forgot password</h2>
+<p class="text-secondary text-center">Enter your account email and we will generate a temporary password.</p>
 <form method="post">{% csrf_token %}
-<input name="email-address" placeholder="Email address" required>
-<button type="submit">Send me new password</button></form>
-<p><a href="/login/">Back to login</a></p>{% endblock %}
+<div class="mb-3"><label class="form-label">Email address</label>
+<input name="email-address" type="email" class="form-control" placeholder="Email address" required autofocus></div>
+<button type="submit" class="btn btn-primary w-100">Send me new password</button></form>
+<p class="text-center mt-3 mb-0"><a href="/login/">Back to login</a></p>
+</div></div>
+</div></div>
+{% endblock %}

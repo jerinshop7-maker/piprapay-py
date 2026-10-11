@@ -1,7 +1,39 @@
-{% extends "base.html" %}{% block content %}<h1>Transactions</h1>
-<p>Tabs: <a href="?">All</a> {% for s,n in tabs.items %}<a href="?status={{ s }}">{{ s }} ({{ n }})</a> {% endfor %}</p>
-<form method="get"><input name="q" value="{{ q }}" placeholder="ref/trx/sender/customer"><input name="status" value="{{ status }}" placeholder="status"><input name="from" type="date" value="{{ date_from }}"><input name="until" type="date" value="{{ date_until }}"><button>Filter</button></form>
+{% extends "staff/base_admin.html" %}
+{% block title %}Transactions — PipraPay Admin{% endblock %}
+{% block pretitle %}Payments{% endblock %}
+{% block pagetitle %}Transactions{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<div class="mb-2">Tabs: <a class="btn btn-sm {% if not status %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?">All</a>
+{% for s,n in tabs.items %}<a class="btn btn-sm {% if status == s %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?status={{ s }}">{{ s }} ({{ n }})</a> {% endfor %}</div>
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Search</label><input name="q" class="form-control" value="{{ q }}" placeholder="ref / trx / sender / customer"></div>
+<div><label class="form-label">Status</label><input name="status" class="form-control" value="{{ status }}" placeholder="status"></div>
+<div><label class="form-label">From</label><input name="from" type="date" class="form-control" value="{{ date_from }}"></div>
+<div><label class="form-label">Until</label><input name="until" type="date" class="form-control" value="{{ date_until }}"></div>
+<div><button class="btn btn-primary" type="submit">Filter</button></div>
+</form>
+</div></div>
+<div class="card">
+<div class="card-header"><h3 class="card-title">Transactions</h3></div>
 <form method="post">{% csrf_token %}
-<select name="bulk"><option value="approved">Approve</option><option value="canceled">Cancel</option><option value="refunded">Refund</option><option value="ipnsend">Send IPN</option><option value="deleted">Delete</option></select>
-<button>Apply to selected</button>
-<ul>{% for t in page %}<li><input type="checkbox" name="selected_ids" value="{{ t.id }}"> <a href="/admin/transaction/{{ t.id }}/">{{ t.ref }}</a> {{ t.status }} {{ t.amount }} {{ t.currency }}</li>{% endfor %}</ul></form>{% endblock %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Ref</th><th>Status</th><th>Amount</th><th>Currency</th></tr></thead>
+<tbody>
+{% for t in page %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ t.id }}"></td>
+<td><a href="/admin/transaction/{{ t.id }}/">{{ t.ref }}</a></td>
+<td><span class="badge {% if t.status == "completed" %}bg-green{% elif t.status == "pending" %}bg-yellow{% elif t.status == "canceled" %}bg-red{% elif t.status == "refunded" %}bg-blue{% else %}bg-secondary{% endif %}">{{ t.status }}</span></td>
+<td>{{ t.amount }}</td><td>{{ t.currency }}</td></tr>
+{% empty %}<tr><td colspan="5" class="text-secondary">No transactions.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2 align-items-center">
+<select name="bulk" class="form-select w-auto"><option value="approved">Approve</option><option value="canceled">Cancel</option><option value="refunded">Refund</option><option value="ipnsend">Send IPN</option><option value="deleted">Delete</option></select>
+<button class="btn btn-outline-primary" type="submit">Apply to selected</button>
+</div>
+</form>
+</div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

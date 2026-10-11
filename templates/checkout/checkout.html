@@ -1,45 +1,55 @@
-{% extends "base.html" %}{% block title %}{{ lang.checkout|default:"Checkout" }} - {{ brand.name }}{% endblock %}
+{% extends "checkout/base_checkout.html" %}
+{% block title %}{{ lang.checkout|default:"Checkout" }} - {{ brand.name }}{% endblock %}
 {% block seo %}{% if options.seo_title %}<meta name="title" content="{{ options.seo_title }}">{% endif %}
 {% if options.seo_description %}<meta name="description" content="{{ options.seo_description }}">{% endif %}
 {% if options.seo_keywords %}<meta name="keywords" content="{{ options.seo_keywords }}">{% endif %}
 {% if options.analytics_code %}{{ options.analytics_code|safe }}{% endif %}
 {% if brand.favicon %}<link rel="icon" href="{{ brand.favicon }}">{% endif %}
-<style>.btn-primary{background-color:{{ options.primary_color|default:"#5f38f9" }};color:{{ options.text_color|default:"#FFFFFF" }};}
-.total-banner{background-color:{{ options.primary_color|default:"#5f38f9" }}14;}</style>
 {% endblock %}
-{% block content %}
-<div style="background:{% if options.enable_bg_image == "enabled" and options.background_image %}url({{ options.background_image }}){% else %}#f8f9fa{% endif %}">
-<p style="text-align:right"><a href="?cancel=1" title="Cancel">✕</a>
-<button data-tab="support">?</button> <button data-tab="details">≡</button> <button data-tab="faq">FAQ</button>
-<button id="lang-btn">{{ language }}</button></p>
-<div id="modal-language" style="display:none"><select id="model-languages">
+{% block checkout_top %}
+<div class="pp-checkout-top">
+<a class="pp-icon-btn" href="?cancel=1" title="Cancel">✕</a>
+<button class="pp-icon-btn" data-tab="support" title="Support">?</button>
+<button class="pp-icon-btn" data-tab="details" title="Details">≡</button>
+<button class="pp-icon-btn" data-tab="faq" title="FAQ">FAQ</button>
+<button class="pp-icon-btn" id="lang-btn" title="Language">🌐 {{ language }}</button>
+</div>
+<div id="modal-language" class="pp-modal" style="display:none">
+<div class="pp-modal-content">
+<span class="pp-close" id="lang-close">×</span>
+<h3>{{ lang.select_a_language|default:"Select a language" }}</h3>
+<p><select id="model-languages" class="form-select">
 <option value="en">English</option><option value="bn">বাংলা</option><option value="hi">हिन्दी</option><option value="ur">اردو</option><option value="ar">العربية</option>
-</select><button id="lang-apply">{{ lang.select_a_language|default:"Select" }}</button> <button id="lang-close">{{ lang.close|default:"Close" }}</button></div>
-{% if brand.logo %}<img src="{{ brand.logo }}" alt="logo" style="width:80px;height:80px;border-radius:50%">{% endif %}
-<h1>{{ brand.name }}</h1>
-<h2>{{ lang.checkout|default:"Checkout" }} — {{ transaction.amount }} {{ transaction.currency }}</h2>
-<p>{{ transaction.ref }} · {{ transaction.customer.name }}</p>
-
-<div class="btn-group">
+</select></p>
+<p><button id="lang-apply" class="btn btn-primary">{{ lang.select_a_language|default:"Select" }}</button>
+<button id="lang-close-btn" class="btn btn-ghost-secondary">{{ lang.close|default:"Close" }}</button></p>
+</div>
+</div>
+{% endblock %}
+{% block checkout_content %}
+{% include "checkout/_brand_header.html" %}
+<div class="text-center px-3">
+<h2 class="mt-1">{{ lang.checkout|default:"Checkout" }} — {{ transaction.amount }} {{ transaction.currency }}</h2>
+<p class="pp-amount-line text-secondary">{{ transaction.ref }} · {{ transaction.customer.name }}</p>
+</div>
+<div class="pp-tabbar">
 {% if gateways_mfs %}<button class="btn btn-mfs" data-tab="mfs">{{ lang.mobile_banking|default:"Mobile Banking" }}</button>{% endif %}
 {% if gateways_bank %}<button class="btn btn-net-banking" data-tab="bank">{{ lang.net_banking|default:"Net Banking" }}</button>{% endif %}
 {% if gateways_global %}<button class="btn btn-global" data-tab="global">{{ lang.global|default:"Global" }}</button>{% endif %}
 </div>
-
-<div id="gateways-mfs"><ul>{% for g in gateways_mfs %}
-<li>{% if g.logo %}<img src="{{ g.logo }}" alt="" style="max-width:100px;max-height:40px">{% endif %}
-<a href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }}</a> ({{ g.currency }} {{ g.converted }})</li>
+<div id="gateways-mfs"><ul class="pp-gateway-list">{% for g in gateways_mfs %}
+<li class="pp-gateway-item">{% if g.logo %}<img src="{{ g.logo }}" alt="">{% endif %}
+<a class="pp-gw-name" href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }}</a><span class="pp-gw-amount">{{ g.currency }} {{ g.converted }}</span></li>
 {% endfor %}</ul></div>
-<div id="gateways-bank" style="display:none"><ul>{% for g in gateways_bank %}
-<li>{% if g.logo %}<img src="{{ g.logo }}" alt="" style="max-width:100px;max-height:40px">{% endif %}
-<a href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }}</a> ({{ g.currency }} {{ g.converted }})</li>
+<div id="gateways-bank" style="display:none"><ul class="pp-gateway-list">{% for g in gateways_bank %}
+<li class="pp-gateway-item">{% if g.logo %}<img src="{{ g.logo }}" alt="">{% endif %}
+<a class="pp-gw-name" href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }}</a><span class="pp-gw-amount">{{ g.currency }} {{ g.converted }}</span></li>
 {% endfor %}</ul></div>
-<div id="gateways-global" style="display:none"><ul>{% for g in gateways_global %}
-<li>{% if g.logo %}<img src="{{ g.logo }}" alt="" style="max-width:100px;max-height:40px">{% endif %}
-<a href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }}</a> ({{ g.currency }} {{ g.converted }})</li>
+<div id="gateways-global" style="display:none"><ul class="pp-gateway-list">{% for g in gateways_global %}
+<li class="pp-gateway-item">{% if g.logo %}<img src="{{ g.logo }}" alt="">{% endif %}
+<a class="pp-gw-name" href="?gateway={{ g.gateway_id }}">{{ g.display|default:g.name }}</a><span class="pp-gw-amount">{{ g.currency }} {{ g.converted }}</span></li>
 {% endfor %}</ul></div>
-
-<div id="tab-support" style="display:none"><h3>Support</h3><ul>
+<div id="tab-support" class="px-3" style="display:none"><h3>Support</h3><ul>
 {% if brand.support.email and brand.support.email != "--" %}<li><a href="mailto:{{ brand.support.email }}">{{ lang.contact_email|default:"Email" }}: {{ brand.support.email }}</a></li>{% endif %}
 {% if brand.support.phone and brand.support.phone != "--" %}<li><a href="tel:{{ brand.support.phone }}">{{ lang.contact_phone|default:"Phone" }}: {{ brand.support.phone }}</a></li>{% endif %}
 {% if brand.support.whatsapp and brand.support.whatsapp != "--" %}<li><a href="https://wa.me/{{ brand.support.whatsapp }}">Whatsapp</a></li>{% endif %}
@@ -48,28 +58,30 @@
 {% if brand.support.messenger and brand.support.messenger != "https://m.me/--" %}<li><a href="{{ brand.support.messenger }}">Messenger</a></li>{% endif %}
 {% if brand.support.fb_page and brand.support.fb_page != "https://facebook.com/--" %}<li><a href="{{ brand.support.fb_page }}">Facebook</a></li>{% endif %}
 </ul></div>
-
-<div id="tab-details" style="display:none"><h3>Details</h3>
-<p>{{ lang.currency|default:"Currency" }}: {{ transaction.currency }}</p>
-<p>Subtotal: {{ transaction.amount }} {{ transaction.currency }}</p>
-<p>{{ lang.discount|default:"Discount" }}: {{ transaction.discount_amount }}</p>
-<p>{{ lang.total|default:"Total" }}: {{ transaction.amount }} {{ transaction.currency }}</p></div>
-
-<div id="tab-faq" style="display:none"><h3>FAQ</h3>
+<div id="tab-details" class="px-3" style="display:none"><h3>Details</h3>
+<div class="table-responsive"><table class="table pp-kv">
+<tr><td>{{ lang.currency|default:"Currency" }}</td><td>{{ transaction.currency }}</td></tr>
+<tr><td>Subtotal</td><td>{{ transaction.amount }} {{ transaction.currency }}</td></tr>
+<tr><td>{{ lang.discount|default:"Discount" }}</td><td>{{ transaction.discount_amount }}</td></tr>
+<tr><td>{{ lang.total|default:"Total" }}</td><td>{{ transaction.amount }} {{ transaction.currency }}</td></tr>
+</table></div></div>
+<div id="tab-faq" class="px-3" style="display:none"><h3>FAQ</h3>
 {% for f in faqs %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.title }}</summary><p>{{ f.description|safe }}</p></details>{% endfor %}</div>
-
-<div class="total-banner"><strong>{{ lang.total|default:"Total" }}: {{ transaction.amount }} {{ transaction.currency }}</strong></div>
-<p>{{ options.watermark_text|default:"" }}</p>
-</div>
+<div class="pp-total-banner">{{ lang.total|default:"Total" }}: {{ transaction.amount }} {{ transaction.currency }}</div>
+{% endblock %}
+{% block checkout_foot %}
 <script>
-document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{
-  ["gateways-mfs","gateways-bank","gateways-global","tab-support","tab-details","tab-faq"].forEach(id=>{document.getElementById(id).style.display="none";});
-  const map={mfs:"gateways-mfs",bank:"gateways-bank",global:"gateways-global",support:"tab-support",details:"tab-details",faq:"tab-faq"};
-  const el=document.getElementById(map[b.dataset.tab]); if(el) el.style.display="block";
-}));
-document.querySelector(".btn-group .btn").click();
-document.getElementById("lang-btn").onclick=()=>{document.getElementById("modal-language").style.display="block";};
-document.getElementById("lang-close").onclick=()=>{document.getElementById("modal-language").style.display="none";};
-document.getElementById("lang-apply").onclick=()=>{location.href="?lang="+document.getElementById("model-languages").value;};
+document.querySelectorAll("[data-tab]").forEach(function(b){ b.addEventListener("click", function(){
+  ["gateways-mfs","gateways-bank","gateways-global","tab-support","tab-details","tab-faq"].forEach(function(id){ document.getElementById(id).style.display = "none"; });
+  var map = {mfs:"gateways-mfs",bank:"gateways-bank",global:"gateways-global",support:"tab-support",details:"tab-details",faq:"tab-faq"};
+  var el = document.getElementById(map[b.dataset.tab]); if (el) el.style.display = "block";
+  document.querySelectorAll(".pp-tabbar .btn").forEach(function(x){ x.classList.remove("active"); });
+  if (b.classList.contains("btn")) b.classList.add("active");
+});});
+var firstTab = document.querySelector(".pp-tabbar .btn"); if (firstTab) firstTab.click();
+document.getElementById("lang-btn").onclick = function(){ document.getElementById("modal-language").style.display = "flex"; };
+document.getElementById("lang-close").onclick = function(){ document.getElementById("modal-language").style.display = "none"; };
+document.getElementById("lang-close-btn").onclick = function(){ document.getElementById("modal-language").style.display = "none"; };
+document.getElementById("lang-apply").onclick = function(){ location.href = "?lang=" + document.getElementById("model-languages").value; };
 </script>
 {% endblock %}

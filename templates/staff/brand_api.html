@@ -1,10 +1,32 @@
-{% extends "base.html" %}{% block content %}<h1>API keys</h1>
-<ul>{% for r in rows %}<li>{{ r.key.name }} {{ r.key.api_key }} {{ r.display_status }} {{ r.key.expired_date }} {{ r.key.api_scopes }}</li>{% endfor %}</ul>
-<h2>Create</h2><form method="post">{% csrf_token %}
-<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select>
-<input name="name" placeholder="Name" required> <input name="expired_date" type="date">
-<label><input type="checkbox" name="scopes" value="create_payment" checked> create_payment</label>
-<label><input type="checkbox" name="scopes" value="verify_payment" checked> verify_payment</label>
-<label><input type="checkbox" name="scopes" value="refund_payment"> refund_payment</label>
-<select name="status"><option>active</option><option>inactive</option></select>
-<button>Create</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}API keys — PipraPay Admin{% endblock %}
+{% block pretitle %}Brand Settings{% endblock %}
+{% block pagetitle %}API keys{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-header"><h3 class="card-title">Keys</h3></div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th>Name</th><th>Key</th><th>Status</th><th>Expires</th><th>Scopes</th></tr></thead>
+<tbody>
+{% for r in rows %}<tr>
+<td>{{ r.key.name }}</td><td><code>{{ r.key.api_key }}</code></td>
+<td><span class="badge {% if r.display_status == "active" %}bg-green{% else %}bg-secondary{% endif %}">{{ r.display_status }}</span></td>
+<td>{{ r.key.expired_date }}</td><td><code>{{ r.key.api_scopes }}</code></td></tr>
+{% empty %}<tr><td colspan="5" class="text-secondary">No API keys.</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="card"><div class="card-header"><h3 class="card-title">Create key</h3></div>
+<div class="card-body"><form method="post">{% csrf_token %}
+<div class="pp-form-grid">
+<div><label class="form-label">Brand</label><select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select></div>
+<div><label class="form-label">Name</label><input name="name" class="form-control" placeholder="Name" required></div>
+<div><label class="form-label">Expiry date</label><input name="expired_date" type="date" class="form-control"></div>
+<div><label class="form-label">Status</label><select name="status" class="form-select"><option>active</option><option>inactive</option></select></div>
+<div class="full"><label class="form-label">Scopes</label>
+<div class="d-flex gap-3">
+<label class="form-check"><input type="checkbox" class="form-check-input" name="scopes" value="create_payment" checked> <span class="form-check-label">create_payment</span></label>
+<label class="form-check"><input type="checkbox" class="form-check-input" name="scopes" value="verify_payment" checked> <span class="form-check-label">verify_payment</span></label>
+<label class="form-check"><input type="checkbox" class="form-check-input" name="scopes" value="refund_payment"> <span class="form-check-label">refund_payment</span></label>
+</div></div>
+</div>
+<div class="mt-3"><button class="btn btn-primary" type="submit">Create</button></div>
+</form></div></div>
+{% endblock %}

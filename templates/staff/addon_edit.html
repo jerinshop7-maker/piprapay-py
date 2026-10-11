@@ -1,5 +1,15 @@
-{% extends "base.html" %}{% block content %}<h1>Addon {{ addon.name }}</h1>
-<form method="post" enctype="multipart/form-data">{% csrf_token %}
-<select name="status"><option {% if addon.status == "active" %}selected{% endif %}>active</option><option {% if addon.status == "inactive" %}selected{% endif %}>inactive</option></select>
-<h3>Options</h3>{% for p in params %}<label>{{ p.option_name }}</label><input name="opt_{{ p.option_name }}" value="{{ p.value }}"><br>{% endfor %}
-<button>Save</button></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Addon {{ addon.name }} — PipraPay Admin{% endblock %}
+{% block pretitle %}Extensions{% endblock %}
+{% block pagetitle %}Addon {{ addon.name }}{% endblock %}
+{% block actions %}<a class="btn btn-ghost-secondary" href="/admin/addons/">Back</a>{% endblock %}
+{% block admin_content %}
+<div class="card"><div class="card-body"><form method="post" enctype="multipart/form-data">{% csrf_token %}
+<div class="mb-3"><label class="form-label">Status</label><select name="status" class="form-select w-auto"><option{% if addon.status == "active" %} selected{% endif %}>active</option><option{% if addon.status == "inactive" %} selected{% endif %}>inactive</option></select></div>
+<h3 class="card-title">Options</h3>
+<div class="pp-form-grid">
+{% for p in params %}<div><label class="form-label">{{ p.option_name }}</label><input name="opt_{{ p.option_name }}" class="form-control" value="{{ p.value }}"></div>{% endfor %}
+</div>
+<div class="mt-3"><button class="btn btn-primary" type="submit">Save</button></div>
+</form></div></div>
+{% endblock %}

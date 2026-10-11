@@ -1,6 +1,28 @@
-{% extends "base.html" %}{% block content %}<h1>Gateways</h1>
-<p><a href="?">All</a> {% for t,n in tabs.items %}<a href="?tab={{ t }}">{{ t }} ({{ n }})</a> {% endfor %}</p>
-<p>Install plugin: {% for slug,gw in plugins.items %}{{ slug }} {% endfor %}</p>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for g in page %}<li><input type="checkbox" name="selected_ids" value="{{ g.gateway_id }}"> <a href="/admin/gateways/{{ g.gateway_id }}/">{{ g.display }}</a> {{ g.slug }} {{ g.tab }} {{ g.status }}</li>{% endfor %}</ul></form>
-<a href="/admin/gateways/create/">New Gateway</a> <a href="/admin/gateways/create-bank/">New Bank</a>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Gateways — PipraPay Admin{% endblock %}
+{% block pretitle %}Payments{% endblock %}
+{% block pagetitle %}Gateways{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="/admin/gateways/create/">New Gateway</a> <a class="btn btn-outline-primary" href="/admin/gateways/create-bank/">New Bank</a>{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<p class="mb-0">Tabs: <a class="btn btn-sm btn-ghost-secondary" href="?">All</a> {% for t,n in tabs.items %}<a class="btn btn-sm btn-ghost-secondary" href="?tab={{ t }}">{{ t }} ({{ n }})</a> {% endfor %}</p>
+<p class="text-secondary mt-2 mb-0">Install plugin: {% for slug,gw in plugins.items %}<code>{{ slug }}</code> {% endfor %}</p>
+</div></div>
+<div class="card"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th></th><th>Display</th><th>Slug</th><th>Tab</th><th>Status</th></tr></thead>
+<tbody>
+{% for g in page %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ g.gateway_id }}"></td>
+<td>{% if g.logo %}<img src="{{ g.logo }}" alt="" style="max-height:28px;max-width:80px">{% endif %}</td>
+<td><a href="/admin/gateways/{{ g.gateway_id }}/">{{ g.display }}</a></td>
+<td><code>{{ g.slug }}</code></td><td>{{ g.tab }}</td>
+<td><span class="badge {% if g.status == "active" %}bg-green{% else %}bg-secondary{% endif %}">{{ g.status }}</span></td></tr>
+{% empty %}<tr><td colspan="6" class="text-secondary">No gateways.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="activated">Activate</option><option value="inactivated">Deactivate</option><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

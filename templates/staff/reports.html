@@ -1,6 +1,28 @@
-{% extends "base.html" %}{% block content %}<h1>Reports ({{ preset }})</h1>
-<p><a href="?preset=today">Today</a> <a href="?preset=yesterday">Yesterday</a> <a href="?preset=this_week">Week</a> <a href="?preset=this_month">Month</a> <a href="?preset=this_year">Year</a></p>
-<form method="get"><input name="start" type="date" value="{{ start }}"><input name="end" type="date" value="{{ end }}"><button>Range</button></form>
-<p>Revenue: {{ revenue }} · Completed: {{ completed }} · Success: {{ success_rate }}% · Avg: {{ average }}</p>
-<ul>{% for r in by_status %}<li>{{ r.status }}: {{ r.n }} ({{ r.total }})</li>{% endfor %}</ul>
-<ul>{% for r in by_gateway %}<li>{{ r.gateway_id }}: {{ r.n }} ({{ r.total }})</li>{% endfor %}</ul>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Reports — PipraPay Admin{% endblock %}
+{% block pretitle %}Analytics{% endblock %}
+{% block pagetitle %}Reports <small class="text-secondary">({{ preset }})</small>{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<div class="mb-2"><a class="btn btn-sm {% if preset == "today" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?preset=today">Today</a> <a class="btn btn-sm {% if preset == "yesterday" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?preset=yesterday">Yesterday</a> <a class="btn btn-sm {% if preset == "this_week" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?preset=this_week">Week</a> <a class="btn btn-sm {% if preset == "this_month" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?preset=this_month">Month</a> <a class="btn btn-sm {% if preset == "this_year" %}btn-primary{% else %}btn-ghost-secondary{% endif %}" href="?preset=this_year">Year</a></div>
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Start</label><input name="start" type="date" class="form-control" value="{{ start }}"></div>
+<div><label class="form-label">End</label><input name="end" type="date" class="form-control" value="{{ end }}"></div>
+<div><button class="btn btn-primary" type="submit">Range</button></div>
+</form>
+</div></div>
+<div class="row row-deck row-cards mb-3">
+<div class="col-sm-6 col-lg-3"><div class="card pp-stat-card"><div class="card-body"><div class="card-title mb-1">Revenue</div><div class="h1 mb-0">{{ revenue }}</div><div class="text-secondary small">Completed: {{ completed }}</div></div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card pp-stat-card"><div class="card-body"><div class="card-title mb-1">Completed</div><div class="h1 mb-0 text-green">{{ completed }}</div><div class="text-secondary small">Completed payments</div></div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card pp-stat-card"><div class="card-body"><div class="card-title mb-1">Success rate</div><div class="h1 mb-0">{{ success_rate }}%</div><div class="text-secondary small">Success: {{ success_rate }}%</div></div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card pp-stat-card"><div class="card-body"><div class="card-title mb-1">Average</div><div class="h1 mb-0">{{ average }}</div><div class="text-secondary small">Avg: {{ average }}</div></div></div></div>
+</div>
+<div class="row row-deck row-cards">
+<div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title">By status</h3></div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table"><thead><tr><th>Status</th><th>Count</th><th>Total</th></tr></thead>
+<tbody>{% for r in by_status %}<tr><td>{{ r.status }}</td><td>{{ r.n }}</td><td>{{ r.total }}</td></tr>{% empty %}<tr><td colspan="3" class="text-secondary">No data.</td></tr>{% endfor %}</tbody></table></div></div></div>
+<div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title">By gateway</h3></div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table"><thead><tr><th>Gateway</th><th>Count</th><th>Total</th></tr></thead>
+<tbody>{% for r in by_gateway %}<tr><td>{{ r.gateway_id }}</td><td>{{ r.n }}</td><td>{{ r.total }}</td></tr>{% empty %}<tr><td colspan="3" class="text-secondary">No data.</td></tr>{% endfor %}</tbody></table></div></div></div>
+</div>
+{% endblock %}

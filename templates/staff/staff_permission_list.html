@@ -1,4 +1,27 @@
-{% extends "base.html" %}{% block content %}<h1>Brand grants: {{ member.username }}</h1>
-<form method="post">{% csrf_token %}<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select><button name="add_brand" value="1">Add brand</button></form>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="activated">Activate</option><option value="suspended">Suspend</option><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for r in rows %}<li><input type="checkbox" name="selected_ids" value="{{ r.id }}"> {{ r.brand_id }} {{ r.status }} <a href="/admin/staff/{{ member.a_id }}/permissions/?permission={{ r.id }}">Edit permissions</a></li>{% endfor %}</ul></form>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Brand grants: {{ member.username }} — PipraPay Admin{% endblock %}
+{% block pretitle %}Team{% endblock %}
+{% block pagetitle %}Brand grants: {{ member.username }}{% endblock %}
+{% block actions %}<a class="btn btn-ghost-secondary" href="/admin/staff/">Back</a>{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body"><form method="post" class="pp-filter-bar">{% csrf_token %}
+<div><label class="form-label">Brand</label><select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}">{{ b.identify_name }}</option>{% endfor %}</select></div>
+<div><button name="add_brand" value="1" class="btn btn-primary" type="submit">Add brand</button></div>
+</form></div></div>
+<div class="card"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Brand</th><th>Status</th><th></th></tr></thead>
+<tbody>
+{% for r in rows %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ r.id }}"></td>
+<td><code>{{ r.brand_id }}</code></td>
+<td><span class="badge {% if r.status == "active" %}bg-green{% else %}bg-secondary{% endif %}">{{ r.status }}</span></td>
+<td><a href="/admin/staff/{{ member.a_id }}/permissions/?permission={{ r.id }}">Edit permissions</a></td></tr>
+{% empty %}<tr><td colspan="4" class="text-secondary">No brand grants.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="activated">Activate</option><option value="suspended">Suspend</option><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}

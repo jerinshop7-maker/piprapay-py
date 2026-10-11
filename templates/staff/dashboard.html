@@ -1,6 +1,97 @@
-{% extends "base.html" %}{% block content %}<h1>Dashboard</h1>
-<p>Transactions: {{ total_transactions }} · Completed: {{ completed }} · Pending: {{ pending }} · 30d volume: {{ volume_30d }}</p>
-<p>Last cron: {{ last_cron }}</p>
-<form method="get"><select name="brand"><option value="">All brands</option>{% for b in brands %}<option value="{{ b.brand_id }}" {% if brand_id == b.brand_id %}selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select><button>Switch</button></form>
-<form method="post" action="/set-brand/">{% csrf_token %}<select name="brand_id">{% for b in brands %}<option value="{{ b.brand_id }}" {% if brand_id == b.brand_id %}selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select><button>Set active brand</button></form>
-<ul>{% for t in recent %}<li>{{ t.ref }} — {{ t.status }} — {{ t.amount }}</li>{% endfor %}</ul>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Dashboard — PipraPay Admin{% endblock %}
+{% block pretitle %}Overview{% endblock %}
+{% block pagetitle %}Dashboard{% endblock %}
+{% block actions %}
+<span class="text-secondary">Last cron invocation: <strong>{{ last_cron|default:"Unknown" }}</strong></span>
+{% endblock %}
+{% block admin_content %}
+<div class="row row-deck row-cards mb-3">
+<div class="col-sm-6 col-lg-3">
+<div class="card pp-stat-card"><div class="card-body">
+<div class="card-title mb-1 fs-4">Total Payments</div>
+<div class="h1 mb-0">{{ total_transactions }}</div>
+<div class="text-secondary small">Transactions: {{ total_transactions }} (excl. initiated)</div>
+</div></div>
+</div>
+<div class="col-sm-6 col-lg-3">
+<div class="card pp-stat-card"><div class="card-body">
+<div class="card-title mb-1 fs-4">Completed</div>
+<div class="h1 mb-0 text-green">{{ completed }}</div>
+<div class="text-secondary small">30d volume: {{ volume_30d }}</div>
+</div></div>
+</div>
+<div class="col-sm-6 col-lg-3">
+<div class="card pp-stat-card"><div class="card-body">
+<div class="card-title mb-1 fs-4">Pending</div>
+<div class="h1 mb-0 text-yellow">{{ pending }}</div>
+<div class="text-secondary small">Awaiting verification</div>
+</div></div>
+</div>
+<div class="col-sm-6 col-lg-3">
+<div class="card pp-stat-card"><div class="card-body">
+<div class="card-title mb-1 fs-4">Active Brand</div>
+<form method="post" action="/set-brand/" class="d-flex gap-2">{% csrf_token %}
+<select name="brand_id" class="form-select">{% for b in brands %}<option value="{{ b.brand_id }}"{% if brand_id == b.brand_id %} selected{% endif %}>{{ b.identify_name }}</option>{% endfor %}</select>
+<button class="btn btn-primary" type="submit">Set</button>
+</form>
+<div class="text-secondary small mt-1">Last cron: {{ last_cron|default:"Unknown" }}</div>
+</div></div>
+</div>
+</div>
+<div class="row row-deck row-cards mb-3">
+<div class="col-lg-8">
+<div class="card"><div class="card-header"><h3 class="card-title">Transaction Statistics</h3>
+<div class="ms-auto d-flex gap-2">
+<select id="txn-range" class="form-select form-select-sm"><option value="today">Today</option><option value="this_week">This week</option><option value="this_month" selected>This month</option><option value="this_year">This year</option></select>
+</div></div>
+<div class="card-body"><div id="chart-txn"></div></div></div>
+</div>
+<div class="col-lg-4">
+<div class="card"><div class="card-header"><h3 class="card-title">Gateway Statistics</h3></div>
+<div class="card-body"><div id="chart-gw"></div></div></div>
+</div>
+</div>
+<div class="card">
+<div class="card-header"><h3 class="card-title">Recent transactions</h3>
+<div class="ms-auto"><a class="btn btn-sm btn-outline-primary" href="/admin/transaction/">View all</a></div></div>
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th>Ref</th><th>Status</th><th>Amount</th></tr></thead>
+<tbody>
+{% for t in recent %}<tr><td><a href="/admin/transaction/{{ t.id }}/">{{ t.ref }}</a></td>
+<td><span class="badge {% if t.status == "completed" %}bg-green{% elif t.status == "pending" %}bg-yellow{% elif t.status == "canceled" %}bg-red{% elif t.status == "refunded" %}bg-blue{% else %}bg-secondary{% endif %}">{{ t.status }}</span></td>
+<td>{{ t.amount }} {{ t.currency }}</td></tr>
+{% empty %}<tr><td colspan="3" class="text-secondary">No transactions yet.</td></tr>{% endfor %}
+</tbody></table></div>
+</div>
+{% endblock %}
+{% block foot %}
+<script src="/static/vendor/js/apexcharts.min.js"></script>
+<script>
+(function(){
+  function drawTxn(){
+    var preset = document.getElementById('txn-range').value;
+    fetch('/admin/reports/transaction-stats/?preset=' + encodeURIComponent(preset), {headers: {'X-Requested-With': 'fetch'}})
+      .then(function(r){ return r.json(); }).then(function(d){
+        var el = document.querySelector('#chart-txn'); el.innerHTML = '';
+        if (typeof ApexCharts === 'undefined' || !d.labels) { el.textContent = d.total + ' transactions'; return; }
+        new ApexCharts(el, {chart: {type: 'bar', height: 280}, series: [
+          {name: 'Completed', data: d.series.map(function(s){ return s.completed; })},
+          {name: 'Pending', data: d.series.map(function(s){ return s.pending; })}
+        ], xaxis: {categories: d.labels}, legend: {position: 'bottom'}}).render();
+      }).catch(function(){});
+  }
+  fetch('/admin/reports/gateway-stats/', {headers: {'X-Requested-With': 'fetch'}})
+    .then(function(r){ return r.json(); }).then(function(d){
+      var el = document.querySelector('#chart-gw'); el.innerHTML = '';
+      if (typeof ApexCharts === 'undefined') { return; }
+      new ApexCharts(el, {chart: {type: 'donut', height: 300},
+        series: d.gateways.map(function(g){ return g.n; }),
+        labels: d.gateways.map(function(g){ return g.name; }),
+        legend: {position: 'bottom'}}).render();
+    }).catch(function(){});
+  document.getElementById('txn-range').addEventListener('change', drawTxn);
+  drawTxn();
+})();
+</script>
+{% endblock %}

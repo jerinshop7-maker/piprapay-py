@@ -1,5 +1,31 @@
-{% extends "base.html" %}{% block content %}<h1>Brands</h1>
-<form method="get"><input name="q" value="{{ q }}" placeholder="name"><input name="from" type="date" value="{{ date_from }}"><input name="until" type="date" value="{{ date_until }}"><button>Filter</button></form>
-<form method="post">{% csrf_token %}<select name="bulk"><option value="deleted">Delete</option></select><button>Apply</button>
-<ul>{% for r in rows %}<li><input type="checkbox" name="selected_ids" value="{{ r.brand.brand_id }}"{% if not r.deleteable %} disabled{% endif %}> <a href="/admin/brands/{{ r.brand.brand_id }}/">{{ r.brand.identify_name }}</a> {{ r.brand.currency_code }}{% if not r.deleteable %} (protected){% endif %}</li>{% endfor %}</ul></form>
-<a href="/admin/brands/create/">Create</a>{% endblock %}
+{% extends "staff/base_admin.html" %}
+{% block title %}Brands — PipraPay Admin{% endblock %}
+{% block pretitle %}Tenancy{% endblock %}
+{% block pagetitle %}Brands{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="/admin/brands/create/">Create brand</a>{% endblock %}
+{% block admin_content %}
+<div class="card mb-3"><div class="card-body">
+<form method="get" class="pp-filter-bar">
+<div><label class="form-label">Name</label><input name="q" class="form-control" value="{{ q }}" placeholder="name"></div>
+<div><label class="form-label">From</label><input name="from" type="date" class="form-control" value="{{ date_from }}"></div>
+<div><label class="form-label">Until</label><input name="until" type="date" class="form-control" value="{{ date_until }}"></div>
+<div><button class="btn btn-primary" type="submit">Filter</button></div>
+</form>
+</div></div>
+<div class="card"><form method="post">{% csrf_token %}
+<div class="pp-table-wrap table-responsive"><table class="table table-vcenter card-table">
+<thead><tr><th class="w-1"><input type="checkbox" class="form-check-input" id="sel-all"></th><th>Brand</th><th>Currency</th><th></th></tr></thead>
+<tbody>
+{% for r in rows %}<tr>
+<td><input type="checkbox" class="form-check-input row-sel" name="selected_ids" value="{{ r.brand.brand_id }}"{% if not r.deleteable %} disabled{% endif %}></td>
+<td><a href="/admin/brands/{{ r.brand.brand_id }}/">{{ r.brand.identify_name }}</a></td>
+<td>{{ r.brand.currency_code }}</td>
+<td>{% if not r.deleteable %}<span class="badge bg-blue">protected</span>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="4" class="text-secondary">No brands.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="card-footer d-flex gap-2"><select name="bulk" class="form-select w-auto"><option value="deleted">Delete</option></select><button class="btn btn-outline-primary" type="submit">Apply</button></div>
+</form></div>
+{% endblock %}
+{% block foot %}
+<script>document.getElementById('sel-all').addEventListener('change', function(){ document.querySelectorAll('.row-sel').forEach(function(c){ if(!c.disabled) c.checked = document.getElementById('sel-all').checked; }); });</script>
+{% endblock %}
