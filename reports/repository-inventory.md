@@ -76,6 +76,11 @@ finding `DEP-1`.
 - **CI:** `.github/workflows/ci.yml` (new) — Python 3.12/3.13/3.14
   matrix: compileall, `check`, `makemigrations --check`, `check_requirements`,
   `test tests`. No linter/formatter/type-checker or dependency-audit step.
+  **Push note:** present in the working tree but not in commit `46f07ca` —
+  the GitHub OAuth token used for the push lacks the `workflow` scope
+  GitHub requires to create workflow files. Add after
+  `gh auth refresh -h github.com -s workflow` (or via the web UI), then
+  push.
 
 ## 5. Upstream → Django source map
 
